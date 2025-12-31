@@ -1,0 +1,97 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      String   @default("PATIENT") // ADMIN, KINESIOLOGIST, RECEPTIONIST, PATIENT
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  patientProfile Patient?
+}
+
+model Patient {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rut           String   @unique
+  phone         String?
+  commune       String
+  gender        String?
+  address       String?
+  birthDate     DateTime?
+  healthSystem  String?  // FONASA, ISAPRE
+  diagnosisDate DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  appointments  Appointment[]
+  exams         MedicalExam[]
+  pulmonaryTests PulmonaryFunctionTest[]
+}
+
+model Appointment {
+  id        String   @id @default(cuid())
+  patientId String
+  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  date      DateTime
+  status    String   @default("PENDING") // PENDING, CONFIRMED, CANCELLED
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model MedicalExam {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  centerName  String
+  doctorName  String
+  examDate    DateTime
+  fileUrl     String
+  fileName    String? 
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model PulmonaryFunctionTest {
+  id          String   @id @default(cuid())
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  date        DateTime
+  
+  // Spirometry
+  cvfValue    Float?   // Litros
+  cvfPercent  Int?     // % Teórico
+  vef1Value   Float?
+  vef1Percent Int?
+  
+  // DLCO
+  dlcoPercent Int?     // % Difusión
+  
+  // TM6M
+  walkDistance Float?  // Metros
+  spo2Rest     Int?    // %
+  spo2Final    Int?    // %
+  heartRateRest Int?
+  heartRateFinal Int?
+  
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+

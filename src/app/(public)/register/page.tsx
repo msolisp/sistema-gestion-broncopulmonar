@@ -1,0 +1,126 @@
+
+'use client'
+
+import { useActionState } from 'react'
+import { useFormStatus } from 'react-dom' // Keep formStatus in dom for now to minimize churn if not broken, or move to react if needed. actually error said useFormState renamed.
+import { registerPatient } from '@/lib/actions'
+
+const initialState = {
+    message: '',
+}
+
+export default function RegisterPage() {
+    const [state, dispatch] = useActionState(registerPatient, initialState)
+
+    return (
+        <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
+            <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl border border-zinc-100">
+                <div className="p-8">
+                    <h1 className="text-3xl font-bold text-zinc-900 mb-2">Crear Cuenta</h1>
+                    <p className="text-zinc-500 mb-8">Únete a nuestra plataforma de gestión</p>
+                    <form action={dispatch} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="name">
+                                Nombre Completo
+                            </label>
+                            <input
+                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                id="name"
+                                type="text"
+                                name="name"
+                                required
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="rut">
+                                    RUT
+                                </label>
+                                <input
+                                    className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    id="rut"
+                                    type="text"
+                                    name="rut"
+                                    placeholder="12.345.678-9"
+                                    required
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="commune">
+                                    Comuna
+                                </label>
+                                <select
+                                    className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                    id="commune"
+                                    name="commune"
+                                    required
+                                >
+                                    <option value="">Seleccionar</option>
+                                    <option value="SANTIAGO">Santiago</option>
+                                    <option value="PROVIDENCIA">Providencia</option>
+                                    <option value="LAS CONDES">Las Condes</option>
+                                    <option value="MAIPU">Maipú</option>
+                                    <option value="LA FLORIDA">La Florida</option>
+                                    <option value="PUENTE ALTO">Puente Alto</option>
+                                    {/* More communes can be added */}
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="email">
+                                Email
+                            </label>
+                            <input
+                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                id="email"
+                                type="email"
+                                name="email"
+                                required
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="password">
+                                Contraseña
+                            </label>
+                            <input
+                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                id="password"
+                                type="password"
+                                name="password"
+                                required
+                            />
+                        </div>
+                        {state.message && (
+                            <div className={`flex items-center space-x-2 text-sm ${state.message === 'Success' ? 'text-green-500' : 'text-red-500'}`}>
+                                <p>{state.message === 'Success' ? 'Cuenta creada exitosamente! Puedes iniciar sesión.' : state.message}</p>
+                            </div>
+                        )}
+                        <RegisterButton />
+                    </form>
+
+                    <div className="mt-6 text-center text-sm text-zinc-500">
+                        ¿Ya tienes cuenta?{' '}
+                        <a href="/login" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                            Inicia Sesión
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    )
+}
+
+function RegisterButton() {
+    const { pending } = useFormStatus()
+
+    return (
+        <button
+            className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+            aria-disabled={pending}
+        >
+            {pending ? 'Registrando...' : 'Registrarse'}
+        </button>
+    )
+}

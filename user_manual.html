@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manual de Usuario - Sistema Gestión Broncopulmonar</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px;
+        }
+        h1 {
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-top: 50px;
+        }
+        h2 {
+            color: #2c3e50;
+            margin-top: 30px;
+            border-left: 5px solid #3498db;
+            padding-left: 10px;
+        }
+        h3 {
+            color: #2980b9;
+            margin-top: 25px;
+        }
+        p {
+            margin-bottom: 15px;
+        }
+        ul {
+            margin-bottom: 20px;
+        }
+        li {
+            margin-bottom: 5px;
+        }
+        .note {
+            background-color: #f8f9fa;
+            border-left: 4px solid #f1c40f;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        @media print {
+            body {
+                padding: 0;
+                margin: 2cm;
+                font-size: 12pt;
+                color: black;
+            }
+            h1 {
+                margin-top: 0;
+            }
+            a {
+                text-decoration: none;
+                color: black;
+            }
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" style="background: #e1f5fe; padding: 15px; margin-bottom: 30px; border-radius: 5px; text-align: center;">
+        <strong>Instrucciones para PDF:</strong> Presione <kbd>Ctrl+P</kbd> (o <kbd>Cmd+P</kbd> en Mac) y seleccione "Guardar como PDF" en su navegador.
+    </div>
+
+    <h1>Manual de Usuario - Sistema de Gestión Broncopulmonar</h1>
+
+    <p>Bienvenido al sistema de gestión clínica para el área de Kinesiología y Broncopulmonar. Este manual cubre las funcionalidades principales para Administradores, Kinesiólogos y Pacientes.</p>
+
+    <h2>1. Acceso al Sistema</h2>
+
+    <h3>Login</h3>
+    <ul>
+        <li>Diríjase a la página de inicio.</li>
+        <li>Ingrese su <strong>Email</strong> y <strong>Contraseña</strong>.</li>
+        <li>Haga clic en <strong>Ingresar</strong>.</li>
+    </ul>
+    <div class="note">
+        <strong>Nota:</strong> Si su cuenta está inactiva, contacte a un administrador.
+    </div>
+
+    <h3>Roles de Usuario</h3>
+    <ul>
+        <li><strong>Administrador</strong>: Acceso total al dashboard, gestión de usuarios, reportes BI y datos clínicos.</li>
+        <li><strong>Kinesiólogo</strong>: Acceso a gestión de pacientes, ingreso de fichas clínicas y visualización de evolución.</li>
+        <li><strong>Paciente</strong>: Acceso restringido al portal personal para ver su propio historial y exámenes.</li>
+    </ul>
+
+    <h2>2. Dashboard (Personal Clínico)</h2>
+    <p><em>Disponible para: Administradores y Kinesiólogos</em></p>
+
+    <p>Al ingresar, verá el <strong>Dashboard Clínico</strong> que resume el estado actual del servicio:</p>
+    <ul>
+        <li><strong>KPIs</strong>: Total de pacientes, Adherencia, etc.</li>
+        <li><strong>Gráficos</strong>: Distribución demográfica, curva epidemiológica.</li>
+        <li><strong>Filtros</strong>: Puede filtrar la vista por Año y Comuna para reportes específicos.</li>
+        <li><strong>Exportar</strong>: Botón <strong>"EXPORTAR"</strong> (arriba a la derecha) para descargar la base de datos completa en formato Excel.</li>
+    </ul>
+
+    <h2>3. Gestión de Pacientes</h2>
+    <p><em>Disponible para: Administradores y Kinesiólogos</em></p>
+
+    <h3>Listado de Pacientes</h3>
+    <ul>
+        <li>En la sección "Pacientes", verá la lista completa.</li>
+        <li>Use la barra de búsqueda para filtrar por <strong>RUT</strong> o <strong>Nombre</strong>.</li>
+    </ul>
+
+    <h3>Creación de Pacientes</h3>
+    <ol>
+        <li>Haga clic en <strong>"Nuevo Paciente"</strong>.</li>
+        <li>Complete los datos personales (RUT, Nombre, Comuna, Previsión).</li>
+        <li>Asigne una contraseña temporal.</li>
+        <li>El paciente quedará habilitado inmediatamente.</li>
+    </ol>
+
+    <h3>Perfil del Paciente</h3>
+    <p>Al hacer clic en un paciente, accederá a su ficha clínica con tres secciones principales:</p>
+    <ol>
+        <li><strong>Datos Personales</strong>: Información demográfica y de contacto.</li>
+        <li><strong>Historial de Exámenes</strong>: Línea de tiempo con exámenes médicos subidos (PDF).</li>
+        <li><strong>Función Pulmonar</strong>: Módulo especializado para kinesiología.</li>
+    </ol>
+
+    <h2>4. Módulo Clínico</h2>
+    <p><em>Disponible para: Administradores y Kinesiólogos</em></p>
+
+    <h3>Registro de Función Pulmonar</h3>
+    <p>En la pestaña "Función Pulmonar":</p>
+    <ol>
+        <li>Haga clic en <strong>"Nuevo Registro"</strong>.</li>
+        <li>Ingrese la fecha y los valores de los exámenes:
+            <ul>
+                <li><strong>TM6M</strong>: Distancia recorrida, SpO2 basal/final.</li>
+                <li><strong>Espirometría</strong>: CVF, VEF1 (Valores y % Teórico).</li>
+                <li><strong>DLCO</strong>: Porcentaje de difusión.</li>
+            </ul>
+        </li>
+        <li>Guarde el registro.</li>
+        <li><strong>Visualización</strong>: El sistema generará automáticamente gráficos de tendencia para evaluar la evolución del paciente.</li>
+    </ol>
+
+    <h3>Carga de Exámenes Externos</h3>
+    <p>En la sección "Historial":</p>
+    <ol>
+        <li>Seleccione <strong>"Subir Examen"</strong>.</li>
+        <li>Complete: Centro médico, Doctor solicitante, Fecha.</li>
+        <li>Adjunte el archivo PDF.</li>
+        <li>Haga clic en subir. El examen quedará disponible para descarga tanto para el clínico como par el paciente.</li>
+    </ol>
+
+    <h2>5. Portal del Paciente</h2>
+    <p><em>Disponible para: Pacientes</em></p>
+
+    <p>Al iniciar sesión como paciente, accederá a su portal personal:</p>
+    <ul>
+        <li><strong>Mis Datos</strong>: Visualice y mantenga actualizada su información de contacto.</li>
+        <li><strong>Mi Historial</strong>: Vea su línea de tiempo clínica.</li>
+        <li><strong>Descargas</strong>: Descargue sus exámenes médicos y resultados de pruebas pulmonares.</li>
+        <li><strong>Privacidad</strong>: Sus datos son privados y solo accesibles por usted y el equipo médico autorizado.</li>
+    </ul>
+
+    <h2>6. Seguridad y Soporte</h2>
+    <ul>
+        <li><strong>Cierre de Sesión</strong>: Por seguridad, cierre siempre su sesión usando el botón "Salir" en el menú lateral.</li>
+        <li><strong>Contraseñas</strong>: Si olvidó su contraseña, solicite un restablecimiento al administrador.</li>
+        <li><strong>Datos Sensibles</strong>: El sistema cumple con estándares de seguridad para proteger su información médica.</li>
+    </ul>
+
+</body>
+</html>
