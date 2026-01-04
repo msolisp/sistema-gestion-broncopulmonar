@@ -490,6 +490,18 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
 
     const { id, name, email, role, active } = validation.data;
 
+    // Check if email exists for ANOTHER user
+    const existingUser = await prisma.user.findFirst({
+        where: {
+            email,
+            id: { not: id }
+        }
+    });
+
+    if (existingUser) {
+        return { message: 'El email ya está en uso por otro usuario.' };
+    }
+
     try {
         await prisma.user.update({
             where: { id },
