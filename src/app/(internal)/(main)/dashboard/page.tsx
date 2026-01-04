@@ -14,5 +14,21 @@ export default async function DashboardPage() {
         },
     });
 
-    return <DashboardContent patients={patients} />;
+    const systemUsers = await prisma.user.findMany({
+        where: {
+            role: {
+                in: ['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST']
+            }
+        },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            role: true,
+            active: true
+        }
+    });
+
+    return <DashboardContent patients={patients} initialUsers={systemUsers} />;
+
 }

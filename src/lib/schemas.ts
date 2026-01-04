@@ -55,3 +55,19 @@ export const AdminUpdatePatientSchema = z.object({
 export const DeletePatientSchema = z.object({
     id: z.string().min(1, { message: 'ID de paciente requerido' }),
 });
+
+export const AdminCreateSystemUserSchema = z.object({
+    name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
+    email: z.string().email({ message: 'Email inválido' }),
+    password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres' }),
+    role: z.enum(['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST']),
+    active: z.boolean().optional(),
+});
+
+export const AdminUpdateSystemUserSchema = z.object({
+    id: z.string().min(1, { message: 'ID de usuario requerido' }),
+    name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
+    email: z.string().email({ message: 'Email inválido' }),
+    role: z.enum(['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST']),
+    active: z.boolean(),
+});

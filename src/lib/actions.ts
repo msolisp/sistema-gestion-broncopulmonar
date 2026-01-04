@@ -14,7 +14,9 @@ import {
     UpdatePatientProfileSchema,
     AdminCreatePatientSchema,
     AdminUpdatePatientSchema,
-    DeletePatientSchema
+    DeletePatientSchema,
+    AdminCreateSystemUserSchema,
+    AdminUpdateSystemUserSchema
 } from './schemas';
 
 export async function logout() {
@@ -414,5 +416,84 @@ export async function uploadMedicalExam(formData: FormData) {
     } catch (error) {
         console.error('Upload Error:', error);
         return { message: 'Error al subir el archivo' };
+    }
+}
+
+export async function adminCreateSystemUser(prevState: any, formData: FormData) {
+    const { auth } = await import('@/auth');
+    const session = await auth();
+    if (!session?.user?.email) return { message: 'Unauthorized' };
+    if ((session.user as any).role !== 'ADMIN') return { message: 'Unauthorized: Admin access required' };
+
+    const rawData = {
+        ...Object.fromEntries(formData),
+        active: formData.get('active') === 'on'
+    };
+    const validation = AdminCreateSystemUserSchema.safeParse(rawData);
+
+    if (!validation.success) {
+        return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
+    }
+
+    const { name, email, password, role, active } = validation.data;
+
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) return { message: 'El email ya existe' };
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    try {
+        await prisma.user.create({
+            data: {
+                email,
+                password: hashedPassword,
+                name,
+                role,
+                active: active ?? true
+            }
+        });
+        revalidatePath('/dashboard');
+        return { message: 'Success' };
+    } catch (e) {
+        console.error(e);
+        return { message: 'Error al crear usuario' };
+    }
+}
+
+export async function adminUpdateSystemUser(prevState: any, formData: FormData) {
+    const { auth } = await import('@/auth');
+    const session = await auth();
+    if (!session?.user?.email) return { message: 'Unauthorized' };
+    if ((session.user as any).role !== 'ADMIN') return { message: 'Unauthorized: Admin access required' };
+
+    const rawData = {
+        ...Object.fromEntries(formData),
+        active: formData.get('active') === 'on' // Checkbox handling
+    };
+
+    // Zod expects booleans, so we handled it above.
+    const validation = AdminUpdateSystemUserSchema.safeParse(rawData);
+
+    if (!validation.success) {
+        return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
+    }
+
+    const { id, name, email, role, active } = validation.data;
+
+    try {
+        await prisma.user.update({
+            where: { id },
+            data: {
+                name,
+                email,
+                role,
+                active
+            }
+        });
+        revalidatePath('/dashboard');
+        return { message: 'Success' };
+    } catch (e) {
+        console.error(e);
+        return { message: 'Error al actualizar usuario' };
     }
 }

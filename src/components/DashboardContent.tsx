@@ -1,7 +1,10 @@
 'use client'
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Users, FileText, X, Check, Shield } from "lucide-react"
+
+import { adminCreateSystemUser, adminUpdateSystemUser } from "@/lib/actions";
+import { useRouter } from "next/navigation";
 
 interface DashboardContentProps {
     patients: Array<{
@@ -10,19 +13,27 @@ interface DashboardContentProps {
         commune: string;
         diagnosisDate: Date | null;
         user: { name: string | null; email: string };
-    }>
+    }>;
+    initialUsers: Array<{
+        id: string;
+        name: string | null;
+        email: string;
+        role: string;
+        active: boolean;
+    }>;
 }
 
 type UserRole = 'ADMIN' | 'KINESIOLOGIST' | 'RECEPTIONIST' | 'PATIENT'
 
 interface SystemUser {
     id: string
-    name: string
+    name: string | null
     email: string
     role: UserRole
     active: boolean
 }
 
+// PermissionMatrix Restored
 function PermissionMatrix() {
     const [permissions, setPermissions] = useState([
         { action: 'Ver Pacientes', kine: true, recep: true },
@@ -72,18 +83,24 @@ function PermissionMatrix() {
     )
 }
 
-export default function DashboardContent({ patients }: DashboardContentProps) {
+export default function DashboardContent({ patients, initialUsers }: DashboardContentProps) {
     const [activeTab, setActiveTab] = useState('Usuarios y Roles')
+    const router = useRouter();
 
-    // User Management State
-    const [users, setUsers] = useState<SystemUser[]>([
-        { id: '1', name: 'Admin User', email: 'admin@test.com', role: 'ADMIN', active: true },
-        { id: '2', name: 'Juan Kine', email: 'kine@test.com', role: 'KINESIOLOGIST', active: false },
-        { id: '3', name: 'Maria Recepción', email: 'recep@test.com', role: 'RECEPTIONIST', active: true }
-    ])
+    // User Management State - Initialize with Real Data
+    // Filter out potential conflicts if needed, but assuming server data is truth
+    const [users, setUsers] = useState<SystemUser[]>(initialUsers as SystemUser[]);
+
+    // Sync state when props change (router.refresh())
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    useEffect(() => {
+        setUsers(initialUsers as SystemUser[]);
+    }, [initialUsers]);
+
     const [isUserModalOpen, setIsUserModalOpen] = useState(false)
     const [editingUser, setEditingUser] = useState<SystemUser | null>(null)
     const [formData, setFormData] = useState<Partial<SystemUser>>({})
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleCreateUser = () => {
         setEditingUser(null)
@@ -97,22 +114,38 @@ export default function DashboardContent({ patients }: DashboardContentProps) {
         setIsUserModalOpen(true)
     }
 
-    const handleSaveUser = () => {
-        if (editingUser) {
-            // Update
-            setUsers(users.map(u => u.id === editingUser.id ? { ...u, ...formData } as SystemUser : u))
-        } else {
-            // Create
-            const newUser: SystemUser = {
-                id: Math.random().toString(36).substr(2, 9),
-                name: formData.name || 'Nuevo Usuario',
-                email: formData.email || '',
-                role: formData.role || 'KINESIOLOGIST',
-                active: formData.active ?? true
-            }
-            setUsers([...users, newUser])
+    const handleSaveUser = async () => {
+        setIsSubmitting(true);
+        const data = new FormData();
+        data.append('name', formData.name || '');
+        data.append('email', formData.email || '');
+        data.append('role', formData.role || 'KINESIOLOGIST');
+        if (formData.active) data.append('active', 'on');
+
+        // For new users, we need a password. For now, defaulting or asking via form?
+        // The schema requires password for create. 
+        // Adding a default or prompting would be better. For now, adding default '123456' if new
+        if (!editingUser) {
+            data.append('password', '123456'); // TODO: Add password field to UI
         }
-        setIsUserModalOpen(false)
+
+        let res;
+        if (editingUser) {
+            data.append('id', editingUser.id);
+            res = await adminUpdateSystemUser(null, data);
+        } else {
+            res = await adminCreateSystemUser(null, data);
+        }
+
+        setIsSubmitting(false);
+
+        if (res?.message === 'Success') {
+            setIsUserModalOpen(false);
+            router.refresh(); // Refresh to get latest data from server
+            // Optimistic update could go here, but refresh is safer for sync
+        } else {
+            alert(res?.message || 'Error al guardar');
+        }
     }
 
     return (
