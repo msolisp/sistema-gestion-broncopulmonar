@@ -139,4 +139,24 @@ describe('PatientsTable Component', () => {
         const cells = screen.getAllByRole('cell')
         expect(cells[3]).toHaveTextContent('-')
     })
+
+    it('allows toggling active status in edit modal', () => {
+        render(<PatientsTable patients={mockPatients} />)
+
+        // Open edit for Juan Perez (Active)
+        const editBtns = screen.getAllByTitle('Editar')
+        fireEvent.click(editBtns[0]) // Juan
+
+        expect(screen.getByText('Editar Paciente')).toBeInTheDocument()
+
+        const activeCheckbox = screen.getByLabelText('Paciente Activo')
+        expect(activeCheckbox).toBeChecked()
+
+        // Uncheck it
+        fireEvent.click(activeCheckbox)
+        expect(activeCheckbox).not.toBeChecked()
+
+        // We can't easily check the server action call arguments here because useActionState is internal logic,
+        // but we verify the UI interaction works.
+    })
 })
