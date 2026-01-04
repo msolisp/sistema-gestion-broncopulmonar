@@ -79,7 +79,49 @@ async function main() {
             }
         });
     }
-    console.log('Seeding completed: 50 patients created.');
+
+    // 4. Seed Permissions
+    console.log('Seeding Permissions...');
+    const actions = [
+        'Ver Pacientes',
+        'Editar Pacientes',
+        'Eliminar Pacientes',
+        'Ver Reportes BI',
+        'Gestionar Usuarios',
+        'Configuración Global'
+    ];
+
+    const defaultPermissions = [
+        // KINE
+        { role: Role.KINESIOLOGIST, action: 'Ver Pacientes', enabled: true },
+        { role: Role.KINESIOLOGIST, action: 'Editar Pacientes', enabled: true },
+        { role: Role.KINESIOLOGIST, action: 'Eliminar Pacientes', enabled: true },
+        { role: Role.KINESIOLOGIST, action: 'Ver Reportes BI', enabled: true },
+        // RECEP
+        { role: Role.RECEPTIONIST, action: 'Ver Pacientes', enabled: true },
+        { role: Role.RECEPTIONIST, action: 'Editar Pacientes', enabled: true },
+    ];
+
+    for (const p of defaultPermissions) {
+        await prisma.rolePermission.upsert({
+            where: { role_action: { role: p.role, action: p.action } },
+            update: {},
+            create: p
+        });
+    }
+
+    // Ensure all combinations exist (disabled by default if not above)
+    for (const action of actions) {
+        for (const role of [Role.KINESIOLOGIST, Role.RECEPTIONIST]) {
+            await prisma.rolePermission.upsert({
+                where: { role_action: { role, action } },
+                update: {},
+                create: { role, action, enabled: false }
+            });
+        }
+    }
+
+    console.log('Seeding completed: 50 patients created + Permissions set.');
 }
 
 main()

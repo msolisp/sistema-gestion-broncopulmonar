@@ -7,6 +7,7 @@ import { AuthError } from 'next-auth';
 import { revalidatePath } from 'next/cache';
 import { writeFile, mkdir } from 'fs/promises';
 import { join } from 'path';
+import { logAction } from './logger';
 import {
     LoginSchema,
     RegisterPatientSchema,
@@ -61,6 +62,9 @@ export async function authenticate(
             redirectTo
         });
 
+        await logAction('LOGIN_SUCCESS', `User ${email} logged in`, null, email);
+
+
     } catch (error) {
         if ((error as any).message === 'NEXT_REDIRECT' || (error as any).digest?.startsWith('NEXT_REDIRECT')) {
             throw error;
@@ -74,6 +78,7 @@ export async function authenticate(
                     return 'Algo salió mal.';
             }
         }
+        await logAction('LOGIN_FAILURE', `Failed login attempt for ${email}`, null, email);
         console.error('Login Error:', error);
         throw error;
     }
@@ -495,5 +500,25 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
     } catch (e) {
         console.error(e);
         return { message: 'Error al actualizar usuario' };
+    }
+}
+
+export async function toggleRolePermission(role: string, action: string, enabled: boolean) {
+    const { auth } = await import('@/auth');
+    const session = await auth();
+    if (!session?.user?.email || (session.user as any).role !== 'ADMIN') return { message: 'Unauthorized' };
+
+    try {
+        await prisma.rolePermission.upsert({
+            where: { role_action: { role, action } },
+            create: { role, action, enabled },
+            update: { enabled }
+        });
+
+        await logAction('UPDATE_PERMISSION', `Role: ${role}, Action: ${action} -> ${enabled}`, (session.user as any).id, session.user.email);
+        revalidatePath('/dashboard');
+        return { message: 'Success' };
+    } catch (e) {
+        return { message: 'Error updating permission' };
     }
 }

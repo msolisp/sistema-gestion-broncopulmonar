@@ -95,3 +95,23 @@ model PulmonaryFunctionTest {
 }
 
 
+
+model SystemLog {
+  id        String   @id @default(cuid())
+  action    String   
+  details   String?
+  userId    String?  
+  userEmail String?  
+  ipAddress String?
+  createdAt DateTime @default(now())
+}
+
+model RolePermission {
+  id        String   @id @default(cuid())
+  role      String   
+  action    String   
+  enabled   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  
+  @@unique([role, action])
+}

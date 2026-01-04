@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Users, FileText, X, Check, Shield } from "lucide-react"
 
-import { adminCreateSystemUser, adminUpdateSystemUser } from "@/lib/actions";
+import { adminCreateSystemUser, adminUpdateSystemUser, toggleRolePermission } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 
 interface DashboardContentProps {
@@ -21,6 +21,18 @@ interface DashboardContentProps {
         role: string;
         active: boolean;
     }>;
+    logs: Array<{
+        id: string;
+        action: string;
+        details: string | null;
+        userEmail: string | null;
+        createdAt: Date;
+    }>;
+    initialPermissions: Array<{
+        action: string;
+        kine: boolean;
+        recep: boolean;
+    }>;
 }
 
 type UserRole = 'ADMIN' | 'KINESIOLOGIST' | 'RECEPTIONIST' | 'PATIENT'
@@ -34,20 +46,28 @@ interface SystemUser {
 }
 
 // PermissionMatrix Restored
-function PermissionMatrix() {
-    const [permissions, setPermissions] = useState([
-        { action: 'Ver Pacientes', kine: true, recep: true },
-        { action: 'Editar Pacientes', kine: true, recep: true },
-        { action: 'Eliminar Pacientes', kine: true, recep: false },
-        { action: 'Ver Reportes BI', kine: true, recep: false },
-        { action: 'Gestionar Usuarios', kine: false, recep: false },
-        { action: 'Configuración Global', kine: false, recep: false },
-    ])
+function PermissionMatrix({ initialData }: { initialData: any[] }) {
+    const [permissions, setPermissions] = useState(initialData);
 
-    const togglePermission = (index: number, role: 'kine' | 'recep') => {
-        const newPermissions = [...permissions]
-        newPermissions[index][role] = !newPermissions[index][role]
-        setPermissions(newPermissions)
+    const togglePermission = async (index: number, role: 'kine' | 'recep') => {
+        const newPermissions = [...permissions];
+        const perm = newPermissions[index];
+        const newValue = !perm[role];
+
+        // Optimistic UI Update
+        newPermissions[index] = { ...perm, [role]: newValue };
+        setPermissions(newPermissions);
+
+        // Server Action
+        const roleName = role === 'kine' ? 'KINESIOLOGIST' : 'RECEPTIONIST';
+        const res = await toggleRolePermission(roleName, perm.action, newValue);
+
+        if (res?.message !== 'Success') {
+            // Revert on failure
+            newPermissions[index] = { ...perm, [role]: !newValue };
+            setPermissions([...newPermissions]);
+            alert('Error al actualizar permiso');
+        }
     }
 
     return (
@@ -83,7 +103,7 @@ function PermissionMatrix() {
     )
 }
 
-export default function DashboardContent({ patients, initialUsers }: DashboardContentProps) {
+export default function DashboardContent({ patients, initialUsers, logs, initialPermissions }: DashboardContentProps) {
     const [activeTab, setActiveTab] = useState('Usuarios y Roles')
     const router = useRouter();
 
@@ -330,7 +350,7 @@ export default function DashboardContent({ patients, initialUsers }: DashboardCo
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-zinc-200">
                             <h3 className="text-lg font-bold text-zinc-800 mb-4">Matriz de Permisos</h3>
                             <div className="overflow-x-auto">
-                                <PermissionMatrix />
+                                <PermissionMatrix initialData={initialPermissions} />
                             </div>
                         </div>
                     </div>
@@ -342,24 +362,23 @@ export default function DashboardContent({ patients, initialUsers }: DashboardCo
                             <h3 className="font-bold text-zinc-700">Logs de Sistema (Últimas 24h)</h3>
                         </div>
                         <div className="divide-y divide-zinc-100">
-                            {[
-                                { user: 'admin@test.com', action: 'LOGIN_SUCCESS', ip: '192.168.1.10', time: '10:42 AM' },
-                                { user: 'kine@test.com', action: 'VIEW_PATIENT_RECORD', ip: '192.168.1.15', time: '10:30 AM' },
-                                { user: 'admin@test.com', action: 'UPDATE_SYSTEM_CONFIG', ip: '192.168.1.10', time: '09:15 AM' },
-                                { user: 'unknown', action: 'LOGIN_FAILURE', ip: '186.42.12.1', time: '08:55 AM' },
-                            ].map((log, i) => (
-                                <div key={i} className="px-6 py-3 flex items-center justify-between hover:bg-zinc-50 text-sm">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-2 h-2 rounded-full ${log.action.includes('FAILURE') ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
-                                        <span className="font-mono text-zinc-600">{log.time}</span>
-                                        <span className="font-medium text-zinc-900">{log.action}</span>
+                            <div className="divide-y divide-zinc-100">
+                                {logs.map((log) => (
+                                    <div key={log.id} className="px-6 py-3 flex items-center justify-between hover:bg-zinc-50 text-sm">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-2 h-2 rounded-full ${log.action.includes('FAILURE') ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                                            <span className="font-mono text-zinc-600">
+                                                {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                            </span>
+                                            <span className="font-medium text-zinc-900">{log.action}</span>
+                                        </div>
+                                        <div className="flex gap-4 text-zinc-500 text-xs">
+                                            <span>User: {log.userEmail || 'System'}</span>
+                                            <span className="text-zinc-400 italic truncate max-w-[200px]" title={log.details || ''}>{log.details}</span>
+                                        </div>
                                     </div>
-                                    <div className="flex gap-4 text-zinc-500 text-xs">
-                                        <span>User: {log.user}</span>
-                                        <span>IP: {log.ip}</span>
-                                    </div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
                     </div>
                 )}
