@@ -2,6 +2,7 @@
 import { auth, signOut } from "@/auth";
 import Link from "next/link";
 import { LogOut, LayoutDashboard, Users, FileText, Settings, Activity } from "lucide-react";
+import SessionTimeout from "@/components/SessionTimeout";
 
 export default async function InternalLayout({
     children,
@@ -12,6 +13,7 @@ export default async function InternalLayout({
 
     return (
         <div className="flex h-screen bg-zinc-50">
+            <SessionTimeout />
             {/* Sidebar */}
             <aside className="w-64 bg-white border-r border-zinc-200 hidden md:flex flex-col shadow-sm z-10">
                 <div className="p-6 flex items-start gap-3">
