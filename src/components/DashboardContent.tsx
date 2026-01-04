@@ -149,8 +149,9 @@ export default function DashboardContent({ patients }: DashboardContentProps) {
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-zinc-700 mb-1">Rol</label>
+                                <label htmlFor="userRole" className="block text-xs font-medium text-zinc-700 mb-1">Rol</label>
                                 <select
+                                    id="userRole"
                                     value={formData.role || 'KINESIOLOGIST'}
                                     onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
                                     className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm text-zinc-900 focus:ring-2 focus:ring-indigo-500 outline-none"

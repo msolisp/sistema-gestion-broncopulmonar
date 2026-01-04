@@ -223,6 +223,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                                 disabled={currentPage === 1}
                                 className="p-2 border border-zinc-300 rounded-md bg-white text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                aria-label="Página Anterior"
                             >
                                 <ChevronLeft className="h-4 w-4" />
                             </button>
@@ -230,6 +231,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                                 disabled={currentPage === totalPages}
                                 className="p-2 border border-zinc-300 rounded-md bg-white text-zinc-600 hover:bg-zinc-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                                aria-label="Página Siguiente"
                             >
                                 <ChevronRight className="h-4 w-4" />
                             </button>
@@ -268,6 +270,10 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                         <label className="block text-sm font-medium text-zinc-700 mb-1">RUT</label>
                                         <input name="rut" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" placeholder="11.111.111-1" />
                                     </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-700 mb-1">Contraseña</label>
+                                    <input name="password" type="password" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" placeholder="********" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-zinc-700 mb-1">Dirección</label>

@@ -73,4 +73,31 @@ describe('BookingInterface Component', () => {
             expect(mockOnConfirm).toHaveBeenCalled()
         }
     })
+
+    it('selects a different date from calendar', () => {
+        render(<BookingInterface onConfirm={mockOnConfirm} isPending={false} />)
+
+        // Find a day button that is NOT currently selected (today)
+        // Today has class 'bg-indigo-600'
+        // We look for a button that has the day number but not that class.
+        // Let's just click the '28'th of the month (likely valid and possibly not today unless it IS 28th)
+        // Safer: click next month button, then click '15'.
+
+        const nextMonthBtn = screen.getAllByRole('button')[1] // The second button in header (Left, Title, Right?)
+        // Header: Left btn, Title, Right btn.
+        // Actually logical order in DOM: Button (Left), H2, Button (Right).
+
+        // Let's use labels if they had them, but they don't.
+        // Using indices or class logic.
+
+        // Let's assume there are day buttons.
+        // We can find a button with text '15'.
+        const dayBtn = screen.getAllByText('15').find(el => el.tagName === 'BUTTON')
+        if (dayBtn) {
+            fireEvent.click(dayBtn)
+            // Expect selectedDate to update (internal state).
+            // Visual check: it should now have 'bg-indigo-600'.
+            expect(dayBtn).toHaveClass('bg-indigo-600')
+        }
+    })
 })

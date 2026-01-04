@@ -113,4 +113,62 @@ describe('DashboardContent Component', () => {
         // Check if form is pre-filled (assuming first user is Admin User)
         expect(screen.getByDisplayValue('Admin User')).toBeInTheDocument()
     })
+
+    it('creates a new user', () => {
+        render(<DashboardContent patients={mockPatients} />)
+        // Use accessible name or partial text match that spans children
+        const newUserBtn = screen.getByRole('button', { name: /\+ Nuevo Usuario/i })
+        fireEvent.click(newUserBtn)
+
+        fireEvent.change(screen.getByLabelText(/Nombre Completo/i), { target: { value: 'New Guy' } })
+        fireEvent.change(screen.getByLabelText(/Email/i), { target: { value: 'new@test.com' } })
+        fireEvent.change(screen.getByLabelText(/Rol/i), { target: { value: 'RECEPTIONIST' } })
+
+        fireEvent.click(screen.getByText('Guardar Cambios'))
+
+        expect(screen.getByText('New Guy')).toBeInTheDocument()
+        expect(screen.getByText('new@test.com')).toBeInTheDocument()
+    })
+
+    it('creates a new user with defaults', () => {
+        render(<DashboardContent patients={mockPatients} />)
+        fireEvent.click(screen.getByRole('button', { name: /\+ Nuevo Usuario/i }))
+        fireEvent.click(screen.getByText('Guardar Cambios'))
+
+        // Use getAllByText because the button "Nuevo Usuario" and the row "Nuevo Usuario" both exist
+        const instances = screen.getAllByText('Nuevo Usuario')
+        expect(instances.length).toBeGreaterThan(0)
+
+        // Or check specifically for the cell if possible, or just presence.
+        // The table renders users.
+        const rows = screen.getAllByRole('row')
+        // New user should be in a row.
+        const newUserRow = rows.find(r => r.textContent?.includes('Nuevo Usuario'))
+        expect(newUserRow).toBeInTheDocument()
+    })
+
+    it('updates an existing user', () => {
+        render(<DashboardContent patients={mockPatients} />)
+        const editBtns = screen.getAllByText('Editar')
+        fireEvent.click(editBtns[0])
+
+        fireEvent.change(screen.getByLabelText(/Nombre Completo/i), { target: { value: 'Updated Admin' } })
+        fireEvent.click(screen.getByText('Guardar Cambios'))
+
+        expect(screen.getByText('Updated Admin')).toBeInTheDocument()
+    })
+
+    it('navigates to other tabs', () => {
+        render(<DashboardContent patients={mockPatients} />)
+
+        // Tablas Maestras
+        fireEvent.click(screen.getByText('Tablas Maestras'))
+        expect(screen.getByText('Comunas')).toBeInTheDocument()
+        expect(screen.getByText('Previsiones')).toBeInTheDocument()
+
+        // Auditoría
+        fireEvent.click(screen.getByText('Auditoría'))
+        expect(screen.getByText('Logs de Sistema (Últimas 24h)')).toBeInTheDocument()
+        expect(screen.getByText('LOGIN_SUCCESS')).toBeInTheDocument()
+    })
 })

@@ -80,4 +80,63 @@ describe('PatientsTable Component', () => {
         expect(XLSX.utils.book_new).toHaveBeenCalled()
         expect(XLSX.writeFile).toHaveBeenCalled()
     })
+
+    it('opens create modal', () => {
+        render(<PatientsTable patients={mockPatients} />)
+        const createBtn = screen.getByText('Nuevo Paciente')
+        fireEvent.click(createBtn)
+        expect(screen.getByText('Nuevo Paciente', { selector: 'h3' })).toBeInTheDocument()
+    })
+
+    it('opens edit modal', () => {
+        render(<PatientsTable patients={mockPatients} />)
+        const editBtns = screen.getAllByTitle('Editar')
+        fireEvent.click(editBtns[0])
+        expect(screen.getByText('Editar Paciente')).toBeInTheDocument()
+        expect(screen.getByDisplayValue('Juan Perez')).toBeInTheDocument()
+    })
+
+    it('opens delete modal', () => {
+        render(<PatientsTable patients={mockPatients} />)
+        const deleteBtns = screen.getAllByTitle('Eliminar')
+        fireEvent.click(deleteBtns[0])
+        expect(screen.getByText('¿Eliminar Paciente?')).toBeInTheDocument()
+        // 'Juan Perez' is in the table AND the modal.
+        const instances = screen.getAllByText('Juan Perez')
+        expect(instances.length).toBeGreaterThan(1)
+    })
+
+    it('handles pagination', () => {
+        const manyPatients = Array.from({ length: 15 }, (_, i) => ({
+            ...mockPatients[0],
+            id: i.toString(),
+            user: { ...mockPatients[0].user, name: `Patient ${i}` }
+        }))
+        render(<PatientsTable patients={manyPatients} />)
+
+        // Use custom matcher for text split across elements
+        const getPaginationText = (text: string) => screen.getAllByText((content, element) => {
+            return element?.tagName.toLowerCase() === 'div' && element.textContent === text
+        })
+
+        expect(getPaginationText('Mostrando 1 a 10 de 15 resultados').length).toBeGreaterThan(0)
+
+        const nextBtn = screen.getByRole('button', { name: 'Página Siguiente' })
+        fireEvent.click(nextBtn)
+        expect(getPaginationText('Mostrando 11 a 15 de 15 resultados').length).toBeGreaterThan(0)
+
+        const prevBtn = screen.getByRole('button', { name: 'Página Anterior' })
+        fireEvent.click(prevBtn)
+        expect(getPaginationText('Mostrando 1 a 10 de 15 resultados').length).toBeGreaterThan(0)
+    })
+
+    it('displays hyphen for missing birth date', () => {
+        const patientNoBirth = [{
+            ...mockPatients[0],
+            birthDate: null
+        }]
+        render(<PatientsTable patients={patientNoBirth} />)
+        const cells = screen.getAllByRole('cell')
+        expect(cells[3]).toHaveTextContent('-')
+    })
 })

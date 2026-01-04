@@ -1,4 +1,5 @@
-import { authenticate, registerPatient, bookAppointment, logout, updatePatientProfile, adminCreatePatient, adminUpdatePatient, deletePatient } from './actions'
+import { authenticate, registerPatient, bookAppointment, logout, updatePatientProfile, adminCreatePatient, adminUpdatePatient, deletePatient, uploadMedicalExam } from './actions'
+
 import { signIn, signOut } from '@/auth'
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
@@ -28,6 +29,9 @@ jest.mock('@/lib/prisma', () => ({
     appointment: {
         create: jest.fn(),
     },
+    medicalExam: {
+        create: jest.fn(),
+    },
     $transaction: jest.fn((arg) => {
         if (Array.isArray(arg)) return Promise.all(arg)
         return arg(prisma)
@@ -42,6 +46,16 @@ jest.mock('next/cache', () => ({
     __esModule: true,
     revalidatePath: jest.fn(),
 }))
+
+jest.mock('fs/promises', () => ({
+    mkdir: jest.fn(),
+    writeFile: jest.fn(),
+}))
+
+jest.mock('path', () => ({
+    join: jest.fn((...args) => args.join('/')),
+}))
+
 
 describe('Server Actions', () => {
     beforeEach(() => {
@@ -61,6 +75,19 @@ describe('Server Actions', () => {
                 password: 'password123',
                 redirectTo: '/reservar',
             })
+            expect(signIn).toHaveBeenCalledWith('credentials', {
+                email: 'test@test.com',
+                password: 'password123',
+                redirectTo: '/reservar',
+            })
+        })
+
+        it('returns error if validation fails', async () => {
+            const formData = new FormData()
+            formData.append('email', 'invalid-email')
+            formData.append('password', '')
+            const result = await authenticate(undefined, formData)
+            expect(result).toBe('Datos inválidos')
         })
 
         it('handles specific AuthError', async () => {
@@ -108,6 +135,20 @@ describe('Server Actions', () => {
             formData.append('password', 'password123')
 
                 ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ role: 'ADMIN' })
+
+            await authenticate(undefined, formData)
+
+            expect(signIn).toHaveBeenCalledWith('credentials', expect.objectContaining({
+                redirectTo: '/dashboard'
+            }))
+        })
+
+        it('redirects to dashboard for KINESIOLOGIST', async () => {
+            const formData = new FormData()
+            formData.append('email', 'kine@test.com')
+            formData.append('password', 'password123')
+
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ role: 'KINESIOLOGIST' })
 
             await authenticate(undefined, formData)
 
@@ -249,6 +290,19 @@ describe('bookAppointment', () => {
         const result = await bookAppointment(null, formData)
         expect(result).toEqual({ message: 'Success' })
     })
+
+    it('handles database error', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'test@test.com' } })
+            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+                id: '1',
+                patientProfile: { id: 'p1' }
+            })
+            ; (prisma.appointment.create as jest.Mock).mockRejectedValueOnce(new Error('DB Error'))
+
+        const result = await bookAppointment(null, formData)
+        expect(result).toEqual({ message: 'Error booking appointment' })
+    })
 })
 
 describe('updatePatientProfile', () => {
@@ -266,6 +320,27 @@ describe('updatePatientProfile', () => {
         auth.mockResolvedValue(null)
         const result = await updatePatientProfile(null, formData)
         expect(result).toEqual({ message: 'Unauthorized' })
+    })
+
+    it('returns error if validation fails', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'test@test.com' } })
+        const invalidData = new FormData()
+        // Missing required 'name'
+        const result = await updatePatientProfile(null, invalidData)
+        expect(result.message).toContain('Datos inválidos')
+    })
+
+    it('returns error if profile not found', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'test@test.com' } })
+            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+                id: '1',
+                patientProfile: null // No profile
+            })
+
+        const result = await updatePatientProfile(null, formData)
+        expect(result.message).toContain('Profile not found')
     })
 
     it('updates successfully', async () => {
@@ -315,6 +390,27 @@ describe('Admin Actions', () => {
         expect(result.message).toContain('Unauthorized')
     })
 
+    it('adminCreatePatient returns error if validation fails', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+        const invalidData = new FormData()
+        const result = await adminCreatePatient(null, invalidData)
+        expect(result.message).toContain('Datos inválidos')
+    })
+
+    it('adminCreatePatient returns error if password missing', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+
+        const noPassData = new FormData()
+        noPassData.append('name', 'Admin Created')
+        noPassData.append('email', 'admin@created.com')
+        noPassData.append('rut', '12345678-9')
+        noPassData.append('commune', 'SANTIAGO')
+        const result = await adminCreatePatient(null, noPassData)
+        expect(result.message).toContain('La contraseña es obligatoria')
+    })
+
     it('adminCreatePatient succeeds if admin', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
@@ -338,6 +434,15 @@ describe('Admin Actions', () => {
 
         const result = await adminCreatePatient(null, formData)
         expect(result).toEqual({ message: 'Error al crear paciente' })
+    })
+
+    it('adminUpdatePatient returns error if validation fails', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+        const invalidData = new FormData()
+        // Missing required fields
+        const result = await adminUpdatePatient(null, invalidData)
+        expect(result.message).toContain('Datos inválidos')
     })
 
     const patientData = new FormData()
@@ -376,6 +481,15 @@ describe('Admin Actions', () => {
         expect(result).toEqual({ message: 'Paciente no encontrado' })
     })
 
+    it('deletePatient returns error if validation fails', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+        const invalidData = new FormData()
+        // Missing id
+        const result = await deletePatient(null, invalidData)
+        expect(result.message).toContain('Datos inválidos')
+    })
+
     it('deletePatient succeeds', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
@@ -398,5 +512,111 @@ describe('Admin Actions', () => {
         delData.append('id', 'p1')
         const result = await deletePatient(null, delData)
         expect(result).toEqual({ message: 'Error al eliminar paciente' })
+    })
+})
+
+describe('uploadMedicalExam', () => {
+    const file = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' })
+    Object.defineProperty(file, 'arrayBuffer', {
+        value: jest.fn().mockResolvedValue(new ArrayBuffer(10))
+    })
+    const formData = new FormData()
+    formData.append('patientId', 'p1')
+    formData.append('centerName', 'Center')
+    formData.append('doctorName', 'Doctor')
+    formData.append('examDate', '2025-01-01')
+    formData.append('file', file)
+
+    beforeEach(() => {
+        jest.clearAllMocks()
+    })
+
+    it('returns unauthorized if not logged in', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue(null)
+        const result = await uploadMedicalExam(formData)
+        expect(result).toEqual({ message: 'Unauthorized' })
+    })
+
+    it('returns error if missing fields', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+        const emptyData = new FormData()
+        const result = await uploadMedicalExam(emptyData)
+        expect(result.message).toContain('Faltan campos obligatorios')
+    })
+
+    it('returns error if RBAC fails (patient trying to upload to another)', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'patient@test.com', role: 'PATIENT' } })
+            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+                patientProfile: { id: 'p2' } // Different ID
+            })
+        const result = await uploadMedicalExam(formData)
+        expect(result.message).toContain('No autorizado')
+    })
+
+    it('allows patient to upload to own profile', async () => {
+        const { auth } = require('@/auth')
+        const { mkdir, writeFile } = require('fs/promises')
+        auth.mockResolvedValue({ user: { email: 'patient@test.com', role: 'PATIENT' } })
+            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({
+                patientProfile: { id: 'p1' } // Same ID
+            })
+            ; (prisma.medicalExam.create as jest.Mock).mockResolvedValue({})
+
+        const result = await uploadMedicalExam(formData)
+        expect(result).toEqual({ success: true })
+        expect(mkdir).toHaveBeenCalled()
+        expect(writeFile).toHaveBeenCalled()
+    })
+
+    it('allows admin/kine to upload', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+            ; (prisma.medicalExam.create as jest.Mock).mockResolvedValue({})
+
+        const result = await uploadMedicalExam(formData)
+        expect(result).toEqual({ success: true })
+    })
+
+    it('returns error if file empty', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+        const emptyFile = new File([], 'test.pdf', { type: 'application/pdf' })
+        const data = new FormData()
+        data.append('patientId', 'p1')
+        data.append('centerName', 'Center')
+        data.append('doctorName', 'Doctor')
+        data.append('examDate', '2025-01-01')
+        data.append('file', emptyFile)
+
+        const result = await uploadMedicalExam(data)
+        expect(result.message).toContain('El archivo está vacío')
+    })
+
+    it('returns error if not PDF', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+        const txtFile = new File(['content'], 'test.txt', { type: 'text/plain' })
+        const data = new FormData()
+        data.append('patientId', 'p1')
+        data.append('centerName', 'Center')
+        data.append('doctorName', 'Doctor')
+        data.append('examDate', '2025-01-01')
+        data.append('file', txtFile)
+
+        const result = await uploadMedicalExam(data)
+        expect(result.message).toContain('Solo se permiten archivos PDF')
+    })
+
+    it('handles processing error', async () => {
+        const { auth } = require('@/auth')
+        const { mkdir } = require('fs/promises')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+        mkdir.mockRejectedValue(new Error('FS Error'))
+
+        const result = await uploadMedicalExam(formData)
+        expect(result.message).toContain('Error al subir el archivo')
     })
 })
