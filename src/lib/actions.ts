@@ -5,9 +5,8 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
 import { revalidatePath } from 'next/cache';
-import { writeFile, mkdir } from 'fs/promises';
-import { join } from 'path';
 import { logAction } from './logger';
+import { put } from '@vercel/blob';
 import {
     LoginSchema,
     RegisterPatientSchema,
@@ -390,20 +389,16 @@ export async function uploadMedicalExam(formData: FormData) {
     if (file.type !== 'application/pdf') return { message: 'Solo se permiten archivos PDF' };
 
     try {
-        const uploadDir = join(process.cwd(), 'public', 'uploads', 'medical-exams', patientId);
-        await mkdir(uploadDir, { recursive: true });
-
         const timestamp = Date.now();
-        // Sanitize filename
         const safeName = file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
         const fileName = `${timestamp}-${safeName}`;
-        const filePath = join(uploadDir, fileName);
 
-        const arrayBuffer = await file.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        await writeFile(filePath, buffer);
+        // Upload to Vercel Blob
+        const blob = await put(fileName, file, {
+            access: 'public',
+        });
 
-        const fileUrl = `/uploads/medical-exams/${patientId}/${fileName}`;
+        const fileUrl = blob.url;
 
         await prisma.medicalExam.create({
             data: {
@@ -420,7 +415,7 @@ export async function uploadMedicalExam(formData: FormData) {
         return { success: true };
     } catch (error) {
         console.error('Upload Error:', error);
-        return { message: 'Error al subir el archivo' };
+        return { message: `Error al subir el archivo: ${(error as Error).message}` };
     }
 }
 
@@ -457,6 +452,7 @@ export async function adminCreateSystemUser(prevState: any, formData: FormData) 
                 active: active ?? true
             }
         });
+        await logAction('CREATE_SYSTEM_USER', `User created: ${email}, Role: ${role}`, (session.user as any).id, session.user.email);
         revalidatePath('/dashboard');
         return { message: 'Success' };
     } catch (e) {
@@ -495,6 +491,7 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
                 active
             }
         });
+        await logAction('UPDATE_SYSTEM_USER', `User updated: ${email}, Role: ${role}`, (session.user as any).id, session.user.email);
         revalidatePath('/dashboard');
         return { message: 'Success' };
     } catch (e) {

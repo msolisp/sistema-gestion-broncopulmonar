@@ -74,7 +74,7 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
                                     name="centerName"
                                     required
                                     placeholder="Ej: Clínica..."
-                                    className="w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs p-2 h-[38px]"
+                                    className="w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs text-zinc-900 p-2 h-[38px]"
                                 />
                             </div>
                             <div>
@@ -86,7 +86,7 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
                                     name="doctorName"
                                     required
                                     placeholder="Ej: Dr. Pérez"
-                                    className="w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs p-2 h-[38px]"
+                                    className="w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs text-zinc-900 p-2 h-[38px]"
                                 />
                             </div>
                             <div>
@@ -97,7 +97,7 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
                                     type="date"
                                     name="examDate"
                                     required
-                                    className="w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs p-2 h-[38px]"
+                                    className="w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs text-zinc-900 p-2 h-[38px]"
                                 />
                             </div>
                         </div>
