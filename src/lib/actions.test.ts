@@ -47,13 +47,9 @@ jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
 }))
 
-jest.mock('fs/promises', () => ({
-    mkdir: jest.fn(),
-    writeFile: jest.fn(),
-}))
 
-jest.mock('path', () => ({
-    join: jest.fn((...args) => args.join('/')),
+jest.mock('@vercel/blob', () => ({
+    put: jest.fn(),
 }))
 
 
@@ -558,26 +554,29 @@ describe('uploadMedicalExam', () => {
 
     it('allows patient to upload to own profile', async () => {
         const { auth } = require('@/auth')
-        const { mkdir, writeFile } = require('fs/promises')
+        const { put } = require('@vercel/blob')
         auth.mockResolvedValue({ user: { email: 'patient@test.com', role: 'PATIENT' } })
             ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({
                 patientProfile: { id: 'p1' } // Same ID
             })
             ; (prisma.medicalExam.create as jest.Mock).mockResolvedValue({})
+            ; (put as jest.Mock).mockResolvedValue({ url: 'https://blob.vercel-storage.com/test.pdf' })
 
         const result = await uploadMedicalExam(formData)
         expect(result).toEqual({ success: true })
-        expect(mkdir).toHaveBeenCalled()
-        expect(writeFile).toHaveBeenCalled()
+        expect(put).toHaveBeenCalled()
     })
 
     it('allows admin/kine to upload', async () => {
         const { auth } = require('@/auth')
+        const { put } = require('@vercel/blob')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
             ; (prisma.medicalExam.create as jest.Mock).mockResolvedValue({})
+            ; (put as jest.Mock).mockResolvedValue({ url: 'https://blob.vercel-storage.com/test.pdf' })
 
         const result = await uploadMedicalExam(formData)
         expect(result).toEqual({ success: true })
+        expect(put).toHaveBeenCalled()
     })
 
     it('returns error if file empty', async () => {
@@ -612,11 +611,11 @@ describe('uploadMedicalExam', () => {
 
     it('handles processing error', async () => {
         const { auth } = require('@/auth')
-        const { mkdir } = require('fs/promises')
+        const { put } = require('@vercel/blob')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-        mkdir.mockRejectedValue(new Error('FS Error'))
+        put.mockRejectedValue(new Error('Upload Failed'))
 
         const result = await uploadMedicalExam(formData)
-        expect(result.message).toContain('Error al subir el archivo')
+        expect(result.message).toContain('Error al subir el archivo: Upload Failed')
     })
 })

@@ -18,6 +18,7 @@ model User {
   name      String?
   role      String   @default("PATIENT") // ADMIN, KINESIOLOGIST, RECEPTIONIST, PATIENT
   active    Boolean  @default(true)
+  mustChangePassword Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   

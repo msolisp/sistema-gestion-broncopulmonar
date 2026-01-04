@@ -42,19 +42,26 @@ export async function authenticate(
         // Pre-check role to determine redirection
         const user = await prisma.user.findUnique({
             where: { email },
-            select: { role: true }
+            select: { role: true, mustChangePassword: true }
         });
 
         let redirectTo = '/reservar'; // Default fallback
 
         if (user) {
-            // Strictly Separate Portals
-            if (['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST'].includes(user.role)) {
+
+            // Check for Forced Password Change
+            if (user.mustChangePassword) {
+                redirectTo = '/change-password';
+            } else if (['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST'].includes(user.role)) {
+                // Strictly Separate Portals
                 redirectTo = '/dashboard';
             } else {
                 redirectTo = '/portal';
             }
         }
+
+        // Artificial Delay for Rate Limiting to prevent Brute Force
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         await signIn('credentials', {
             ...rawData,
@@ -256,6 +263,7 @@ export async function adminCreatePatient(prevState: any, formData: FormData) {
                     password: hashedPassword,
                     name,
                     role: 'PATIENT',
+                    mustChangePassword: true,
                 }
             });
 
@@ -449,7 +457,8 @@ export async function adminCreateSystemUser(prevState: any, formData: FormData) 
                 password: hashedPassword,
                 name,
                 role,
-                active: active ?? true
+                active: active ?? true,
+                mustChangePassword: true
             }
         });
         await logAction('CREATE_SYSTEM_USER', `User created: ${email}, Role: ${role}`, (session.user as any).id, session.user.email);
@@ -517,5 +526,38 @@ export async function toggleRolePermission(role: string, action: string, enabled
         return { message: 'Success' };
     } catch (e) {
         return { message: 'Error updating permission' };
+    }
+}
+
+export async function changePassword(formData: FormData) {
+    const { auth } = await import('@/auth');
+    const session = await auth();
+
+    // Safety check: User must be logged in
+    if (!session?.user?.email) return { message: 'Unauthorized' };
+
+    const newPassword = formData.get('newPassword') as string;
+
+    if (!newPassword || newPassword.length < 6) {
+        return { message: 'La contraseña debe tener al menos 6 caracteres' };
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    try {
+        await prisma.user.update({
+            where: { email: session.user.email },
+            data: {
+                password: hashedPassword,
+                mustChangePassword: false
+            }
+        });
+
+        await logAction('PASSWORD_CHANGE', `User ${session.user.email} changed password`, null, session.user.email);
+
+        return { message: 'Success' };
+    } catch (e) {
+        console.error(e);
+        return { message: 'Error al cambiar la contraseña' };
     }
 }

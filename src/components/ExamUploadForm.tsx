@@ -38,20 +38,22 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
             </div>
 
             <div className="p-4">
-                <form id="upload-form" action={handleSubmit} className="space-y-4">
+                <form id="upload-form" onSubmit={(e) => {
+                    e.preventDefault();
+                    handleSubmit(new FormData(e.currentTarget as HTMLFormElement));
+                }} className="space-y-4">
 
                     <div className="flex flex-col md:flex-row gap-4">
                         {/* File Input - Takes up 40% */}
                         <div className="w-full md:w-5/12">
                             <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
                                 Archivo PDF
-                            </label>
-                            <input
-                                type="file"
-                                name="file"
-                                accept="application/pdf"
-                                required
-                                className="block w-full text-xs text-zinc-500
+                                <input
+                                    type="file"
+                                    name="file"
+                                    accept="application/pdf"
+                                    required
+                                    className="mt-1 block w-full text-xs text-zinc-500
                                   file:mr-2 file:py-2 file:px-3
                                   file:rounded-full file:border-0
                                   file:text-xs file:font-bold
@@ -60,7 +62,8 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
                                   border border-dashed border-zinc-300 rounded-lg cursor-pointer p-2
                                   focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent
                                 "
-                            />
+                                />
+                            </label>
                         </div>
 
                         {/* Metadata Inputs - Takes up 60% */}
@@ -68,37 +71,37 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
                             <div>
                                 <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
                                     Centro Médico
+                                    <input
+                                        type="text"
+                                        name="centerName"
+                                        required
+                                        placeholder="Ej: Clínica..."
+                                        className="mt-1 w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs text-zinc-900 p-2 h-[38px]"
+                                    />
                                 </label>
-                                <input
-                                    type="text"
-                                    name="centerName"
-                                    required
-                                    placeholder="Ej: Clínica..."
-                                    className="w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs text-zinc-900 p-2 h-[38px]"
-                                />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
                                     Médico
+                                    <input
+                                        type="text"
+                                        name="doctorName"
+                                        required
+                                        placeholder="Ej: Dr. Pérez"
+                                        className="mt-1 w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs text-zinc-900 p-2 h-[38px]"
+                                    />
                                 </label>
-                                <input
-                                    type="text"
-                                    name="doctorName"
-                                    required
-                                    placeholder="Ej: Dr. Pérez"
-                                    className="w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs text-zinc-900 p-2 h-[38px]"
-                                />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
                                     Fecha
+                                    <input
+                                        type="date"
+                                        name="examDate"
+                                        required
+                                        className="mt-1 w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs text-zinc-900 p-2 h-[38px]"
+                                    />
                                 </label>
-                                <input
-                                    type="date"
-                                    name="examDate"
-                                    required
-                                    className="w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs text-zinc-900 p-2 h-[38px]"
-                                />
                             </div>
                         </div>
                     </div>
