@@ -502,6 +502,17 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
         return { message: 'El email ya está en uso por otro usuario.' };
     }
 
+    // Check if target user is ADMIN
+    const targetUser = await prisma.user.findUnique({ where: { id } });
+    if (targetUser?.role === 'ADMIN') {
+        // Prevent editing OTHER admins, or any admin? 
+        // Request says "protege de edicion al administrador". 
+        // Assuming we should NOT edit admins from this generic UI.
+        return { message: 'No se puede editar al Administrador Principal desde esta vista.' }
+
+
+    }
+
     try {
         await prisma.user.update({
             where: { id },
@@ -620,5 +631,29 @@ export async function seedPermissions() {
     } catch (e) {
         console.error(e);
         return { message: 'Error seeding permissions' };
+    }
+}
+
+
+export async function adminDeleteSystemUser(id: string) {
+    const { auth } = await import('@/auth');
+    const session = await auth();
+    if (!session?.user?.email || (session.user as any).role !== 'ADMIN') return { message: 'Unauthorized' };
+
+    try {
+        const targetUser = await prisma.user.findUnique({ where: { id } });
+        if (!targetUser) return { message: 'Usuario no encontrado' };
+
+        if (targetUser.role === 'ADMIN') {
+            return { message: 'No se puede eliminar a un Administrador.' };
+        }
+
+        await prisma.user.delete({ where: { id } });
+        await logAction('DELETE_SYSTEM_USER', `User deleted: ${targetUser.email}`, (session.user as any).id, session.user.email);
+        revalidatePath('/dashboard');
+        return { message: 'Success' };
+    } catch (e) {
+        console.error(e);
+        return { message: 'Error al eliminar usuario' };
     }
 }

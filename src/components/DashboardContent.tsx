@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Users, FileText, X, Check, Shield } from "lucide-react"
 
-import { adminCreateSystemUser, adminUpdateSystemUser, toggleRolePermission, seedPermissions } from "@/lib/actions";
+import { adminCreateSystemUser, adminUpdateSystemUser, toggleRolePermission, seedPermissions, adminDeleteSystemUser } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 
 interface DashboardContentProps {
@@ -168,6 +168,17 @@ export default function DashboardContent({ patients, initialUsers, logs, initial
         }
     }
 
+    const handleDeleteUser = async (user: SystemUser) => {
+        if (!confirm(`¿Estás seguro de que deseas eliminar al usuario ${user.name}?`)) return;
+
+        const res = await adminDeleteSystemUser(user.id);
+        if (res?.message === 'Success') {
+            router.refresh();
+        } else {
+            alert(res?.message || 'Error al eliminar usuario');
+        }
+    }
+
     return (
         <div className="space-y-8 relative">
             {/* User Modal */}
@@ -312,13 +323,27 @@ export default function DashboardContent({ patients, initialUsers, logs, initial
                                                     <span className="text-zinc-400 font-medium">Inactivo</span>
                                                 )}
                                             </td>
-                                            <td className="px-6 py-4 text-right">
-                                                <button
-                                                    onClick={() => handleEditUser(user)}
-                                                    className="text-indigo-600 font-bold hover:text-indigo-800 transition-colors"
-                                                >
-                                                    Editar
-                                                </button>
+
+                                            <td className="px-6 py-4 text-right flex justify-end gap-2">
+                                                {user.role !== 'ADMIN' && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => handleEditUser(user)}
+                                                            className="text-indigo-600 font-bold hover:text-indigo-800 transition-colors"
+                                                        >
+                                                            Editar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleDeleteUser(user)}
+                                                            className="text-red-500 font-bold hover:text-red-700 transition-colors"
+                                                        >
+                                                            Eliminar
+                                                        </button>
+                                                    </>
+                                                )}
+                                                {user.role === 'ADMIN' && (
+                                                    <span className="text-zinc-400 text-xs italic">Protegido</span>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
