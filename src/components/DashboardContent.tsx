@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { Users, FileText, X, Check, Shield } from "lucide-react"
 
-import { adminCreateSystemUser, adminUpdateSystemUser, toggleRolePermission } from "@/lib/actions";
+import { adminCreateSystemUser, adminUpdateSystemUser, toggleRolePermission, seedPermissions } from "@/lib/actions";
 import { useRouter } from "next/navigation";
 
 interface DashboardContentProps {
@@ -348,7 +348,21 @@ export default function DashboardContent({ patients, initialUsers, logs, initial
                 {activeTab === 'Seguridad - Control de acceso' && (
                     <div className="space-y-6">
                         <div className="bg-white p-6 rounded-xl shadow-sm border border-zinc-200">
-                            <h3 className="text-lg font-bold text-zinc-800 mb-4">Matriz de Permisos</h3>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-lg font-bold text-zinc-800">Matriz de Permisos</h3>
+                                <button
+                                    onClick={async () => {
+                                        if (confirm('¿Reiniciar matriz de permisos por defecto?')) {
+                                            const res = await seedPermissions();
+                                            alert(res.message === 'Success' ? 'Permisos inicializados' : 'Error');
+                                            router.refresh();
+                                        }
+                                    }}
+                                    className="text-xs bg-zinc-800 text-white px-3 py-2 rounded-lg hover:bg-black transition-colors"
+                                >
+                                    Inicializar Permisos
+                                </button>
+                            </div>
                             <div className="overflow-x-auto">
                                 <PermissionMatrix initialData={initialPermissions} />
                             </div>

@@ -561,3 +561,52 @@ export async function changePassword(formData: FormData) {
         return { message: 'Error al cambiar la contraseña' };
     }
 }
+
+export async function seedPermissions() {
+    const { auth } = await import('@/auth');
+    const session = await auth();
+    if (!session?.user?.email || (session.user as any).role !== 'ADMIN') return { message: 'Unauthorized' };
+
+    const actions = [
+        'Ver Pacientes',
+        'Editar Pacientes',
+        'Eliminar Pacientes',
+        'Ver Reportes BI',
+        'Gestionar Usuarios',
+        'Configuración Global'
+    ];
+
+    const defaultPermissions = [
+        // KINE
+        { role: 'KINESIOLOGIST', action: 'Ver Pacientes', enabled: true },
+        { role: 'KINESIOLOGIST', action: 'Editar Pacientes', enabled: true },
+        { role: 'KINESIOLOGIST', action: 'Eliminar Pacientes', enabled: true },
+        { role: 'KINESIOLOGIST', action: 'Ver Reportes BI', enabled: true },
+        // RECEP
+        { role: 'RECEPTIONIST', action: 'Ver Pacientes', enabled: true },
+        { role: 'RECEPTIONIST', action: 'Editar Pacientes', enabled: true },
+    ];
+
+    try {
+        for (const action of actions) {
+            for (const role of ['KINESIOLOGIST', 'RECEPTIONIST']) {
+                // Check if specific default exists
+                const specific = defaultPermissions.find(p => p.role === role && p.action === action);
+                const enabled = specific ? specific.enabled : false;
+
+                // Using prisma directly here (imported at top of file, ideally)
+                // But wait, prisma is imported at line 4. 
+                await prisma.rolePermission.upsert({
+                    where: { role_action: { role, action } },
+                    update: {}, // Don't overwrite if exists
+                    create: { role, action, enabled }
+                });
+            }
+        }
+        revalidatePath('/dashboard');
+        return { message: 'Success' };
+    } catch (e) {
+        console.error(e);
+        return { message: 'Error seeding permissions' };
+    }
+}
