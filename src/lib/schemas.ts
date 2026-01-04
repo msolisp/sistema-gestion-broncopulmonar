@@ -50,6 +50,7 @@ export const AdminUpdatePatientSchema = z.object({
     healthSystem: z.string().optional(),
     birthDate: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), { message: 'Fecha de nacimiento inválida' }),
     diagnosisDate: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), { message: 'Fecha de diagnóstico inválida' }),
+    active: z.boolean(),
 });
 
 export const DeletePatientSchema = z.object({

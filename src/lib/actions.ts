@@ -293,14 +293,17 @@ export async function adminUpdatePatient(prevState: any, formData: FormData) {
     if (!session?.user?.email) return { message: 'Unauthorized' };
     if ((session.user as any).role !== 'ADMIN') return { message: 'Unauthorized: Admin access required' };
 
-    const rawData = Object.fromEntries(formData);
+    const rawData = {
+        ...Object.fromEntries(formData),
+        active: formData.get('active') === 'on'
+    };
     const validation = AdminUpdatePatientSchema.safeParse(rawData);
 
     if (!validation.success) {
         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
     }
 
-    const { id, name, rut, commune, address, gender, healthSystem, birthDate, diagnosisDate } = validation.data;
+    const { id, name, rut, commune, address, gender, healthSystem, birthDate, diagnosisDate, active } = validation.data;
 
     try {
         const patient = await prisma.patient.findUnique({ where: { id }, include: { user: true } });
@@ -309,7 +312,10 @@ export async function adminUpdatePatient(prevState: any, formData: FormData) {
         await prisma.$transaction([
             prisma.user.update({
                 where: { id: patient.userId },
-                data: { name }
+                data: {
+                    name,
+                    active
+                }
             }),
             prisma.patient.update({
                 where: { id },

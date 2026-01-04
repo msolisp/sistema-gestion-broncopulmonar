@@ -369,6 +369,21 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                             className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900"
                                         />
                                     </div>
+
+                                </div>
+
+
+                                <div className="flex items-center gap-2 pt-2">
+                                    <input
+                                        type="checkbox"
+                                        name="active"
+                                        id="active"
+                                        defaultChecked={selectedPatient.user.active}
+                                        className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-zinc-300 rounded"
+                                    />
+                                    <label htmlFor="active" className="text-sm font-medium text-zinc-700 select-none cursor-pointer">
+                                        Paciente Activo
+                                    </label>
                                 </div>
 
                                 {updateState?.message && updateState.message !== 'Success' && <p className="text-red-500 text-sm">{updateState.message}</p>}
@@ -379,7 +394,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                 </div>
                             </form>
                         </div>
-                    </div>
+                    </div >
                 )
             }
 
