@@ -11,27 +11,14 @@ export async function getPatientHistory() {
             return { error: "No autorizado" };
         }
 
-        let patient = await prisma.patient.findUnique({
-            where: { userId: session.user.id },
+        // Session ID IS the Patient ID for patient users
+        const patient = await prisma.patient.findUnique({
+            where: { id: session.user.id },
             select: { id: true }
         });
 
-        // Self-healing: Create profile if missing
         if (!patient) {
-            console.log(`[Auto-Recovery] Creating missing profile for user ${session.user.id}`);
-            const timestamp = Date.now();
-            patient = await prisma.patient.create({
-                data: {
-                    userId: session.user.id,
-                    rut: `TMP-${timestamp}`, // Temporary RUT to allow access
-                    commune: 'SIN INFORMACION', // Default
-                    address: 'Por completar',
-                    healthSystem: 'FONASA',
-                    phone: '',
-                    birthDate: new Date()
-                },
-                select: { id: true }
-            });
+            return { error: "Paciente no encontrado" };
         }
 
         const tests = await prisma.pulmonaryFunctionTest.findMany({

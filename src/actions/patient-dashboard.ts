@@ -13,7 +13,7 @@ export async function getPatientDashboardData() {
         }
 
         const patient = await prisma.patient.findUnique({
-            where: { email: session.user.email },
+            where: { id: session.user.id },
             select: {
                 id: true,
                 commune: true

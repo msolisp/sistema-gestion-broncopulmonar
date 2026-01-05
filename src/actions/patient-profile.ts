@@ -11,13 +11,13 @@ export async function getPatientProfile() {
             return { error: "No autorizado" };
         }
 
-        const user = await prisma.user.findUnique({
-            where: { id: session.user.id },
-            include: { patientProfile: true }
+        // Direct query to Patient table using session ID
+        const user = await prisma.patient.findUnique({
+            where: { id: session.user.id }
         });
 
         if (!user) {
-            return { error: "Usuario no encontrado" };
+            return { error: "Perfil no encontrado" };
         }
 
         return { user };
