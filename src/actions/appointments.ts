@@ -43,8 +43,8 @@ export async function bookAppointment(prevState: any, formData: FormData) {
             data: {
                 patientId: user.patientProfile.id,
                 date: appointmentDate,
-                status: "PENDING",
-                notes: "Reserva web"
+                status: "CONFIRMED",
+                notes: "Reserva web confirmada"
             }
         })
 

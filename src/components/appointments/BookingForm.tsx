@@ -31,8 +31,8 @@ export default function BookingForm() {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                         </svg>
                     </div>
-                    <h2 className="text-xl font-semibold text-zinc-900 mb-2">¡Solicitud Enviada!</h2>
-                    <p className="text-zinc-500 mb-6">Tu reserva ha quedado en estado pendiente.</p>
+                    <h2 className="text-xl font-semibold text-zinc-900 mb-2">¡Reserva Confirmada!</h2>
+                    <p className="text-zinc-500 mb-6">Tu hora ha sido agendada exitosamente.</p>
                     <button onClick={() => window.location.reload()} className="text-indigo-600 hover:underline">
                         Realizar otra reserva
                     </button>
