@@ -39,6 +39,16 @@ export async function authenticate(
     try {
         console.log('Attempting login for:', email);
 
+        // Rate Limiting
+        const { rateLimit } = await import('@/lib/rate-limit');
+        try {
+            await rateLimit(email); // Limit by email
+            // Also limit by IP if possible, but headers() in server actions is tricky in some Next versions
+            // For now, email based limiting prevents brute forcing a specific account
+        } catch (e) {
+            return 'Demasiados intentos. Por favor espera 1 minuto.';
+        }
+
         // Pre-check role to determine redirection
         const user = await prisma.user.findUnique({
             where: { email },
@@ -404,7 +414,20 @@ export async function uploadMedicalExam(formData: FormData) {
     }
 
     if (file.size === 0) return { message: 'El archivo está vacío' };
+    // 1. Check declared MIME type (Fail fast)
     if (file.type !== 'application/pdf') return { message: 'Solo se permiten archivos PDF' };
+
+    // 2. Check Magic Bytes (Secure check)
+    const arrayBuffer = await file.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    // file-type is ESM, so we import dynamically
+    const { fileTypeFromBuffer } = await import('file-type');
+    const type = await fileTypeFromBuffer(buffer);
+
+    if (!type || type.mime !== 'application/pdf') {
+        return { message: 'El archivo no es un PDF válido (Firma digital incorrecta).' };
+    }
 
     try {
         const timestamp = Date.now();

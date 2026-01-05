@@ -9,7 +9,19 @@ export const authConfig = {
         authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user;
             const isOnInternal = nextUrl.pathname.startsWith('/dashboard') || nextUrl.pathname.startsWith('/intranet');
-            const isOnPublic = !isOnInternal;
+
+            // Password Change Enforcement
+            if (isLoggedIn && (auth.user as any).mustChangePassword) {
+                if (nextUrl.pathname !== '/change-password') {
+                    return Response.redirect(new URL('/change-password', nextUrl));
+                }
+                return true;
+            }
+
+            if (nextUrl.pathname === '/change-password') {
+                if (!isLoggedIn) return Response.redirect(new URL('/login', nextUrl));
+                return true;
+            }
 
             if (isOnInternal) {
                 if (isLoggedIn) {
@@ -36,6 +48,7 @@ export const authConfig = {
             if (user) {
                 token.role = user.role
                 token.id = user.id
+                token.mustChangePassword = (user as any).mustChangePassword
             }
             return token
         },
@@ -43,6 +56,7 @@ export const authConfig = {
             if (token && session.user) {
                 session.user.role = token.role as string
                 session.user.id = token.id as string
+                (session.user as any).mustChangePassword = token.mustChangePassword as boolean
             }
             return session
         }
