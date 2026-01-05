@@ -34,7 +34,7 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     // 4. Verification: Redirect to Portal
     await page.waitForURL(/.*\/portal/);
     await expect(page).toHaveURL(/.*\/portal/);
-    await expect(page.getByRole('heading', { name: /Portal del Paciente/i })).toBeVisible();
+    await expect(page.locator('h1')).toContainText('Bienvenido');
 
     // 5. Navigate to Reserve
     // 5. Book

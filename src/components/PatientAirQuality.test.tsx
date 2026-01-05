@@ -16,66 +16,41 @@ jest.mock('lucide-react', () => ({
     AlertOctagon: () => <span data-testid="icon-emergency">Emergency</span>,
 }));
 
-describe('PatientAirQuality', () => {
-    it('should render "Bueno" status correctly', async () => {
-        (getRealtimeGlobalAQI as jest.Mock).mockResolvedValue([
-            {
-                commune: 'SANTIAGO',
-                originalName: 'Parque O Higgins',
-                value: 50,
-                status: 'Good',
-                color: '#10b981',
-                level: 'Bueno'
-            }
-        ]);
+it('should render "Bueno" status correctly', () => {
+    const mockData = {
+        commune: 'SANTIAGO',
+        originalName: 'Parque O Higgins',
+        value: 50,
+        level: 'Bueno' as const,
+        color: '#10b981',
+        coords: [-33.46, -70.66] as [number, number]
+    };
 
-        const ui = await PatientAirQuality({ commune: 'SANTIAGO' });
-        render(ui!);
+    render(<PatientAirQuality commune="SANTIAGO" aqiData={mockData} />);
 
-        expect(screen.getByText('Calidad del Aire en SANTIAGO')).toBeInTheDocument();
-        expect(screen.getByText('50 AQI')).toBeInTheDocument();
-        expect(screen.getByText('Bueno')).toBeInTheDocument();
-        expect(screen.getByText('El aire es seguro para realizar actividades al aire libre.')).toBeInTheDocument();
-    });
+    expect(screen.getByText('Calidad del Aire en SANTIAGO')).toBeInTheDocument();
+    expect(screen.getByText('50 AQI')).toBeInTheDocument();
+    expect(screen.getByText('Bueno')).toBeInTheDocument();
+    expect(screen.getByText('El aire es seguro para realizar actividades al aire libre.')).toBeInTheDocument();
+});
 
-    it('should render "Regular" status correctly', async () => {
-        (getRealtimeGlobalAQI as jest.Mock).mockResolvedValue([
-            {
-                commune: 'SANTIAGO',
-                originalName: 'Parque O Higgins',
-                value: 120,
-                status: 'Moderate',
-                color: '#f59e0b',
-                level: 'Regular'
-            }
-        ]);
+it('should render "Regular" status correctly', () => {
+    const mockData = {
+        commune: 'SANTIAGO',
+        originalName: 'Parque O Higgins',
+        value: 120,
+        level: 'Regular' as const,
+        color: '#f59e0b',
+        coords: [-33.46, -70.66] as [number, number]
+    };
 
-        const ui = await PatientAirQuality({ commune: 'SANTIAGO' });
-        render(ui!);
+    render(<PatientAirQuality commune="SANTIAGO" aqiData={mockData} />);
 
-        expect(screen.getByText('Regular')).toBeInTheDocument();
-        expect(screen.getByText('Calidad aceptable. Personas muy sensibles deberían considerar reducir esfuerzos.')).toBeInTheDocument();
-    });
+    expect(screen.getByText('Regular')).toBeInTheDocument();
+    expect(screen.getByText('Calidad aceptable. Personas muy sensibles deberían considerar reducir esfuerzos.')).toBeInTheDocument();
+});
 
-    it('should fallback to Santiago if commune not found', async () => {
-        (getRealtimeGlobalAQI as jest.Mock).mockResolvedValue([
-            {
-                commune: 'SANTIAGO',
-                originalName: 'Parque O Higgins',
-                value: 50, // 50
-                status: 'Good',
-                color: '#10b981',
-                level: 'Bueno'
-            }
-        ]);
-
-        // Requesting "LA PINTANA" but logic falls back to Santiago if not found
-        const ui = await PatientAirQuality({ commune: 'LA PINTANA' });
-        render(ui!);
-
-        expect(screen.getByText(/Calidad del Aire/)).toBeInTheDocument();
-        // Since we mocked only Santiago returning, it should use that data
-        expect(screen.getByText('Bueno')).toBeInTheDocument();
-        expect(screen.getByText(/El aire es seguro/)).toBeInTheDocument();
-    });
+it('should render nothing if no data provided', () => {
+    const { container } = render(<PatientAirQuality commune="SANTIAGO" aqiData={null} />);
+    expect(container).toBeEmptyDOMElement();
 });

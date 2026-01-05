@@ -52,8 +52,7 @@ export async function getPatientDashboardData() {
                 orderBy: { date: 'asc' },
                 select: {
                     date: true,
-                    status: true,
-                    timeBlock: true
+                    status: true
                 }
             }),
             getRealtimeGlobalAQI()
