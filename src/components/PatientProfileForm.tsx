@@ -1,212 +1,250 @@
-'use client'
 
-import { useActionState, useMemo, useState, useEffect } from 'react'
-import { updatePatientProfile } from '@/lib/actions'
-import { User, Phone, MapPin, Building, Save, Calendar, HeartPulse } from 'lucide-react'
+'use client';
 
-const initialState = {
-    message: '',
-}
+import { useActionState, useEffect, useState } from 'react';
+import { updatePatientProfile } from '@/lib/actions';
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { User, Phone, MapPin, Calendar, Heart } from "lucide-react";
 
-interface PatientProfileFormProps {
-    user: {
-        name: string | null;
-        patientProfile: {
-            phone: string | null;
-            address: string | null;
-            commune: string;
-            gender: string | null;
-            birthDate: Date | null;
-            healthSystem: string | null;
-        } | null
-    }
-}
+import { useRouter } from 'next/navigation';
 
-function calculateAge(birthDate: Date | string | null) {
-    if (!birthDate) return null;
-    const today = new Date();
-    const birth = new Date(birthDate);
-    let age = today.getFullYear() - birth.getFullYear();
-    const m = today.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
-        age--;
-    }
-    return age;
-}
+// Simplified Select if shadcn not fully set up or to reduce complexity
+// We'll use native selects for reliability unless we verify shadcn select components exist.
+// Given strict component setup, let's look for ui/select. Actually I will use native, safe choice.
 
-export default function PatientProfileForm({ user }: PatientProfileFormProps) {
-    const [state, dispatch] = useActionState(updatePatientProfile, initialState)
-    const [birthDate, setBirthDate] = useState(user.patientProfile?.birthDate ? new Date(user.patientProfile.birthDate).toISOString().split('T')[0] : '')
 
-    const age = useMemo(() => calculateAge(birthDate), [birthDate]);
+import { REGIONS, findRegionByCommune } from '@/lib/chile-data';
+
+export default function PatientProfileForm({ user }: { user: any }) {
+    const [state, formAction, isPending] = useActionState(updatePatientProfile, null);
+    const router = useRouter();
+    const [successMessage, setSuccessMessage] = useState<string | null>(null);
+    const patient = user.patientProfile || {};
+
+    const [selectedRegion, setSelectedRegion] = useState<string>('');
+    const [selectedCommune, setSelectedCommune] = useState<string>('');
+
+    // Derived state - simpler and less error prone
+    const availableCommunes = selectedRegion
+        ? REGIONS.find(r => r.name === selectedRegion)?.communes || []
+        : [];
+
+    // Track if it's the initial load to prevent clearing the existing commune
+    const [isInitialLoad, setIsInitialLoad] = useState(true);
+
+    useEffect(() => {
+        if (state?.message === 'Success') {
+            setSuccessMessage("Perfil actualizado correctamente");
+            const timer = setTimeout(() => setSuccessMessage(null), 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [state]);
+
+    // Initialize Region and Commune based on existing data
+    useEffect(() => {
+        // Only run on mount or if patient data fundamentally changes from outside
+        if (isInitialLoad && patient.commune) {
+            const region = findRegionByCommune(patient.commune);
+            if (region) {
+                setSelectedRegion(region);
+                // We verify that the formatted commune matches our expected uppercase format
+                setSelectedCommune(patient.commune.toUpperCase());
+            }
+        }
+        setIsInitialLoad(false);
+    }, [patient.commune, isInitialLoad]);
+
+    // Explicitly handle "User Changed Region" to reset commune
+    const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newRegion = e.target.value;
+        setSelectedRegion(newRegion);
+        // User changed region, so we must reset the commune selection
+        setSelectedCommune('');
+    };
+
+    const handleCommuneChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setSelectedCommune(e.target.value);
+    };
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-zinc-200 p-6">
-            <h2 className="text-lg font-bold text-zinc-900 mb-6 flex items-center">
-                <User className="w-5 h-5 mr-2 text-indigo-600" />
-                Mis Datos
-            </h2>
-
-            {state.message && (
-                <div className={`mb-6 p-4 rounded-lg text-sm flex items-center ${state.message === 'Success'
-                    ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-red-50 text-red-700 border border-red-200'
-                    }`}>
-                    {state.message === 'Success' ? 'Datos actualizados correctamente' : `Error: ${state.message}`}
-                </div>
-            )}
-
-            <form action={dispatch} className="space-y-5">
-                <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-zinc-700 mb-1">Nombre Completo</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <User className="h-5 w-5 text-zinc-400" />
+        <Card className="max-w-2xl mx-auto shadow-md border-zinc-200">
+            <CardHeader className="border-b border-zinc-100 bg-zinc-50/50">
+                <CardTitle className="text-xl font-bold text-zinc-800 flex items-center gap-2">
+                    <User className="w-5 h-5 text-indigo-600" /> Mis Datos Personales
+                </CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
+                <form action={formAction} className="space-y-6">
+                    {successMessage && (
+                        <div className="p-3 bg-green-50 text-green-700 rounded-lg text-sm font-medium border border-green-200">
+                            {successMessage}
                         </div>
-                        <input
-                            type="text"
-                            name="name"
-                            id="name"
-                            defaultValue={user.name || ''}
-                            className="block w-full pl-10 pr-3 py-2 border border-zinc-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors text-zinc-900"
-                            placeholder="Tu nombre"
-                        />
-                    </div>
-                </div>
+                    )}
 
-                <div className="grid grid-cols-2 gap-4">
-                    <div>
-                        <label htmlFor="birthDate" className="block text-sm font-medium text-zinc-700 mb-1">Fecha de Nacimiento</label>
+                    {state?.message && state.message !== 'Success' && (
+                        <div className="p-3 bg-red-50 text-red-700 rounded-lg text-sm font-medium border border-red-200">
+                            {state.message}
+                        </div>
+                    )}
+
+                    {/* Name */}
+                    <div className="space-y-2">
+                        <Label htmlFor="name">Nombre Completo</Label>
                         <div className="relative">
-                            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                <Calendar className="h-5 w-5 text-zinc-400" />
-                            </div>
-                            <input
-                                type="date"
-                                name="birthDate"
-                                id="birthDate"
-                                value={birthDate}
-                                onChange={(e) => setBirthDate(e.target.value)}
-                                className="block w-full pl-10 pr-3 py-2 border border-zinc-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors text-zinc-900"
+                            <User className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                            <Input
+                                id="name"
+                                name="name"
+                                defaultValue={user.name || ''}
+                                className="pl-9 bg-white border-zinc-200 text-zinc-900 focus:ring-indigo-500 focus:border-indigo-500 transition-all hover:border-zinc-300"
+                                required
+                                minLength={2}
                             />
                         </div>
                     </div>
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-700 mb-1">Edad</label>
-                        <div className="px-3 py-2 border border-zinc-200 rounded-lg bg-zinc-50 text-zinc-900 sm:text-sm">
-                            {age !== null ? `${age} años` : '-'}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Phone */}
+                        <div className="space-y-2">
+                            <Label htmlFor="phone">Teléfono</Label>
+                            <div className="relative">
+                                <Phone className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                                <Input
+                                    id="phone"
+                                    name="phone"
+                                    defaultValue={patient.phone || ''}
+                                    className="pl-9 bg-white border-zinc-200 text-zinc-900 focus:ring-indigo-500 focus:border-indigo-500 transition-all hover:border-zinc-300"
+                                    placeholder="+56 9 ..."
+                                />
+                            </div>
+                        </div>
+
+                        {/* Birth Date */}
+                        <div className="space-y-2">
+                            <Label htmlFor="birthDate">Fecha de Nacimiento</Label>
+                            <div className="relative">
+                                <Calendar className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                                <Input
+                                    id="birthDate"
+                                    name="birthDate"
+                                    type="date"
+                                    defaultValue={patient.birthDate ? new Date(patient.birthDate).toISOString().split('T')[0] : ''}
+                                    className="pl-9 bg-white border-zinc-200 text-zinc-900 focus:ring-indigo-500 focus:border-indigo-500 transition-all hover:border-zinc-300"
+                                />
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div>
-                    <label htmlFor="gender" className="block text-sm font-medium text-zinc-700 mb-1">Género</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <User className="h-5 w-5 text-zinc-400" />
+                    {/* Address & Commune */}
+                    <div className="space-y-4 md:space-y-0">
+                        <div className="space-y-2 mb-6">
+                            <Label htmlFor="address">Dirección</Label>
+                            <div className="relative">
+                                <MapPin className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                                <Input
+                                    id="address"
+                                    name="address"
+                                    defaultValue={patient.address || ''}
+                                    className="pl-9 bg-white border-zinc-200 text-zinc-900 focus:ring-indigo-500 focus:border-indigo-500 transition-all hover:border-zinc-300"
+                                    placeholder="Calle, número..."
+                                />
+                            </div>
                         </div>
-                        <select
-                            name="gender"
-                            id="gender"
-                            defaultValue={user.patientProfile?.gender || ''}
-                            className="block w-full pl-10 pr-3 py-2 border border-zinc-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors appearance-none bg-white text-zinc-900"
-                        >
-                            <option value="">Selecciona tu género</option>
-                            <option value="Masculino">Masculino</option>
-                            <option value="Femenino">Femenino</option>
-                            <option value="Otro">Otro</option>
-                        </select>
-                    </div>
-                </div>
 
-                <div>
-                    <label htmlFor="healthSystem" className="block text-sm font-medium text-zinc-700 mb-1">Previsión</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <HeartPulse className="h-5 w-5 text-zinc-400" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Region Selector */}
+                            <div className="space-y-2">
+                                <Label htmlFor="region">Región</Label>
+                                <select
+                                    id="region"
+                                    value={selectedRegion}
+                                    onChange={handleRegionChange}
+                                    className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all hover:border-zinc-300 text-zinc-900"
+                                >
+                                    <option value="">Seleccionar Región</option>
+                                    {REGIONS.map((region) => (
+                                        <option key={region.name} value={region.name}>
+                                            {region.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Commune Selector */}
+                            <div className="space-y-2">
+                                <Label htmlFor="commune">Comuna</Label>
+                                <div className="relative">
+                                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                                    <select
+                                        id="commune"
+                                        name="commune"
+                                        value={selectedCommune}
+                                        onChange={handleCommuneChange}
+                                        className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-9 transition-all hover:border-zinc-300 text-zinc-900"
+                                    >
+                                        <option value="">Seleccionar Comuna</option>
+                                        {availableCommunes.map((commune) => (
+                                            <option key={commune} value={commune.toUpperCase()}>
+                                                {commune}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
                         </div>
-                        <select
-                            name="healthSystem"
-                            id="healthSystem"
-                            defaultValue={user.patientProfile?.healthSystem || ''}
-                            className="block w-full pl-10 pr-3 py-2 border border-zinc-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors appearance-none bg-white text-zinc-900"
-                        >
-                            <option value="">Selecciona tu previsión</option>
-                            <option value="FONASA">FONASA</option>
-                            <option value="ISAPRE">ISAPRE</option>
-                            <option value="PARTICULAR">PARTICULAR</option>
-                        </select>
                     </div>
-                </div>
 
-                <div>
-                    <label htmlFor="phone" className="block text-sm font-medium text-zinc-700 mb-1">Teléfono</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Phone className="h-5 w-5 text-zinc-400" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Gender */}
+                        <div className="space-y-2">
+                            <Label htmlFor="gender">Género</Label>
+                            <div className="relative">
+                                <select
+                                    id="gender"
+                                    name="gender"
+                                    defaultValue={patient.gender || ''}
+                                    className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all hover:border-zinc-300 text-zinc-900"
+                                >
+                                    <option value="">Seleccionar</option>
+                                    <option value="Masculino">Masculino</option>
+                                    <option value="Femenino">Femenino</option>
+                                </select>
+                            </div>
                         </div>
-                        <input
-                            type="tel"
-                            name="phone"
-                            id="phone"
-                            defaultValue={user.patientProfile?.phone || ''}
-                            className="block w-full pl-10 pr-3 py-2 border border-zinc-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors text-zinc-900"
-                            placeholder="+56 9 1234 5678"
-                        />
-                    </div>
-                </div>
 
-                <div>
-                    <label htmlFor="address" className="block text-sm font-medium text-zinc-700 mb-1">Dirección</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <MapPin className="h-5 w-5 text-zinc-400" />
+                        {/* Health System */}
+                        <div className="space-y-2">
+                            <Label htmlFor="healthSystem">Previsión</Label>
+                            <div className="relative">
+                                <Heart className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                                <select
+                                    id="healthSystem"
+                                    name="healthSystem"
+                                    defaultValue={patient.healthSystem || ''}
+                                    className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-9 transition-all hover:border-zinc-300 text-zinc-900"
+                                >
+                                    <option value="">Seleccionar</option>
+                                    <option value="FONASA">FONASA</option>
+                                    <option value="ISAPRE">ISAPRE</option>
+                                    <option value="PARTICULAR">PARTICULAR</option>
+                                </select>
+                            </div>
                         </div>
-                        <input
-                            type="text"
-                            name="address"
-                            id="address"
-                            defaultValue={user.patientProfile?.address || ''}
-                            className="block w-full pl-10 pr-3 py-2 border border-zinc-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors text-zinc-900"
-                            placeholder="Calle 123, Depto 4"
-                        />
                     </div>
-                </div>
 
-                <div>
-                    <label htmlFor="commune" className="block text-sm font-medium text-zinc-700 mb-1">Comuna</label>
-                    <div className="relative">
-                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <Building className="h-5 w-5 text-zinc-400" />
-                        </div>
-                        <select
-                            name="commune"
-                            id="commune"
-                            defaultValue={user.patientProfile?.commune || ''}
-                            className="block w-full pl-10 pr-3 py-2 border border-zinc-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm transition-colors appearance-none bg-white text-zinc-900"
-                        >
-                            <option value="">Selecciona tu comuna</option>
-                            <option value="SANTIAGO">Santiago</option>
-                            <option value="PROVIDENCIA">Providencia</option>
-                            <option value="LAS CONDES">Las Condes</option>
-                            <option value="MAIPU">Maipú</option>
-                            <option value="LA FLORIDA">La Florida</option>
-                            <option value="PUENTE ALTO">Puente Alto</option>
-                            {/* Add more communes as needed */}
-                        </select>
+                    <div className="pt-4 flex justify-end gap-3">
+                        <Button type="button" variant="outline" onClick={() => router.back()}>
+                            Cancelar
+                        </Button>
+                        <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 min-w-[150px]" disabled={isPending}>
+                            {isPending ? "Guardando..." : "Guardar Cambios"}
+                        </Button>
                     </div>
-                </div>
-
-                <div className="pt-2">
-                    <button
-                        type="submit"
-                        className="w-full flex justify-center items-center px-4 py-2 border border-transparent rounded-lg shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors"
-                    >
-                        <Save className="w-4 h-4 mr-2" />
-                        Guardar Cambios
-                    </button>
-                </div>
-            </form>
-        </div>
-    )
+                </form>
+            </CardContent>
+        </Card>
+    );
 }

@@ -65,6 +65,7 @@ function LoginButton() {
 
     return (
         <button
+            type="submit"
             className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
             aria-disabled={pending}
         >

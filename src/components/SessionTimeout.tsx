@@ -14,14 +14,35 @@ export default function SessionTimeout() {
     const [timeLeft, setTimeLeft] = useState(WARNING_MS / 1000);
     const idleTimerRef = useRef<NodeJS.Timeout | null>(null);
     const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+    const notificationRef = useRef<Notification | null>(null);
 
     const logout = useCallback(async () => {
+        if (notificationRef.current) notificationRef.current.close();
         await signOut({ callbackUrl: '/login' });
     }, []);
 
     const startCountdown = useCallback(() => {
         setShowModal(true);
         setTimeLeft(WARNING_MS / 1000);
+
+        // Web Notification Logic
+        try {
+            if (typeof window !== 'undefined' && 'Notification' in window && document.hidden && Notification.permission === 'granted') {
+                notificationRef.current = new Notification('Alerta de Inactividad', {
+                    body: 'Tu sesión está por expirar. Haz clic para mantenerte conectado.',
+                    icon: '/favicon.ico', // Adjust if needed
+                    requireInteraction: true
+                });
+
+                notificationRef.current.onclick = () => {
+                    window.focus();
+                    notificationRef.current?.close();
+                };
+            }
+        } catch (error) {
+            console.error('Notification Error:', error);
+            // Ignore notification errors to prevents crash
+        }
 
         if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
 
@@ -40,6 +61,10 @@ export default function SessionTimeout() {
     const resetTimer = useCallback(() => {
         if (showModal) {
             setShowModal(false);
+            if (notificationRef.current) {
+                notificationRef.current.close();
+                notificationRef.current = null;
+            }
         }
 
         if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
@@ -49,13 +74,24 @@ export default function SessionTimeout() {
     }, [showModal, startCountdown]);
 
     useEffect(() => {
-        const events = ['mousedown', 'keydown', 'scroll', 'touchstart'];
+        // Request Permission on Mount
+        if ('Notification' in window && Notification.permission === 'default') {
+            Notification.requestPermission();
+        }
+
+        const events = ['mousedown', 'keydown', 'scroll', 'touchstart', 'focus'];
 
         // Initial start
         resetTimer();
 
         // Attach listeners
         const handleActivity = () => {
+            // If modal is showing, only reset if user explicitly interacts (e.g. clicks "Keep Session")
+            // actually, the requirement is "activity resets timer". 
+            // But usually if modal is open, we want explicit action? 
+            // The code before: if (!showModal) resetTimer(). 
+            // Let's keep that behavior: background activity doesn't auto-close modal 
+            // UNLESS it's the specific "Mantener Sesion" button or maybe a focus verify?
             if (!showModal) {
                 resetTimer();
             }
@@ -71,6 +107,7 @@ export default function SessionTimeout() {
             });
             if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
             if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
+            if (notificationRef.current) notificationRef.current.close();
         };
     }, [resetTimer, showModal]);
 

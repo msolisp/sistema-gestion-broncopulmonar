@@ -13,18 +13,24 @@ const prisma = new PrismaClient()
 
 async function main() {
     const password = await bcrypt.hash('Paciente', 10)
-    const adminPassword = await bcrypt.hash('admin', 10)
+    const adminPassword = await bcrypt.hash('admin123', 10)
 
     // 1. Create Admin
-    const adminEmail = 'admin@test.com'
+    const adminEmail = 'admin@example.com'
     const admin = await prisma.user.upsert({
         where: { email: adminEmail },
-        update: { password: adminPassword }, // Force update password
+        update: {
+            password: adminPassword,
+            active: true,
+            mustChangePassword: false
+        },
         create: {
             email: adminEmail,
             name: 'Admin User',
             password: adminPassword,
             role: Role.ADMIN,
+            active: true,
+            mustChangePassword: false
         },
     })
     console.log({ admin })

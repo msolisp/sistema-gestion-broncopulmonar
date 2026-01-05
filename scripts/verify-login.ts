@@ -1,40 +1,52 @@
 
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function main() {
-    const email = 'admin@test.com'
-    const passwordToCheck = 'admin'
+    const email = 'paciente1@test.com';
+    const password = 'Paciente';
 
-    console.log(`Checking user: ${email}`)
+    console.log(`Checking user: ${email}`);
 
     const user = await prisma.user.findUnique({
-        where: { email }
-    })
+        where: { email },
+    });
 
     if (!user) {
-        console.error('User not found!')
-        return
+        console.error('❌ User not found in database!');
+        return;
     }
 
-    console.log('User found:', user.name)
-    console.log('Role:', user.role)
-    console.log('Stored Hash:', user.password)
+    console.log('✅ User found.');
+    console.log('Role:', user.role);
+    console.log('Active Status:', user.active);
+    console.log('Stored Hash:', user.password);
 
-    const isValid = await bcrypt.compare(passwordToCheck, user.password)
+    const isValid = await bcrypt.compare(password, user.password);
 
     if (isValid) {
-        console.log('✅ Password matches!')
+        console.log('✅ Password "Paciente" is VALID.');
     } else {
-        console.error('❌ Password does NOT match.')
-        // Test with old password just in case
-        const isOldValid = await bcrypt.compare('Paciente', user.password)
-        if (isOldValid) console.log('⚠️ Password still matches "Paciente"')
+        console.error('❌ Password "Paciente" is INVALID.');
+
+        // Attempt to fix it
+        console.log('🔄 Attempting to fix password...');
+        const newHash = await bcrypt.hash(password, 10);
+        await prisma.user.update({
+            where: { email },
+            data: { password: newHash }
+        });
+        console.log('✅ Password updated to "Paciente" (new hash).');
     }
 }
 
 main()
-    .catch(e => console.error(e))
-    .finally(async () => await prisma.$disconnect())
+    .catch((e) => {
+        console.error(e);
+        process.exit(1);
+    })
+    .finally(async () => {
+        await prisma.$disconnect();
+    });

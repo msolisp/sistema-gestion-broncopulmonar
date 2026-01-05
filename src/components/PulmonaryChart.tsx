@@ -29,7 +29,7 @@ export function PulmonaryChart({ data }: { data: any[] }) {
     }));
 
     return (
-        <div className="h-[400px] w-full bg-white p-4 rounded-xl border border-zinc-200 shadow-sm">
+        <div className="h-[400px] w-full bg-white p-4 rounded-xl border border-zinc-200 shadow-md">
             <h3 className="text-lg font-bold text-zinc-800 mb-4">Tendencia de Función Pulmonar</h3>
             <ResponsiveContainer width="100%" height="100%">
                 <LineChart

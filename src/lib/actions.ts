@@ -203,6 +203,8 @@ export async function updatePatientProfile(prevState: any, formData: FormData) {
             return { message: 'Profile not found' };
         }
 
+        console.log('Updating profile for user:', session.user.email, 'Data:', { name, phone, address, commune });
+
         await prisma.$transaction([
             prisma.user.update({
                 where: { id: user.id },
@@ -222,6 +224,7 @@ export async function updatePatientProfile(prevState: any, formData: FormData) {
         ]);
 
         revalidatePath('/portal');
+        revalidatePath('/portal/perfil');
         return { message: 'Success' };
     } catch (e) {
         console.error(e);
@@ -331,6 +334,7 @@ export async function adminUpdatePatient(prevState: any, formData: FormData) {
             })
         ]);
         revalidatePath('/dashboard');
+        revalidatePath('/patients');
         return { message: 'Success' };
     } catch (e) {
         console.error(e);
