@@ -18,6 +18,14 @@ export default function RegisterPage() {
         <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
             <div className="w-full max-w-md overflow-hidden rounded-2xl bg-white shadow-xl border border-zinc-100">
                 <div className="p-8">
+                    <div className="mb-6">
+                        <a href="/login" className="inline-flex items-center text-sm text-zinc-500 hover:text-indigo-600 transition-colors">
+                            <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
+                            Volver al inicio
+                        </a>
+                    </div>
                     <h1 className="text-3xl font-bold text-zinc-900 mb-2">Crear Cuenta</h1>
                     <p className="text-zinc-500 mb-8">Únete a nuestra plataforma de gestión</p>
                     <form action={dispatch} className="space-y-4">
