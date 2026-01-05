@@ -29,13 +29,12 @@ import {
 interface BiReportsContentProps {
     patients: Array<{
         id: string;
-        rut: string;
         commune: string;
         diagnosisDate: Date | null;
         birthDate: Date | null;
         gender: string | null;
         healthSystem: string | null;
-        user: { name: string | null; email: string };
+        user: { name: string | null; email: string; rut: string | null };
         exams: Array<{
             centerName: string;
             doctorName: string;
@@ -235,7 +234,7 @@ export default function BiReportsContent({ patients }: BiReportsContentProps) {
 
         // Sheet 1: Patients
         const patientsData = filteredPatients.map(p => ({
-            RUT: p.rut,
+            RUT: p.user.rut,
             Comuna: p.commune,
             'Fecha Diagnóstico': p.diagnosisDate ? new Date(p.diagnosisDate).toLocaleDateString() : '',
             'Edad': p.birthDate ? new Date().getFullYear() - new Date(p.birthDate).getFullYear() : '',
@@ -249,7 +248,7 @@ export default function BiReportsContent({ patients }: BiReportsContentProps) {
         // Sheet 2: Exams
         const examsData = filteredPatients.flatMap(p =>
             p.exams.map(e => ({
-                'RUT Paciente': p.rut,
+                'RUT Paciente': p.user.rut,
                 'Centro': e.centerName,
                 'Doctor': e.doctorName,
                 'Fecha': new Date(e.examDate).toLocaleDateString()

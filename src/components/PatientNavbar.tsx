@@ -43,6 +43,7 @@ export default function PatientNavbar() {
                         <button
                             onClick={() => signOut({ callbackUrl: '/login' })}
                             className="p-2 text-zinc-400 hover:text-red-600 rounded-full hover:bg-red-50"
+                            aria-label="Cerrar sesión"
                         >
                             <LogOut className="h-5 w-5" />
                         </button>

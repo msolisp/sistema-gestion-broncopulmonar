@@ -7,8 +7,8 @@ test('Admin Flow: Login and Access Dashboard', async ({ page }) => {
 
     // 2. Login as Admin (using seeded credentials)
     // 2. Login as Admin (using seeded credentials)
-    await page.fill('input[name="email"]', 'admin@test.com');
-    await page.fill('input[name="password"]', 'admin'); // Updated password
+    await page.fill('input[name="email"]', 'admin@example.com');
+    await page.fill('input[name="password"]', 'admin123'); // Updated password
     await page.click('button:has-text("Ingresar")');
 
     // Expect redirect to dashboard (Admin logic)
@@ -25,8 +25,8 @@ test('Admin Flow: Login and Access Dashboard', async ({ page }) => {
 test('Admin Flow: Create Patient and Upload Exam', async ({ page }) => {
     // 1. Login
     await page.goto('/login');
-    await page.fill('input[name="email"]', 'admin@test.com');
-    await page.fill('input[name="password"]', 'admin');
+    await page.fill('input[name="email"]', 'admin@example.com');
+    await page.fill('input[name="password"]', 'admin123');
     await page.click('button:has-text("Ingresar")');
     await expect(page).toHaveURL(/.*\/dashboard/);
 
@@ -101,5 +101,12 @@ test('Admin Flow: Create Patient and Upload Exam', async ({ page }) => {
 
     // 7. Verify Timeline update
     // Should see the new exam in the timeline
+
+    // Force reload to see the new data if not automatically revalidated
+
+    // Wait for the timeline to update (revalidation should happen on server)
+    // We might need to reload if standard client router cache persists
+    await page.waitForTimeout(2000);
+    await page.reload();
     await expect(page.getByText('Clínica Test E2E')).toBeVisible();
 });

@@ -10,7 +10,9 @@ const mockProps = {
             rut: '1-9',
             commune: 'Santiago',
             diagnosisDate: new Date('2024-01-01'),
-            user: { name: 'Patient One', email: 'p1@test.com' }
+            gender: 'Male',
+            birthDate: new Date('1990-01-01'),
+            user: { name: 'Patient One', email: 'p1@test.com', rut: '1-9' }
         }
     ],
     initialUsers: [
@@ -34,6 +36,21 @@ const mockProps = {
     initialPermissions: [
         { action: 'Ver Pacientes', kine: true, recep: true },
         { action: 'Editar Pacientes', kine: true, recep: false }
+    ],
+    appointments: [
+        {
+            id: 'apt1',
+            date: new Date(),
+            status: 'PENDING',
+            notes: 'Test appointment',
+            patient: {
+                user: {
+                    name: 'Patient One',
+                    email: 'p1@test.com',
+                    rut: '1-9'
+                }
+            }
+        }
     ]
 }
 
@@ -59,8 +76,14 @@ describe('DashboardContent Component', () => {
         expect(screen.getByText('Administración Central')).toBeInTheDocument()
     })
 
-    it('displays user management tab by default', () => {
+    it('displays Agendamiento tab by default', () => {
         render(<DashboardContent {...mockProps} />)
+        expect(screen.getByText('Reservas Web')).toBeInTheDocument()
+    })
+
+    it('navigates to User Management', () => {
+        render(<DashboardContent {...mockProps} />)
+        fireEvent.click(screen.getByText('Usuarios y Roles'))
         expect(screen.getByText('Gestión de Usuarios')).toBeInTheDocument()
         expect(screen.getByText('Kine User')).toBeInTheDocument()
     })
@@ -104,6 +127,7 @@ describe('DashboardContent Component', () => {
 
     it('opens existing user modal', () => {
         render(<DashboardContent {...mockProps} />)
+        fireEvent.click(screen.getByText('Usuarios y Roles'))
         const editBtn = screen.getByText('Editar')
         fireEvent.click(editBtn)
         expect(screen.getByDisplayValue('Kine User')).toBeInTheDocument()
@@ -111,6 +135,7 @@ describe('DashboardContent Component', () => {
 
     it('opens new user modal', () => {
         render(<DashboardContent {...mockProps} />)
+        fireEvent.click(screen.getByText('Usuarios y Roles'))
         const newBtn = screen.getByRole('button', { name: /nuevo usuario/i })
         fireEvent.click(newBtn)
         expect(screen.getByText('Nuevo Usuario', { selector: 'h3' })).toBeInTheDocument()

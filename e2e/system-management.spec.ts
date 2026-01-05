@@ -4,8 +4,8 @@ import { test, expect } from '@playwright/test';
 test('System Management: Create User, Update Permissions, Check Logs', async ({ page }) => {
     // 1. Login
     await page.goto('/login');
-    await page.fill('input[name="email"]', 'admin@test.com');
-    await page.fill('input[name="password"]', 'admin');
+    await page.fill('input[name="email"]', 'admin@example.com');
+    await page.fill('input[name="password"]', 'admin123');
     await page.click('button:has-text("Ingresar")');
     await expect(page).toHaveURL(/.*\/dashboard/);
 

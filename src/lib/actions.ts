@@ -58,6 +58,11 @@ export async function authenticate(
         let redirectTo = '/reservar'; // Default fallback
 
         if (user) {
+            // Security Check: Internal Portal Access
+            const portalType = formData.get('portal_type');
+            if (portalType === 'internal' && user.role === 'PATIENT') {
+                return 'No tiene acceso al portal interno.';
+            }
 
             // Check for Forced Password Change
             if (user.mustChangePassword) {

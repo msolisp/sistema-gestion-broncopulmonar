@@ -9,10 +9,11 @@ import { useRouter } from "next/navigation";
 interface DashboardContentProps {
     patients: Array<{
         id: string;
-        rut: string;
         commune: string;
         diagnosisDate: Date | null;
-        user: { name: string | null; email: string };
+        gender: string | null;
+        birthDate: Date | null;
+        user: { name: string | null; email: string; rut: string | null };
     }>;
     initialUsers: Array<{
         id: string;

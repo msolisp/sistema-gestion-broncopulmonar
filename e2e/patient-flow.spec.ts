@@ -18,7 +18,7 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     await page.selectOption('select[id="region"]', { label: 'Metropolitana de Santiago' });
     // Playwright will wait for the option to appear
     const communeSelect = page.locator('select[name="commune"]');
-    await communeSelect.selectOption({ label: 'Santiago' });
+    await communeSelect.selectOption({ value: 'SANTIAGO' });
     await page.fill('input[name="email"]', uniqueEmail);
     await page.fill('input[name="password"]', 'password123');
 

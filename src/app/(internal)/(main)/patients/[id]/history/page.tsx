@@ -37,7 +37,7 @@ export default async function PatientHistoryPage({ params }: { params: Promise<{
                     <div>
                         <h1 className="text-3xl font-bold text-zinc-900">Historial Médico</h1>
                         <p className="text-zinc-500 mt-1">
-                            Paciente: <span className="font-semibold text-zinc-900">{patient.user.name}</span> | RUT: {patient.rut}
+                            Paciente: <span className="font-semibold text-zinc-900">{patient.user.name}</span> | RUT: {patient.user.rut}
                         </p>
                     </div>
                 </div>

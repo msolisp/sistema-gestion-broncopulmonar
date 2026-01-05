@@ -10,6 +10,7 @@ export default async function ReportsPage() {
                 select: {
                     name: true,
                     email: true,
+                    rut: true,
                 },
             },
             exams: {

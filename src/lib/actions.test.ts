@@ -32,6 +32,9 @@ jest.mock('@/lib/prisma', () => ({
     medicalExam: {
         create: jest.fn(),
     },
+    systemLog: {
+        create: jest.fn(),
+    },
     $transaction: jest.fn((arg) => {
         if (Array.isArray(arg)) return Promise.all(arg)
         return arg(prisma)
@@ -47,6 +50,11 @@ jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
 }))
 
+
+
+jest.mock('file-type', () => ({
+    fileTypeFromBuffer: jest.fn().mockResolvedValue({ mime: 'application/pdf' }),
+}), { virtual: true })
 
 jest.mock('@vercel/blob', () => ({
     put: jest.fn(),

@@ -9,7 +9,6 @@ import { adminCreatePatient, adminUpdatePatient, deletePatient } from "@/lib/act
 
 interface Patient {
     id: string
-    rut: string
     commune: string
 
     diagnosisDate: Date | null
@@ -20,6 +19,7 @@ interface Patient {
         name: string | null
         email: string
         active: boolean
+        rut: string | null
     }
     appointments: any[]
 }
@@ -73,7 +73,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
         const term = searchTerm.toLowerCase()
         const name = patient.user.name?.toLowerCase() || ''
         const email = patient.user.email.toLowerCase()
-        const rut = patient.rut.toLowerCase()
+        const rut = patient.user.rut?.toLowerCase() || ''
         const commune = patient.commune.toLowerCase()
 
         return name.includes(term) || email.includes(term) || rut.includes(term) || commune.includes(term)
@@ -89,7 +89,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
         const dataToExport = filteredPatients.map(p => ({
             'Nombre': p.user.name,
             'Email': p.user.email,
-            'RUT': p.rut,
+            'RUT': p.user.rut,
             'Comuna': p.commune,
             'Edad': calculateAge(p.birthDate),
             'Estado': p.user.active ? 'Activo' : 'Inactivo',
@@ -166,7 +166,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{patient.rut}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{patient.user.rut}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{patient.commune}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{calculateAge(patient.birthDate)}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
@@ -334,7 +334,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-zinc-700 mb-1">RUT</label>
-                                        <input name="rut" defaultValue={selectedPatient.rut} required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
+                                        <input name="rut" defaultValue={selectedPatient.user.rut} required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-zinc-700 mb-1">Dirección</label>

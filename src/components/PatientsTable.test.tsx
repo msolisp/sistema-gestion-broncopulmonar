@@ -21,25 +21,25 @@ jest.mock('@/lib/actions', () => ({
 const mockPatients = [
     {
         id: '1',
-        rut: '11.111.111-1',
         commune: 'Santiago',
         address: 'Av. Test 123',
-        gender: 'Masculino',
-        birthDate: new Date('1990-01-01'),
+        phone: '123456789',
         diagnosisDate: new Date('2024-01-01'),
-        user: { name: 'Juan Perez', email: 'juan@test.com', active: true },
-        appointments: []
+        birthDate: new Date('1990-01-01'),
+        gender: 'Masculino',
+        appointments: [],
+        user: { name: 'Juan Perez', email: 'juan@test.com', active: true, rut: '11.111.111-1' }
     },
     {
         id: '2',
-        rut: '22.222.222-2',
         commune: 'Providencia',
         address: 'Calle Falsa 123',
-        gender: 'Femenino',
-        birthDate: new Date('1985-05-05'),
+        phone: '987654321',
         diagnosisDate: new Date('2024-02-01'),
-        user: { name: 'Maria Gonzalez', email: 'maria@test.com', active: false },
-        appointments: [1]
+        birthDate: new Date('1985-05-05'),
+        gender: 'Femenino',
+        appointments: [1],
+        user: { name: 'Maria Gonzalez', email: 'maria@test.com', active: false, rut: '22.222.222-2' }
     }
 ]
 
