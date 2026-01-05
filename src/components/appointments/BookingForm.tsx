@@ -5,10 +5,12 @@ import { useFormStatus } from "react-dom"
 import { bookAppointment } from "@/actions/appointments"
 import Link from "next/link"
 
-const TIME_SLOTS = [
-    "09:00", "09:30", "10:00", "10:30", "11:00", "11:30",
-    "12:00", "12:30", "14:00", "14:30", "15:00", "15:30",
-    "16:00", "16:30", "17:00", "17:30"
+const TIME_SLOTS_AM = [
+    "09:00", "10:00", "11:00", "12:00"
+]
+
+const TIME_SLOTS_PM = [
+    "14:00", "15:00", "16:00", "17:00"
 ]
 
 const initialState = {
@@ -50,25 +52,45 @@ export default function BookingForm() {
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-zinc-700 mb-2">
-                            Horario Disponible
-                        </label>
-                        <div className="grid grid-cols-4 gap-2">
-                            {TIME_SLOTS.map((time) => (
-                                <label key={time} className="relative cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="timeBlock"
-                                        value={time}
-                                        required
-                                        className="peer sr-only"
-                                    />
-                                    <div className="text-center py-2 rounded-lg border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 transition-all">
-                                        {time}
-                                    </div>
-                                </label>
-                            ))}
+                    <div className="space-y-4">
+                        <div>
+                            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Bloque AM</span>
+                            <div className="grid grid-cols-4 gap-2 mt-2">
+                                {TIME_SLOTS_AM.map((time) => (
+                                    <label key={time} className="relative cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="timeBlock"
+                                            value={time}
+                                            required
+                                            className="peer sr-only"
+                                        />
+                                        <div className="text-center py-2 rounded-lg border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 transition-all">
+                                            {time}
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <span className="text-xs font-semibold text-zinc-500 uppercase tracking-wider">Bloque PM</span>
+                            <div className="grid grid-cols-4 gap-2 mt-2">
+                                {TIME_SLOTS_PM.map((time) => (
+                                    <label key={time} className="relative cursor-pointer">
+                                        <input
+                                            type="radio"
+                                            name="timeBlock"
+                                            value={time}
+                                            required
+                                            className="peer sr-only"
+                                        />
+                                        <div className="text-center py-2 rounded-lg border border-zinc-200 text-sm font-medium text-zinc-600 hover:bg-zinc-50 peer-checked:bg-indigo-600 peer-checked:text-white peer-checked:border-indigo-600 transition-all">
+                                            {time}
+                                        </div>
+                                    </label>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
