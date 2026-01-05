@@ -15,7 +15,10 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
 
     await page.fill('input[name="name"]', 'Test Patient');
     await page.fill('input[name="rut"]', uniqueRut);
-    await page.selectOption('select[name="commune"]', 'MAIPU');
+    await page.selectOption('select[id="region"]', { label: 'Metropolitana de Santiago' });
+    // Playwright will wait for the option to appear
+    const communeSelect = page.locator('select[name="commune"]');
+    await communeSelect.selectOption({ label: 'Santiago' });
     await page.fill('input[name="email"]', uniqueEmail);
     await page.fill('input[name="password"]', 'password123');
 

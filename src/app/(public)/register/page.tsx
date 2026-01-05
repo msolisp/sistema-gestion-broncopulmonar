@@ -1,9 +1,10 @@
 
 'use client'
 
-import { useActionState } from 'react'
-import { useFormStatus } from 'react-dom' // Keep formStatus in dom for now to minimize churn if not broken, or move to react if needed. actually error said useFormState renamed.
+import { useActionState, useState } from 'react'
+import { useFormStatus } from 'react-dom'
 import { registerPatient } from '@/lib/actions'
+import { REGIONS } from '@/lib/chile-data'
 
 const initialState = {
     message: '',
@@ -11,6 +12,7 @@ const initialState = {
 
 export default function RegisterPage() {
     const [state, dispatch] = useActionState(registerPatient, initialState)
+    const [selectedRegion, setSelectedRegion] = useState('');
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
@@ -46,25 +48,51 @@ export default function RegisterPage() {
                                     required
                                 />
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="commune">
-                                    Comuna
-                                </label>
-                                <select
-                                    className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                    id="commune"
-                                    name="commune"
-                                    required
-                                >
-                                    <option value="">Seleccionar</option>
-                                    <option value="SANTIAGO">Santiago</option>
-                                    <option value="PROVIDENCIA">Providencia</option>
-                                    <option value="LAS CONDES">Las Condes</option>
-                                    <option value="MAIPU">Maipú</option>
-                                    <option value="LA FLORIDA">La Florida</option>
-                                    <option value="PUENTE ALTO">Puente Alto</option>
-                                    {/* More communes can be added */}
-                                </select>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="region">
+                                        Región
+                                    </label>
+                                    <select
+                                        className="w-full rounded-lg border border-zinc-200 px-2 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 truncate"
+                                        id="region"
+                                        value={selectedRegion}
+                                        onChange={(e) => {
+                                            console.log('Region changed to:', e.target.value);
+                                            setSelectedRegion(e.target.value);
+                                        }}
+                                        required
+                                    >
+                                        <option value="">Región</option>
+                                        {REGIONS.map((r) => (
+                                            <option key={r.name} value={r.name}>
+                                                {r.name}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="commune">
+                                        Comuna
+                                    </label>
+                                    <select
+                                        className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-zinc-100 disabled:text-zinc-400"
+                                        id="commune"
+                                        name="commune"
+                                        required
+                                    >
+                                        <option value="">Comuna</option>
+                                        {selectedRegion ? (
+                                            REGIONS.find(r => r.name === selectedRegion)?.communes.map((c) => (
+                                                <option key={c} value={c.toUpperCase()}>
+                                                    {c}
+                                                </option>
+                                            ))
+                                        ) : (
+                                            <option value="">Seleccione Región</option>
+                                        )}
+                                    </select>
+                                </div>
                             </div>
                         </div>
 

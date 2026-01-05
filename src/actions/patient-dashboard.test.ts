@@ -55,7 +55,8 @@ describe('getPatientDashboardData', () => {
         });
 
         (getRealtimeGlobalAQI as jest.Mock).mockResolvedValue([
-            { commune: 'SANTIAGO', aqi: 50, status: 'Bueno' }
+            { commune: 'SANTIAGO', aqi: 50, status: 'Bueno' },
+            { commune: 'PUENTE ALTO', aqi: 100, status: 'Regular' }
         ]);
 
         const result = await getPatientDashboardData();
@@ -63,6 +64,49 @@ describe('getPatientDashboardData', () => {
         expect(result).toHaveProperty('patient');
         expect(result).toHaveProperty('nextAppointment');
         expect(result.userName).toBe('Test User');
+        expect(result.aqiData).toEqual({ commune: 'SANTIAGO', aqi: 50, status: 'Bueno' }); // Matches patient commune 'SANTIAGO'
+    });
+
+    it('should return correct AQI for non-Santiago commune', async () => {
+        (auth as jest.Mock).mockResolvedValue({
+            user: { id: 'user-2', name: 'Puente Alto User' }
+        });
+
+        (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
+            id: 'patient-2',
+            commune: 'PUENTE ALTO'
+        });
+
+        (prisma.appointment.findFirst as jest.Mock).mockResolvedValue(null);
+
+        (getRealtimeGlobalAQI as jest.Mock).mockResolvedValue([
+            { commune: 'SANTIAGO', aqi: 50, status: 'Bueno' },
+            { commune: 'PUENTE ALTO', aqi: 100, status: 'Regular' }
+        ]);
+
+        const result = await getPatientDashboardData();
+
+        expect(result.aqiData).toEqual({ commune: 'PUENTE ALTO', aqi: 100, status: 'Regular' });
+    });
+
+    it('should fallback to Santiago for unknown commune', async () => {
+        (auth as jest.Mock).mockResolvedValue({
+            user: { id: 'user-3', name: 'Unknown User' }
+        });
+
+        (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
+            id: 'patient-3',
+            commune: 'UNKNOWN_CITY'
+        });
+
+        (prisma.appointment.findFirst as jest.Mock).mockResolvedValue(null);
+
+        (getRealtimeGlobalAQI as jest.Mock).mockResolvedValue([
+            { commune: 'SANTIAGO', aqi: 50, status: 'Bueno' } // Only Santiago available/matches default
+        ]);
+
+        const result = await getPatientDashboardData();
+
         expect(result.aqiData).toEqual({ commune: 'SANTIAGO', aqi: 50, status: 'Bueno' });
     });
 
