@@ -123,6 +123,7 @@ export async function registerPatient(prevState: any, formData: FormData) {
                     email,
                     password: hashedPassword,
                     name,
+                    rut,
                     role: 'PATIENT',
                 }
             });
@@ -130,7 +131,6 @@ export async function registerPatient(prevState: any, formData: FormData) {
             await tx.patient.create({
                 data: {
                     userId: user.id,
-                    rut,
                     commune,
                 }
             });
@@ -275,6 +275,7 @@ export async function adminCreatePatient(prevState: any, formData: FormData) {
                     email,
                     password: hashedPassword,
                     name,
+                    rut,
                     role: 'PATIENT',
                     mustChangePassword: true,
                 }
@@ -283,7 +284,6 @@ export async function adminCreatePatient(prevState: any, formData: FormData) {
             await tx.patient.create({
                 data: {
                     userId: user.id,
-                    rut,
                     commune,
                     address,
                     gender,
@@ -327,13 +327,13 @@ export async function adminUpdatePatient(prevState: any, formData: FormData) {
                 where: { id: patient.userId },
                 data: {
                     name,
+                    rut,
                     active
                 }
             }),
             prisma.patient.update({
                 where: { id },
                 data: {
-                    rut,
                     commune,
                     address,
                     gender,

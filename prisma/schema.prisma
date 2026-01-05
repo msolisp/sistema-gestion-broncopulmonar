@@ -14,6 +14,7 @@ datasource db {
 model User {
   id        String   @id @default(cuid())
   email     String   @unique
+  rut       String?  @unique
   password  String
   name      String?
   role      String   @default("PATIENT") // ADMIN, KINESIOLOGIST, RECEPTIONIST, PATIENT
@@ -29,7 +30,6 @@ model Patient {
   id            String   @id @default(cuid())
   userId        String   @unique
   user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  rut           String   @unique
   phone         String?
   commune       String
   gender        String?

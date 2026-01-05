@@ -27,6 +27,7 @@ async function main() {
         create: {
             email: adminEmail,
             name: 'Admin User',
+            rut: '1-9', // Admin RUT
             password: adminPassword,
             role: Role.ADMIN,
             active: true,
@@ -70,11 +71,11 @@ async function main() {
             create: {
                 email,
                 name,
+                rut,
                 password,
                 role: Role.PATIENT,
                 patientProfile: {
                     create: {
-                        rut,
                         commune,
                         birthDate,
                         diagnosisDate: new Date(),
