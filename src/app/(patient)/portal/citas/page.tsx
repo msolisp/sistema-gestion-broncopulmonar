@@ -10,7 +10,7 @@ export default async function AppointmentsPage() {
         <div className="max-w-4xl mx-auto space-y-8">
             <header className="flex items-center justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-zinc-900">Mis Citas</h1>
+                    <h1 className="text-2xl font-bold text-zinc-900">Gestiona tus horas de atención</h1>
                     <p className="text-zinc-500">Gestiona tus horas médicas</p>
                 </div>
                 <Link href="/portal" className="text-sm text-indigo-600 hover:underline">
@@ -45,8 +45,8 @@ export default async function AppointmentsPage() {
                                     </div>
                                     <div>
                                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
-                                                apt.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
-                                                    'bg-yellow-100 text-yellow-700'
+                                            apt.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                                                'bg-yellow-100 text-yellow-700'
                                             }`}>
                                             {apt.status === 'PENDING' ? 'Pendiente' :
                                                 apt.status === 'CONFIRMED' ? 'Confirmada' : 'Cancelada'}
