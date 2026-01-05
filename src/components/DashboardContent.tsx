@@ -33,6 +33,19 @@ interface DashboardContentProps {
         kine: boolean;
         recep: boolean;
     }>;
+    appointments: Array<{
+        id: string;
+        date: Date;
+        status: string;
+        notes: string | null;
+        patient: {
+            user: {
+                name: string | null;
+                email: string;
+                rut: string | null;
+            }
+        }
+    }>;
 }
 
 type UserRole = 'ADMIN' | 'KINESIOLOGIST' | 'RECEPTIONIST' | 'PATIENT'
@@ -103,8 +116,8 @@ function PermissionMatrix({ initialData }: { initialData: any[] }) {
     )
 }
 
-export default function DashboardContent({ patients, initialUsers, logs, initialPermissions }: DashboardContentProps) {
-    const [activeTab, setActiveTab] = useState('Usuarios y Roles')
+export default function DashboardContent({ patients, initialUsers, logs, initialPermissions, appointments = [] }: DashboardContentProps) {
+    const [activeTab, setActiveTab] = useState('Agendamiento')
     const router = useRouter();
 
     // User Management State - Initialize with Real Data
@@ -260,7 +273,7 @@ export default function DashboardContent({ patients, initialUsers, logs, initial
                     <h1 className="text-3xl font-bold text-sky-900">Administración Central</h1>
 
                     <nav className="flex space-x-6 overflow-x-auto">
-                        {['Usuarios y Roles', 'Tablas Maestras', 'Seguridad - Control de acceso', 'Auditoría'].map((tab) => (
+                        {['Agendamiento', 'Usuarios y Roles', 'Tablas Maestras', 'Seguridad - Control de acceso', 'Auditoría'].map((tab) => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
@@ -278,6 +291,69 @@ export default function DashboardContent({ patients, initialUsers, logs, initial
 
             {/* Content Area based on Active Tab */}
             <div className="animate-in fade-in duration-300">
+
+                {activeTab === 'Agendamiento' && (
+                    <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50 flex justify-between items-center">
+                            <h3 className="font-bold text-zinc-700">Reservas Web</h3>
+                            <button onClick={() => router.refresh()} className="text-xs text-indigo-600 hover:underline">
+                                Actualizar
+                            </button>
+                        </div>
+                        <div className="p-0">
+                            <table className="w-full text-sm text-left">
+                                <thead className="text-xs text-zinc-500 uppercase bg-zinc-50 border-b border-zinc-100">
+                                    <tr>
+                                        <th className="px-6 py-3">Fecha</th>
+                                        <th className="px-6 py-3">Hora</th>
+                                        <th className="px-6 py-3">Paciente</th>
+                                        <th className="px-6 py-3">RUT</th>
+                                        <th className="px-6 py-3">Estado</th>
+                                        <th className="px-6 py-3">Notas</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-zinc-100">
+                                    {appointments.map((apt) => (
+                                        <tr key={apt.id} className="hover:bg-zinc-50/50">
+                                            <td className="px-6 py-4 font-medium text-zinc-900">
+                                                {new Date(apt.date).toLocaleDateString('es-CL')}
+                                            </td>
+                                            <td className="px-6 py-4 text-zinc-600">
+                                                {new Date(apt.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <div className="font-medium text-zinc-900">{apt.patient.user.name}</div>
+                                                <div className="text-xs text-zinc-500">{apt.patient.user.email}</div>
+                                            </td>
+                                            <td className="px-6 py-4 text-zinc-500 font-mono text-xs">
+                                                {apt.patient.user.rut || 'N/A'}
+                                            </td>
+                                            <td className="px-6 py-4">
+                                                <span className={`px-2 py-1 rounded-full text-xs font-bold ${apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
+                                                    apt.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
+                                                        'bg-yellow-100 text-yellow-700'
+                                                    }`}>
+                                                    {apt.status === 'PENDING' ? 'Pendiente' :
+                                                        apt.status === 'CONFIRMED' ? 'Confirmada' : 'Cancelada'}
+                                                </span>
+                                            </td>
+                                            <td className="px-6 py-4 text-xs text-zinc-400 italic">
+                                                {apt.notes}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    {appointments.length === 0 && (
+                                        <tr>
+                                            <td colSpan={6} className="px-6 py-8 text-center text-zinc-500">
+                                                No hay reservas registradas.
+                                            </td>
+                                        </tr>
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                )}
 
                 {activeTab === 'Usuarios y Roles' && (
                     <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">

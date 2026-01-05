@@ -36,6 +36,20 @@ export default async function DashboardPage() {
 
     const permissions = await prisma.rolePermission.findMany();
 
+    const appointments = await prisma.appointment.findMany({
+        include: {
+            patient: {
+                include: {
+                    user: {
+                        select: { name: true, email: true, rut: true }
+                    }
+                }
+            }
+        },
+        orderBy: { date: 'desc' },
+        take: 100 // Limit for performance
+    });
+
     // Transform permissions for Matrix [Action][Role] = boolean
     // Client expects: { action: string, kine: boolean, recep: boolean }[]
     const actions: string[] = Array.from(new Set(permissions.map((p: any) => p.action)));
@@ -54,6 +68,7 @@ export default async function DashboardPage() {
         initialUsers={systemUsers}
         logs={logs}
         initialPermissions={permissionMatrix}
+        appointments={appointments}
     />;
 
 }
