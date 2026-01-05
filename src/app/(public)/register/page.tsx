@@ -34,27 +34,28 @@ export default function RegisterPage() {
                             />
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="rut">
+                                RUT
+                            </label>
+                            <input
+                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all duration-200"
+                                id="rut"
+                                type="text"
+                                name="rut"
+                                placeholder="12.345.678-9"
+                                required
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="rut">
-                                    RUT
+                                <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="region">
+                                    Región
                                 </label>
-                                <input
-                                    className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                    id="rut"
-                                    type="text"
-                                    name="rut"
-                                    placeholder="12.345.678-9"
-                                    required
-                                />
-                            </div>
-                            <div className="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="region">
-                                        Región
-                                    </label>
+                                <div className="relative">
                                     <select
-                                        className="w-full rounded-lg border border-zinc-200 px-2 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 truncate"
+                                        className="w-full appearance-none rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all duration-200 bg-white"
                                         id="region"
                                         value={selectedRegion}
                                         onChange={(e) => {
@@ -63,25 +64,32 @@ export default function RegisterPage() {
                                         }}
                                         required
                                     >
-                                        <option value="">Región</option>
+                                        <option value="">Seleccionar Región</option>
                                         {REGIONS.map((r) => (
                                             <option key={r.name} value={r.name}>
                                                 {r.name}
                                             </option>
                                         ))}
                                     </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-zinc-500">
+                                        <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                                        </svg>
+                                    </div>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="commune">
-                                        Comuna
-                                    </label>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="commune">
+                                    Comuna
+                                </label>
+                                <div className="relative">
                                     <select
-                                        className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 disabled:bg-zinc-100 disabled:text-zinc-400"
+                                        className="w-full appearance-none rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all duration-200 bg-white disabled:bg-zinc-50 disabled:text-zinc-400"
                                         id="commune"
                                         name="commune"
                                         required
                                     >
-                                        <option value="">Comuna</option>
+                                        <option value="">Seleccionar Comuna</option>
                                         {selectedRegion ? (
                                             REGIONS.find(r => r.name === selectedRegion)?.communes.map((c) => (
                                                 <option key={c} value={c.toUpperCase()}>
@@ -89,9 +97,14 @@ export default function RegisterPage() {
                                                 </option>
                                             ))
                                         ) : (
-                                            <option value="">Seleccione Región</option>
+                                            <option value="">Primero seleccione región</option>
                                         )}
                                     </select>
+                                    <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-zinc-500">
+                                        <svg className="h-4 w-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                                            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                                        </svg>
+                                    </div>
                                 </div>
                             </div>
                         </div>
