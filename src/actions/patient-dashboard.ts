@@ -12,17 +12,33 @@ export async function getPatientDashboardData() {
             return { error: "No autorizado" };
         }
 
-        const patient = await prisma.patient.findUnique({
+        let patient = await prisma.patient.findUnique({
             where: { userId: session.user.id },
             select: {
                 id: true,
-                commune: true,
-                region: true
+                commune: true
             }
         });
 
+        // Self-healing: Create profile if missing
         if (!patient) {
-            return { error: "Paciente no encontrado" };
+            console.log(`[Auto-Recovery] Creating missing profile for user ${session.user.id} in Dashboard`);
+            const timestamp = Date.now();
+            patient = await prisma.patient.create({
+                data: {
+                    userId: session.user.id,
+                    rut: `TMP-${timestamp}`,
+                    commune: 'SANTIAGO', // Default for Dashboard to avoid breaking AQI
+                    address: 'Por completar',
+                    healthSystem: 'FONASA',
+                    phone: '',
+                    birthDate: new Date()
+                },
+                select: {
+                    id: true,
+                    commune: true
+                }
+            });
         }
 
         // Parallel Fetching for performance
