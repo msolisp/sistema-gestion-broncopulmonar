@@ -6,7 +6,6 @@ export const dynamic = 'force-dynamic';
 export default async function PatientsPage() {
     const patients = await prisma.patient.findMany({
         include: {
-            user: true,
             appointments: true
         }
     });

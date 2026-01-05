@@ -28,7 +28,10 @@ const mockPatients = [
         birthDate: new Date('1990-01-01'),
         gender: 'Masculino',
         appointments: [],
-        user: { name: 'Juan Perez', email: 'juan@test.com', active: true, rut: '11.111.111-1' }
+        name: 'Juan Perez',
+        email: 'juan@test.com',
+        active: true,
+        rut: '11.111.111-1'
     },
     {
         id: '2',
@@ -39,7 +42,10 @@ const mockPatients = [
         birthDate: new Date('1985-05-05'),
         gender: 'Femenino',
         appointments: [1],
-        user: { name: 'Maria Gonzalez', email: 'maria@test.com', active: false, rut: '22.222.222-2' }
+        name: 'Maria Gonzalez',
+        email: 'maria@test.com',
+        active: false,
+        rut: '22.222.222-2'
     }
 ]
 
@@ -110,7 +116,7 @@ describe('PatientsTable Component', () => {
         const manyPatients = Array.from({ length: 15 }, (_, i) => ({
             ...mockPatients[0],
             id: i.toString(),
-            user: { ...mockPatients[0].user, name: `Patient ${i}` }
+            name: `Patient ${i}`
         }))
         render(<PatientsTable patients={manyPatients} />)
 
@@ -158,5 +164,19 @@ describe('PatientsTable Component', () => {
 
         // We can't easily check the server action call arguments here because useActionState is internal logic,
         // but we verify the UI interaction works.
+    })
+    it('updates hidden rut input on change', () => {
+        render(<PatientsTable patients={mockPatients} />)
+        const createBtn = screen.getByText('Nuevo Paciente')
+        fireEvent.click(createBtn)
+
+        const rutNum = document.getElementById('rut_num') as HTMLInputElement
+        const rutDv = document.getElementById('rut_dv') as HTMLInputElement
+
+        fireEvent.change(rutNum, { target: { value: '12345678' } })
+        fireEvent.change(rutDv, { target: { value: 'K' } })
+
+        const hiddenRut = document.getElementById('rut_hidden') as HTMLInputElement
+        expect(hiddenRut.value).toBe('12345678-K')
     })
 })

@@ -12,15 +12,13 @@ interface Patient {
     commune: string
 
     diagnosisDate: Date | null
-    gender: string | null        // Add gender
-    address: string | null       // Add address
-    birthDate: Date | null       // Add birthDate
-    user: {
-        name: string | null
-        email: string
-        active: boolean
-        rut: string | null
-    }
+    gender: string | null
+    address: string | null
+    birthDate: Date | null
+    name: string | null
+    email: string
+    active: boolean
+    rut: string | null
     appointments: any[]
 }
 
@@ -71,9 +69,9 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
 
     const filteredPatients = patients.filter(patient => {
         const term = searchTerm.toLowerCase()
-        const name = patient.user.name?.toLowerCase() || ''
-        const email = patient.user.email.toLowerCase()
-        const rut = patient.user.rut?.toLowerCase() || ''
+        const name = patient.name?.toLowerCase() || ''
+        const email = patient.email.toLowerCase()
+        const rut = patient.rut?.toLowerCase() || ''
         const commune = patient.commune.toLowerCase()
 
         return name.includes(term) || email.includes(term) || rut.includes(term) || commune.includes(term)
@@ -87,12 +85,12 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
 
     const handleExport = () => {
         const dataToExport = filteredPatients.map(p => ({
-            'Nombre': p.user.name,
-            'Email': p.user.email,
-            'RUT': p.user.rut,
+            'Nombre': p.name,
+            'Email': p.email,
+            'RUT': p.rut,
             'Comuna': p.commune,
             'Edad': calculateAge(p.birthDate),
-            'Estado': p.user.active ? 'Activo' : 'Inactivo',
+            'Estado': p.active ? 'Activo' : 'Inactivo',
             'Citas': p.appointments.length
         }))
 
@@ -158,20 +156,20 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                 <td className="px-6 py-4 whitespace-nowrap">
                                     <div className="flex items-center">
                                         <div className="flex-shrink-0 h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600 font-bold">
-                                            {patient.user.name?.[0]}
+                                            {patient.name?.[0]}
                                         </div>
                                         <div className="ml-4">
-                                            <div className="text-sm font-medium text-zinc-900">{patient.user.name}</div>
-                                            <div className="text-sm text-zinc-500">{patient.user.email}</div>
+                                            <div className="text-sm font-medium text-zinc-900">{patient.name}</div>
+                                            <div className="text-sm text-zinc-500">{patient.email}</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{patient.user.rut}</td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{patient.rut}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{patient.commune}</td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">{calculateAge(patient.birthDate)}</td>
                                 <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${patient.user.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                        {patient.user.active ? 'Activo' : 'Inactivo'}
+                                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${patient.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                        {patient.active ? 'Activo' : 'Inactivo'}
                                     </span>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
@@ -266,9 +264,38 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                         <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
                                         <input name="email" type="email" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
                                     </div>
-                                    <div>
-                                        <label className="block text-sm font-medium text-zinc-700 mb-1">RUT</label>
-                                        <input name="rut" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" placeholder="11.111.111-1" />
+                                    <div className="flex gap-2">
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium text-zinc-700 mb-1">RUT</label>
+                                            <input
+                                                id="rut_num"
+                                                type="text"
+                                                maxLength={8}
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900"
+                                                placeholder="11111111"
+                                                onChange={(e) => {
+                                                    const num = e.target.value.replace(/[^0-9]/g, '');
+                                                    const dv = (document.getElementById('rut_dv') as HTMLInputElement).value;
+                                                    (document.getElementById('rut_hidden') as HTMLInputElement).value = num && dv ? `${num}-${dv}` : '';
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="w-20">
+                                            <label className="block text-sm font-medium text-zinc-700 mb-1">DV</label>
+                                            <input
+                                                id="rut_dv"
+                                                type="text"
+                                                maxLength={1}
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 text-center uppercase"
+                                                placeholder="K"
+                                                onChange={(e) => {
+                                                    const dv = e.target.value.toUpperCase().replace(/[^0-9K]/g, '');
+                                                    const num = (document.getElementById('rut_num') as HTMLInputElement).value;
+                                                    (document.getElementById('rut_hidden') as HTMLInputElement).value = num && dv ? `${num}-${dv}` : '';
+                                                }}
+                                            />
+                                        </div>
+                                        <input type="hidden" name="rut" id="rut_hidden" />
                                     </div>
                                 </div>
                                 <div>
@@ -329,12 +356,12 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                 <input type="hidden" name="id" value={selectedPatient.id} />
                                 <div>
                                     <label className="block text-sm font-medium text-zinc-700 mb-1">Nombre Completo</label>
-                                    <input name="name" defaultValue={selectedPatient.user.name} required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
+                                    <input name="name" defaultValue={selectedPatient.name} required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-zinc-700 mb-1">RUT</label>
-                                        <input name="rut" defaultValue={selectedPatient.user.rut} required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
+                                        <input name="rut" defaultValue={selectedPatient.rut} required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-zinc-700 mb-1">Dirección</label>
@@ -378,7 +405,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                         type="checkbox"
                                         name="active"
                                         id="active"
-                                        defaultChecked={selectedPatient.user.active}
+                                        defaultChecked={selectedPatient.active}
                                         className="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-zinc-300 rounded"
                                     />
                                     <label htmlFor="active" className="text-sm font-medium text-zinc-700 select-none cursor-pointer">
@@ -409,7 +436,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                 </div>
                                 <h3 className="text-xl font-bold text-zinc-900 mb-2">¿Eliminar Paciente?</h3>
                                 <p className="text-zinc-500 text-sm mb-6">
-                                    Estás a punto de eliminar a <strong>{selectedPatient.user.name}</strong>. Esta acción no se puede deshacer.
+                                    Estás a punto de eliminar a <strong>{selectedPatient.name}</strong>. Esta acción no se puede deshacer.
                                 </p>
 
                                 <form action={deleteAction} className="flex justify-center gap-3">

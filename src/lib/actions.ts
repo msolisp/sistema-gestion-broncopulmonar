@@ -50,29 +50,66 @@ export async function authenticate(
         }
 
         // Pre-check role to determine redirection
-        const user = await prisma.user.findUnique({
-            where: { email },
-            select: { role: true, mustChangePassword: true }
-        });
+        const portalType = formData.get('portal_type');
+        let role = '';
+        let mustChangePassword = false;
+        let active = true;
+
+        if (portalType === 'internal') {
+            const user = await prisma.user.findUnique({
+                where: { email },
+                select: { role: true, mustChangePassword: true, active: true }
+            });
+            if (!user) {
+                // If not found in User table, check if it's a Patient trying to login
+                const patient = await prisma.patient.findUnique({ where: { email } });
+                if (patient) {
+                    return 'No tiene acceso al portal interno.';
+                }
+                // Otherwise let signIn handle invalid credentials
+            } else {
+                role = user.role;
+                mustChangePassword = user.mustChangePassword;
+                active = user.active;
+            }
+        } else {
+            const patient = await prisma.patient.findUnique({
+                where: { email },
+                select: { active: true }
+            });
+            if (patient) {
+                role = 'PATIENT';
+                active = patient.active;
+            }
+        }
+
+        if (!active) return 'Cuenta inactiva.';
 
         let redirectTo = '/reservar'; // Default fallback
 
-        if (user) {
-            // Security Check: Internal Portal Access
-            const portalType = formData.get('portal_type');
-            if (portalType === 'internal' && user.role === 'PATIENT') {
-                return 'No tiene acceso al portal interno.';
+        // Security Check: Internal Portal Access
+        if (portalType === 'internal') {
+            if (role === 'PATIENT') {
+                // Logic hole: Patient won't be found in User table, so role is empty. 
+                // If a User has ROLE='PATIENT' (legacy), we block.
+                // But new Patients are in Patient table. 
+                // If someone tries to login with Patient credentials at Internal, 
+                // Query `User` returns null. `signIn` returns null. Result: "Credenciales inválidas".
+                // This is SAFE.
+                // The explicit message "No tiene acceso" helps if a USER (Staff) tries to login but has restricted role?
+                // Or if we want to give feedback to patient.
+                // If we want to check if it IS a patient trying:
+                const isPatient = await prisma.patient.findUnique({ where: { email } });
+                if (isPatient) return 'No tiene acceso al portal interno.';
             }
+        }
 
-            // Check for Forced Password Change
-            if (user.mustChangePassword) {
-                redirectTo = '/change-password';
-            } else if (['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST'].includes(user.role)) {
-                // Strictly Separate Portals
-                redirectTo = '/dashboard';
-            } else {
-                redirectTo = '/portal';
-            }
+        if (mustChangePassword) {
+            redirectTo = '/change-password';
+        } else if (['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST'].includes(role)) {
+            redirectTo = '/dashboard';
+        } else {
+            redirectTo = '/portal';
         }
 
         // Artificial Delay for Rate Limiting to prevent Brute Force
@@ -115,34 +152,26 @@ export async function registerPatient(prevState: any, formData: FormData) {
 
     const { email, password, name, rut, commune } = validation.data;
 
-    // Check if user exists
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) return { message: 'Email already exists' };
+    // Check if patient exists
+    const existingPatient = await prisma.patient.findUnique({ where: { email } });
+    if (existingPatient) return { message: 'Email already exists' };
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     try {
-        await prisma.$transaction(async (tx: any) => {
-            const user = await tx.user.create({
-                data: {
-                    email,
-                    password: hashedPassword,
-                    name,
-                    rut,
-                    role: 'PATIENT',
-                }
-            });
-
-            await tx.patient.create({
-                data: {
-                    userId: user.id,
-                    commune,
-                }
-            });
+        await prisma.patient.create({
+            data: {
+                email,
+                password: hashedPassword,
+                name,
+                rut,
+                commune,
+                active: true,
+            }
         });
     } catch (e) {
         console.error(e)
-        return { message: 'Database Error: Failed to Create User' };
+        return { message: 'Database Error: Failed to Create Patient' };
     }
 
     return { message: 'Success' };
@@ -166,19 +195,18 @@ export async function bookAppointment(prevState: any, formData: FormData) {
     const { date, notes } = validation.data;
     const dateStr = date;
 
-    const user = await prisma.user.findUnique({
+    const patient = await prisma.patient.findUnique({
         where: { email: sessionData.user.email },
-        include: { patientProfile: true }
     });
 
-    if (!user || !user.patientProfile) {
+    if (!patient) {
         return { message: `Patient profile not found for user: ${sessionData.user.email}` };
     }
 
     try {
         await prisma.appointment.create({
             data: {
-                patientId: user.patientProfile.id,
+                patientId: patient.id,
                 date: new Date(dateStr),
                 notes,
                 status: 'PENDING'
@@ -209,34 +237,18 @@ export async function updatePatientProfile(prevState: any, formData: FormData) {
     const { name, phone, address, commune, gender, healthSystem, birthDate } = validation.data;
 
     try {
-        const user = await prisma.user.findUnique({
+        await prisma.patient.update({
             where: { email: session.user.email },
-            include: { patientProfile: true }
+            data: {
+                name,
+                phone,
+                address,
+                commune,
+                gender,
+                healthSystem,
+                birthDate: birthDate ? new Date(birthDate) : undefined
+            }
         });
-
-        if (!user || !user.patientProfile) {
-            return { message: 'Profile not found' };
-        }
-
-        console.log('Updating profile for user:', session.user.email, 'Data:', { name, phone, address, commune });
-
-        await prisma.$transaction([
-            prisma.user.update({
-                where: { id: user.id },
-                data: { name }
-            }),
-            prisma.patient.update({
-                where: { id: user.patientProfile.id },
-                data: {
-                    phone,
-                    address,
-                    commune,
-                    gender,
-                    healthSystem,
-                    birthDate: birthDate ? new Date(birthDate) : undefined
-                }
-            })
-        ]);
 
         revalidatePath('/portal');
         revalidatePath('/portal/perfil');
@@ -268,34 +280,25 @@ export async function adminCreatePatient(prevState: any, formData: FormData) {
         return { message: 'La contraseña es obligatoria para nuevos usuarios.' };
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) return { message: 'El email ya existe' };
+    const existingPatient = await prisma.patient.findUnique({ where: { email } });
+    if (existingPatient) return { message: 'El email ya existe' };
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     try {
-        await prisma.$transaction(async (tx: any) => {
-            const user = await tx.user.create({
-                data: {
-                    email,
-                    password: hashedPassword,
-                    name,
-                    rut,
-                    role: 'PATIENT',
-                    mustChangePassword: true,
-                }
-            });
-
-            await tx.patient.create({
-                data: {
-                    userId: user.id,
-                    commune,
-                    address,
-                    gender,
-                    healthSystem,
-                    birthDate: birthDate ? new Date(birthDate) : undefined
-                }
-            });
+        await prisma.patient.create({
+            data: {
+                email,
+                password: hashedPassword,
+                name,
+                rut,
+                commune,
+                address,
+                gender,
+                healthSystem,
+                birthDate: birthDate ? new Date(birthDate) : undefined,
+                active: true,
+            }
         });
         revalidatePath('/dashboard');
         return { message: 'Success' };
@@ -324,30 +327,20 @@ export async function adminUpdatePatient(prevState: any, formData: FormData) {
     const { id, name, rut, commune, address, gender, healthSystem, birthDate, diagnosisDate, active } = validation.data;
 
     try {
-        const patient = await prisma.patient.findUnique({ where: { id }, include: { user: true } });
-        if (!patient) return { message: 'Paciente no encontrado' };
-
-        await prisma.$transaction([
-            prisma.user.update({
-                where: { id: patient.userId },
-                data: {
-                    name,
-                    rut,
-                    active
-                }
-            }),
-            prisma.patient.update({
-                where: { id },
-                data: {
-                    commune,
-                    address,
-                    gender,
-                    healthSystem,
-                    birthDate: birthDate ? new Date(birthDate) : undefined,
-                    diagnosisDate: diagnosisDate ? new Date(diagnosisDate) : undefined
-                }
-            })
-        ]);
+        await prisma.patient.update({
+            where: { id },
+            data: {
+                name,
+                rut,
+                active,
+                commune,
+                address,
+                gender,
+                healthSystem,
+                birthDate: birthDate ? new Date(birthDate) : undefined,
+                diagnosisDate: diagnosisDate ? new Date(diagnosisDate) : undefined
+            }
+        });
         revalidatePath('/dashboard');
         revalidatePath('/patients');
         return { message: 'Success' };
@@ -373,11 +366,8 @@ export async function deletePatient(prevState: any, formData: FormData) {
     const { id } = validation.data;
 
     try {
-        const patient = await prisma.patient.findUnique({ where: { id } });
-        if (!patient) return { message: 'Paciente no encontrado' };
-
-        await prisma.user.delete({
-            where: { id: patient.userId }
+        await prisma.patient.delete({
+            where: { id }
         });
 
         revalidatePath('/dashboard');
@@ -408,12 +398,11 @@ export async function uploadMedicalExam(formData: FormData) {
     // RBAC & IDOR Check
     const userRole = (session.user as any).role;
     if (userRole !== 'ADMIN' && userRole !== 'KINESIOLOGIST') {
-        const user = await prisma.user.findUnique({
+        const patient = await prisma.patient.findUnique({
             where: { email: session.user.email as string },
-            include: { patientProfile: true }
         });
 
-        if (!user?.patientProfile || user.patientProfile.id !== patientId) {
+        if (!patient || patient.id !== patientId) {
             return { message: 'No autorizado para subir exámenes a este perfil.' };
         }
     }

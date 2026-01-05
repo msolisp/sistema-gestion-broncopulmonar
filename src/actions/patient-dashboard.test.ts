@@ -1,4 +1,3 @@
-
 /**
  * @jest-environment node
  */
@@ -11,11 +10,12 @@ import { getRealtimeGlobalAQI } from '@/lib/air-quality';
 jest.mock('@/lib/prisma', () => ({
     patient: {
         findUnique: jest.fn(),
-        create: jest.fn(), // For self-healing
+        create: jest.fn(),
     },
     appointment: {
         findFirst: jest.fn(),
     },
+    // We might need to mock transaction if used, but here it's not.
 }));
 
 jest.mock('@/auth', () => ({
@@ -41,7 +41,7 @@ describe('getPatientDashboardData', () => {
 
     it('should return dashboard data for existing patient', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'user-1', name: 'Test User' }
+            user: { id: 'user-1', name: 'Test User', email: 'test@test.com' }
         });
 
         (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
@@ -69,7 +69,7 @@ describe('getPatientDashboardData', () => {
 
     it('should return correct AQI for non-Santiago commune', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'user-2', name: 'Puente Alto User' }
+            user: { id: 'user-2', name: 'Puente Alto User', email: 'user2@test.com' }
         });
 
         (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
@@ -91,7 +91,7 @@ describe('getPatientDashboardData', () => {
 
     it('should fallback to Santiago for unknown commune', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'user-3', name: 'Unknown User' }
+            user: { id: 'user-3', name: 'Unknown User', email: 'user3@test.com' }
         });
 
         (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
@@ -110,32 +110,23 @@ describe('getPatientDashboardData', () => {
         expect(result.aqiData).toEqual({ commune: 'SANTIAGO', aqi: 50, status: 'Bueno' });
     });
 
-    it('should auto-recover (create profile) if patient not found', async () => {
+    it('should return error if patient not found (no auto-recover)', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'user-broken', name: 'Broken User' }
+            user: { id: 'user-broken', name: 'Broken User', email: 'broken@test.com' }
         });
 
         // First findUnique returns null
         (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null);
 
-        // Create returns new patient
-        (prisma.patient.create as jest.Mock).mockResolvedValue({
-            id: 'new-patient-id',
-            commune: 'SANTIAGO'
-        });
-
-        (getRealtimeGlobalAQI as jest.Mock).mockResolvedValue([]);
-
         const result = await getPatientDashboardData();
 
-        expect(prisma.patient.create).toHaveBeenCalled(); // Verify self-healing trigger
-        expect(result).toHaveProperty('patient');
-        expect(result.patient.id).toBe('new-patient-id');
+        expect(result).toEqual({ error: "Perfil de paciente no encontrado" });
+        expect(prisma.patient.create).not.toHaveBeenCalled();
     });
 
     it('should handle errors gracefully', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'user-1', name: 'Test User' }
+            user: { id: 'user-1', name: 'Test User', email: 'test@test.com' }
         });
 
         (prisma.patient.findUnique as jest.Mock).mockRejectedValue(new Error('DB Error'));

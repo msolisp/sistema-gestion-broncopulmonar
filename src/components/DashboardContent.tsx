@@ -13,7 +13,11 @@ interface DashboardContentProps {
         diagnosisDate: Date | null;
         gender: string | null;
         birthDate: Date | null;
-        user: { name: string | null; email: string; rut: string | null };
+        user: { name: string | null; email: string; rut: string | null }; // Deprecated or remove
+        // Use direct properties
+        name: string | null;
+        email: string;
+        rut: string | null;
     }>;
     initialUsers: Array<{
         id: string;
@@ -40,11 +44,9 @@ interface DashboardContentProps {
         status: string;
         notes: string | null;
         patient: {
-            user: {
-                name: string | null;
-                email: string;
-                rut: string | null;
-            }
+            name: string | null;
+            email: string;
+            rut: string | null;
         }
     }>;
 }
@@ -323,11 +325,11 @@ export default function DashboardContent({ patients, initialUsers, logs, initial
                                                 {new Date(apt.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
                                             </td>
                                             <td className="px-6 py-4">
-                                                <div className="font-medium text-zinc-900">{apt.patient.user.name}</div>
-                                                <div className="text-xs text-zinc-500">{apt.patient.user.email}</div>
+                                                <div className="font-medium text-zinc-900">{apt.patient.name}</div>
+                                                <div className="text-xs text-zinc-500">{apt.patient.email}</div>
                                             </td>
                                             <td className="px-6 py-4 text-zinc-500 font-mono text-xs">
-                                                {apt.patient.user.rut || 'N/A'}
+                                                {apt.patient.rut || 'N/A'}
                                             </td>
                                             <td className="px-6 py-4">
                                                 <span className={`px-2 py-1 rounded-full text-xs font-bold ${apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' :

@@ -18,25 +18,44 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
             },
             authorize: async (credentials) => {
                 const parsedCredentials = z
-                    .object({ email: z.string().email(), password: z.string().min(6) })
+                    .object({ email: z.string().email(), password: z.string().min(6), portal_type: z.string().optional() })
                     .safeParse(credentials);
 
                 if (parsedCredentials.success) {
-                    const { email, password } = parsedCredentials.data;
+                    const { email, password, portal_type } = parsedCredentials.data;
 
-                    const user = await prisma.user.findUnique({ where: { email } });
-                    if (!user) return null;
+                    // Internal Portal Login
+                    if (portal_type === 'internal') {
+                        const user = await prisma.user.findUnique({ where: { email } });
+                        if (!user) return null;
 
-                    const passwordsMatch = await bcrypt.compare(password, user.password);
-                    if (passwordsMatch) {
-                        return {
-                            id: user.id,
-                            name: user.name,
-                            email: user.email,
-                            role: user.role,
-                            active: user.active,
-                            mustChangePassword: user.mustChangePassword
-                        };
+                        const passwordsMatch = await bcrypt.compare(password, user.password);
+                        if (passwordsMatch) {
+                            return {
+                                id: user.id,
+                                name: user.name,
+                                email: user.email,
+                                role: user.role,
+                                active: user.active,
+                                mustChangePassword: user.mustChangePassword
+                            };
+                        }
+                    } else {
+                        // Patient Portal Login (Default)
+                        const patient = await prisma.patient.findUnique({ where: { email } });
+                        if (!patient) return null;
+
+                        const passwordsMatch = await bcrypt.compare(password, patient.password);
+                        if (passwordsMatch) {
+                            return {
+                                id: patient.id,
+                                name: patient.name,
+                                email: patient.email,
+                                role: 'PATIENT', // Hardcoded role for patients
+                                active: patient.active,
+                                mustChangePassword: false // Patients don't have forced reset currently
+                            };
+                        }
                     }
                 }
                 return null;

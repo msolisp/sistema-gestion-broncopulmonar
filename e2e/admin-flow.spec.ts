@@ -3,13 +3,13 @@ import { test, expect } from '@playwright/test';
 
 test('Admin Flow: Login and Access Dashboard', async ({ page }) => {
     // 1. Go to Login
-    await page.goto('/login');
+    await page.goto('/intranet/login');
 
     // 2. Login as Admin (using seeded credentials)
     // 2. Login as Admin (using seeded credentials)
     await page.fill('input[name="email"]', 'admin@example.com');
     await page.fill('input[name="password"]', 'admin123'); // Updated password
-    await page.click('button:has-text("Ingresar")');
+    await page.click('button:has-text("Iniciar Sesión Segura")');
 
     // Expect redirect to dashboard (Admin logic)
     await expect(page).toHaveURL(/.*\/dashboard/);
@@ -24,10 +24,10 @@ test('Admin Flow: Login and Access Dashboard', async ({ page }) => {
 
 test('Admin Flow: Create Patient and Upload Exam', async ({ page }) => {
     // 1. Login
-    await page.goto('/login');
+    await page.goto('/intranet/login');
     await page.fill('input[name="email"]', 'admin@example.com');
     await page.fill('input[name="password"]', 'admin123');
-    await page.click('button:has-text("Ingresar")');
+    await page.click('button:has-text("Iniciar Sesión Segura")');
     await expect(page).toHaveURL(/.*\/dashboard/);
 
     // 2. Navigate to Patients
@@ -37,23 +37,28 @@ test('Admin Flow: Create Patient and Upload Exam', async ({ page }) => {
 
     // 3. Create New Patient
     await page.click('button:has-text("Nuevo Paciente")');
-    const uniqueRut = `15.${Math.floor(Math.random() * 900) + 100}.${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9)}`;
+    const uniqueRutNum = `${Math.floor(Math.random() * 10000000) + 10000000}`; // 8 digits
+    const uniqueRutDv = `${Math.floor(Math.random() * 9)}`;
+    const uniqueRut = `${uniqueRutNum}-${uniqueRutDv}`;
     const uniqueEmail = `new_patient_${Date.now()}@test.com`;
 
-    await page.fill('input[name="name"]', 'Admin Created Patient');
+    await page.fill('input[name="name"]', 'Paciente E2E');
     await page.fill('input[name="email"]', uniqueEmail);
-    await page.fill('input[name="password"]', 'password123');
-    // Force specific RUT format if needed, but generic works
-    await page.fill('input[name="rut"]', uniqueRut);
+    // Split RUT filling
+    await page.fill('input[id="rut_num"]', uniqueRutNum);
+    await page.fill('input[id="rut_dv"]', uniqueRutDv);
+    await page.fill('input[name="password"]', 'Password123!');
+    await page.fill('input[name="address"]', 'Calle Falsa 123');
     // Select Commune
     await page.selectOption('select[name="commune"]', 'PROVIDENCIA');
     // Fill Address
-    await page.fill('input[name="address"]', 'Calle Test 123');
+    // already filled above
     // Select Gender
     await page.selectOption('select[name="gender"]', 'Masculino');
     // Date
     await page.fill('input[name="birthDate"]', '1990-01-01');
 
+    // Submit
     await page.click('button:has-text("Crear Paciente")');
 
     // Wait for modal to close (implies success)
@@ -62,6 +67,8 @@ test('Admin Flow: Create Patient and Upload Exam', async ({ page }) => {
 
     // Reload to ensure list is updated (if revalidatePath is slow or client router needs it)
     await page.reload();
+    // Wait for table to load
+    await expect(page.locator('table')).toBeVisible();
     await expect(page.getByRole('heading', { name: 'Gestión de Pacientes' })).toBeVisible();
 
     // 4. Verify Creation

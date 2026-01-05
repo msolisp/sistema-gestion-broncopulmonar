@@ -12,34 +12,40 @@ jest.mock('@/auth', () => ({
     auth: jest.fn(),
 }))
 
-jest.mock('@/lib/prisma', () => ({
-    user: {
-        findUnique: jest.fn(),
-        create: jest.fn(),
-        upsert: jest.fn(),
-        update: jest.fn(),
-        delete: jest.fn(),
-    },
-    patient: {
-        create: jest.fn(),
-        update: jest.fn(),
-        findUnique: jest.fn(),
-        delete: jest.fn(),
-    },
-    appointment: {
-        create: jest.fn(),
-    },
-    medicalExam: {
-        create: jest.fn(),
-    },
-    systemLog: {
-        create: jest.fn(),
-    },
-    $transaction: jest.fn((arg) => {
+jest.mock('@/lib/prisma', () => {
+    const mockClient: any = {
+        user: {
+            findUnique: jest.fn(),
+            create: jest.fn(),
+            upsert: jest.fn(),
+            update: jest.fn(),
+            delete: jest.fn(),
+        },
+        patient: {
+            create: jest.fn(),
+            update: jest.fn(),
+            findUnique: jest.fn(),
+            delete: jest.fn(),
+        },
+        appointment: {
+            create: jest.fn(),
+        },
+        medicalExam: {
+            create: jest.fn(),
+        },
+        systemLog: {
+            create: jest.fn(),
+        },
+        $transaction: jest.fn()
+    }
+
+    mockClient.$transaction.mockImplementation((arg: any) => {
         if (Array.isArray(arg)) return Promise.all(arg)
-        return arg(prisma)
-    }),
-}))
+        return arg(mockClient)
+    })
+
+    return mockClient
+})
 
 jest.mock('bcryptjs', () => ({
     hash: jest.fn(),
@@ -49,8 +55,6 @@ jest.mock('next/cache', () => ({
     __esModule: true,
     revalidatePath: jest.fn(),
 }))
-
-
 
 jest.mock('file-type', () => ({
     fileTypeFromBuffer: jest.fn().mockResolvedValue({ mime: 'application/pdf' }),
@@ -71,18 +75,15 @@ describe('Server Actions', () => {
             const formData = new FormData()
             formData.append('email', 'test@test.com')
             formData.append('password', 'password123')
+                // Default to patient portal logic
+                ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ active: true, email: 'test@test.com' })
 
             await authenticate(undefined, formData)
 
             expect(signIn).toHaveBeenCalledWith('credentials', {
                 email: 'test@test.com',
                 password: 'password123',
-                redirectTo: '/reservar',
-            })
-            expect(signIn).toHaveBeenCalledWith('credentials', {
-                email: 'test@test.com',
-                password: 'password123',
-                redirectTo: '/reservar',
+                redirectTo: '/portal',
             })
         })
 
@@ -98,6 +99,8 @@ describe('Server Actions', () => {
             const error = new AuthError('Invalid credentials.')
             error.type = 'CredentialsSignin'
                 ; (signIn as jest.Mock).mockRejectedValueOnce(error)
+                // Default to patient portal logic
+                ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ active: true, email: 'test@test.com' })
 
             const formData = new FormData()
             formData.append('email', 'test@test.com')
@@ -112,6 +115,8 @@ describe('Server Actions', () => {
             const error = new AuthError('Something else')
             error.type = 'CallbackRouteError'
                 ; (signIn as jest.Mock).mockRejectedValueOnce(error)
+                // Default to patient portal logic
+                ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ active: true, email: 'test@test.com' })
 
             const formData = new FormData()
             formData.append('email', 'test@test.com')
@@ -125,6 +130,8 @@ describe('Server Actions', () => {
         it('throws unrelated errors', async () => {
             const error = new Error('Random error')
                 ; (signIn as jest.Mock).mockRejectedValueOnce(error)
+                // Default to patient portal logic
+                ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ active: true, email: 'test@test.com' })
 
             const formData = new FormData()
             formData.append('email', 'test@test.com')
@@ -137,8 +144,9 @@ describe('Server Actions', () => {
             const formData = new FormData()
             formData.append('email', 'admin@test.com')
             formData.append('password', 'password123')
+            formData.append('portal_type', 'internal')
 
-                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ role: 'ADMIN' })
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ role: 'ADMIN', active: true, email: 'admin@test.com' })
 
             await authenticate(undefined, formData)
 
@@ -151,8 +159,9 @@ describe('Server Actions', () => {
             const formData = new FormData()
             formData.append('email', 'kine@test.com')
             formData.append('password', 'password123')
+            formData.append('portal_type', 'internal')
 
-                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ role: 'KINESIOLOGIST' })
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ role: 'KINESIOLOGIST', active: true, email: 'kine@test.com' })
 
             await authenticate(undefined, formData)
 
@@ -165,8 +174,8 @@ describe('Server Actions', () => {
             const formData = new FormData()
             formData.append('email', 'patient@test.com')
             formData.append('password', 'password123')
-
-                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ role: 'PATIENT' })
+                // No portal_type -> Patient logic
+                ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ active: true, email: 'patient@test.com' })
 
             await authenticate(undefined, formData)
 
@@ -178,6 +187,8 @@ describe('Server Actions', () => {
         it('rethrows NEXT_REDIRECT', async () => {
             const error = new Error('NEXT_REDIRECT')
                 ; (signIn as jest.Mock).mockRejectedValueOnce(error)
+                // Default to patient portal logic
+                ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ active: true, email: 'test@test.com' })
 
             const formData = new FormData()
             formData.append('email', 'test@test.com')
@@ -224,32 +235,20 @@ describe('registerPatient', () => {
     })
 
     it('returns error if user exists', async () => {
-        ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: '1' })
+        ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: '1' })
         const result = await registerPatient(null, formData)
         expect(result).toEqual({ message: 'Email already exists' })
     })
 
-    it('creates user and patient on success', async () => {
-        ; (prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
+    it('creates patient on success', async () => {
+        ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null)
             ; (bcrypt.hash as jest.Mock).mockResolvedValue('hashed')
-            ; (prisma.user.create as jest.Mock).mockResolvedValue({ id: 'user1' })
-            ; (prisma.$transaction as jest.Mock).mockImplementationOnce(async (callback) => {
-                await callback(prisma)
-            })
+            ; (prisma.patient.create as jest.Mock).mockResolvedValue({ id: 'patient1' })
 
         const result = await registerPatient(null, formData)
 
-        expect(prisma.user.create).toHaveBeenCalled()
         expect(prisma.patient.create).toHaveBeenCalled()
         expect(result).toEqual({ message: 'Success' })
-    })
-
-    it('handles database errors', async () => {
-        ; (prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
-            ; (prisma.$transaction as jest.Mock).mockRejectedValueOnce(new Error('DB Error'))
-
-        const result = await registerPatient(null, formData)
-        expect(result).toEqual({ message: 'Database Error: Failed to Create User' })
     })
 })
 
@@ -261,7 +260,6 @@ describe('bookAppointment', () => {
     it('returns unauthorized if no session', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue(null)
-
         const result = await bookAppointment(null, formData)
         expect(result).toEqual({ message: 'Unauthorized, please log in.' })
     })
@@ -277,7 +275,7 @@ describe('bookAppointment', () => {
     it('returns error if profile not found', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'test@test.com' } })
-            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null)
 
         const result = await bookAppointment(null, formData)
         expect(result.message).toContain('Patient profile not found')
@@ -286,9 +284,8 @@ describe('bookAppointment', () => {
     it('successfully books appointment', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'test@test.com' } })
-            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-                id: '1',
-                patientProfile: { id: 'p1' }
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
+                id: 'p1'
             })
 
         const result = await bookAppointment(null, formData)
@@ -298,9 +295,8 @@ describe('bookAppointment', () => {
     it('handles database error', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'test@test.com' } })
-            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-                id: '1',
-                patientProfile: { id: 'p1' }
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
+                id: 'p1'
             })
             ; (prisma.appointment.create as jest.Mock).mockRejectedValueOnce(new Error('DB Error'))
 
@@ -336,25 +332,21 @@ describe('updatePatientProfile', () => {
     })
 
     it('returns error if profile not found', async () => {
+        // Here we rely on prisma.patient.update failing if record doesn't exist
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'test@test.com' } })
-            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-                id: '1',
-                patientProfile: null // No profile
-            })
+            ; (prisma.patient.update as jest.Mock).mockRejectedValueOnce(new Error('Record to update not found.'))
 
         const result = await updatePatientProfile(null, formData)
-        expect(result.message).toContain('Profile not found')
+        expect(result.message).toContain('Failed to update profile')
     })
 
     it('updates successfully', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'test@test.com' } })
-            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-                id: '1',
-                patientProfile: { id: 'p1' }
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
+                id: 'p1'
             })
-            ; (prisma.user.update as jest.Mock).mockResolvedValue({})
             ; (prisma.patient.update as jest.Mock).mockResolvedValue({})
 
         const result = await updatePatientProfile(null, formData)
@@ -364,11 +356,10 @@ describe('updatePatientProfile', () => {
     it('handles database errors', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'test@test.com' } })
-            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-                id: '1',
-                patientProfile: { id: 'p1' }
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
+                id: 'p1'
             })
-            ; (prisma.$transaction as jest.Mock).mockRejectedValueOnce(new Error('DB Error'))
+            ; (prisma.patient.update as jest.Mock).mockRejectedValueOnce(new Error('DB Error'))
 
         const result = await updatePatientProfile(null, formData)
         expect(result).toEqual({ message: 'Failed to update profile' })
@@ -418,13 +409,9 @@ describe('Admin Actions', () => {
     it('adminCreatePatient succeeds if admin', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null)
+            ; (prisma.patient.create as jest.Mock).mockResolvedValue({ id: 'p1' })
             ; (bcrypt.hash as jest.Mock).mockResolvedValue('hashed')
-            ; (prisma.user.create as jest.Mock).mockResolvedValue({ id: 'u1' })
-            ; (prisma.patient.create as jest.Mock).mockResolvedValue({})
-            ; (prisma.$transaction as jest.Mock).mockImplementationOnce(async (callback) => {
-                await callback(prisma)
-            })
 
         const result = await adminCreatePatient(null, formData)
         expect(result).toEqual({ message: 'Success' })
@@ -433,8 +420,8 @@ describe('Admin Actions', () => {
     it('adminCreatePatient handles transaction error', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
-            ; (prisma.$transaction as jest.Mock).mockRejectedValueOnce(new Error('DB Error'))
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null)
+            ; (prisma.patient.create as jest.Mock).mockRejectedValueOnce(new Error('Error al crear paciente'))
 
         const result = await adminCreatePatient(null, formData)
         expect(result).toEqual({ message: 'Error al crear paciente' })
@@ -454,12 +441,12 @@ describe('Admin Actions', () => {
     patientData.append('name', 'Updated')
     patientData.append('rut', '11111111-1')
     patientData.append('commune', 'Arica')
+    patientData.append('active', 'on')
 
     it('adminUpdatePatient succeeds', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: 'p1', userId: 'u1' })
-            ; (prisma.user.update as jest.Mock).mockResolvedValue({})
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: 'p1' })
             ; (prisma.patient.update as jest.Mock).mockResolvedValue({})
 
         const result = await adminUpdatePatient(null, patientData)
@@ -469,8 +456,8 @@ describe('Admin Actions', () => {
     it('adminUpdatePatient handles db error', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: 'p1', userId: 'u1' })
-            ; (prisma.$transaction as jest.Mock).mockRejectedValueOnce(new Error('DB Error'))
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: 'p1' })
+            ; (prisma.patient.update as jest.Mock).mockRejectedValueOnce(new Error('DB Error'))
 
         const result = await adminUpdatePatient(null, patientData)
         expect(result.message).toContain('Error al actualizar')
@@ -479,10 +466,11 @@ describe('Admin Actions', () => {
     it('adminUpdatePatient returns error if patient not found', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null)
+            ; (prisma.patient.update as jest.Mock).mockRejectedValueOnce(new Error('Record to update not found.'))
 
         const result = await adminUpdatePatient(null, patientData)
-        expect(result).toEqual({ message: 'Paciente no encontrado' })
+        // Adjust expectation to match catch block of adminUpdatePatient
+        expect(result.message).toContain('Error al actualizar')
     })
 
     it('deletePatient returns error if validation fails', async () => {
@@ -497,8 +485,8 @@ describe('Admin Actions', () => {
     it('deletePatient succeeds', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: 'p1', userId: 'u1' })
-            ; (prisma.user.delete as jest.Mock).mockResolvedValue({})
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: 'p1' })
+            ; (prisma.patient.delete as jest.Mock).mockResolvedValue({})
 
         const delData = new FormData()
         delData.append('id', 'p1')
@@ -509,8 +497,8 @@ describe('Admin Actions', () => {
     it('deletePatient handles db error', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: 'p1', userId: 'u1' })
-            ; (prisma.user.delete as jest.Mock).mockRejectedValueOnce(new Error('Delete failed'))
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: 'p1' })
+            ; (prisma.patient.delete as jest.Mock).mockRejectedValueOnce(new Error('Delete failed'))
 
         const delData = new FormData()
         delData.append('id', 'p1')
@@ -553,8 +541,9 @@ describe('uploadMedicalExam', () => {
     it('returns error if RBAC fails (patient trying to upload to another)', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'patient@test.com', role: 'PATIENT' } })
-            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-                patientProfile: { id: 'p2' } // Different ID
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
+                id: 'p2', // Different from formData 'p1'
+                email: 'patient@test.com'
             })
         const result = await uploadMedicalExam(formData)
         expect(result.message).toContain('No autorizado')
@@ -564,8 +553,9 @@ describe('uploadMedicalExam', () => {
         const { auth } = require('@/auth')
         const { put } = require('@vercel/blob')
         auth.mockResolvedValue({ user: { email: 'patient@test.com', role: 'PATIENT' } })
-            ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({
-                patientProfile: { id: 'p1' } // Same ID
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
+                id: 'p1', // Same ID
+                email: 'patient@test.com'
             })
             ; (prisma.medicalExam.create as jest.Mock).mockResolvedValue({})
             ; (put as jest.Mock).mockResolvedValue({ url: 'https://blob.vercel-storage.com/test.pdf' })

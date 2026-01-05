@@ -8,37 +8,20 @@ export async function getPatientDashboardData() {
     try {
         const session = await auth();
 
-        if (!session?.user?.id) {
+        if (!session?.user?.email) {
             return { error: "No autorizado" };
         }
 
-        let patient = await prisma.patient.findUnique({
-            where: { userId: session.user.id },
+        const patient = await prisma.patient.findUnique({
+            where: { email: session.user.email },
             select: {
                 id: true,
                 commune: true
             }
         });
 
-        // Self-healing: Create profile if missing
         if (!patient) {
-            console.log(`[Auto-Recovery] Creating missing profile for user ${session.user.id} in Dashboard`);
-            const timestamp = Date.now();
-            patient = await prisma.patient.create({
-                data: {
-                    userId: session.user.id,
-                    rut: `TMP-${timestamp}`,
-                    commune: 'SANTIAGO', // Default for Dashboard to avoid breaking AQI
-                    address: 'Por completar',
-                    healthSystem: 'FONASA',
-                    phone: '',
-                    birthDate: new Date()
-                },
-                select: {
-                    id: true,
-                    commune: true
-                }
-            });
+            return { error: "Perfil de paciente no encontrado" };
         }
 
         // Parallel Fetching for performance

@@ -39,7 +39,6 @@ describe('BiReportsContent Component', () => {
             birthDate: new Date('1950-01-01'), // > 65 (Senior)
             gender: 'Masculino',
             healthSystem: 'FONASA',
-            user: { name: 'Patient One', email: 'p1@test.com' },
             exams: [
                 {
                     centerName: 'Center A',
@@ -56,7 +55,6 @@ describe('BiReportsContent Component', () => {
             birthDate: new Date('2020-01-01'), // < 18 (Pediatric)
             gender: 'Femenino',
             healthSystem: 'ISAPRE',
-            user: { name: 'Patient Two', email: 'p2@test.com' },
             exams: []
         },
         {
@@ -67,7 +65,6 @@ describe('BiReportsContent Component', () => {
             birthDate: new Date('1990-01-01'), // Adult
             gender: 'Masculino',
             healthSystem: 'FONASA',
-            user: { name: 'Patient Three', email: 'p3@test.com' },
             exams: []
         }
     ]

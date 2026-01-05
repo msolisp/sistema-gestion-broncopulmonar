@@ -6,13 +6,6 @@ import BiReportsContent from "@/components/BiReportsContent";
 export default async function ReportsPage() {
     const patients = await prisma.patient.findMany({
         include: {
-            user: {
-                select: {
-                    name: true,
-                    email: true,
-                    rut: true,
-                },
-            },
             exams: {
                 select: {
                     centerName: true,

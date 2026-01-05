@@ -16,7 +16,16 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     await page.fill('input[name="name"]', 'Test Patient');
     await page.fill('input[name="rut"]', uniqueRut);
     await page.selectOption('select[id="region"]', { label: 'Metropolitana de Santiago' });
-    // Playwright will wait for the option to appear
+    // Select Region first to populate Commune options
+    const regionSelect = page.locator('select#region');
+    await regionSelect.selectOption({ label: 'Metropolitana de Santiago' });
+
+    // Wait for the hydration/state update
+    await page.waitForTimeout(1000);
+
+    // Validate that the option exists before selecting
+    await expect(page.locator('select[name="commune"] option[value="SANTIAGO"]')).toBeAttached();
+
     const communeSelect = page.locator('select[name="commune"]');
     await communeSelect.selectOption({ value: 'SANTIAGO' });
     await page.fill('input[name="email"]', uniqueEmail);

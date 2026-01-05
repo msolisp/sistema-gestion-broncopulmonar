@@ -65,7 +65,7 @@ async function main() {
         const day = 1 + Math.floor(Math.random() * 28);
         const birthDate = new Date(year, month, day);
 
-        await prisma.user.upsert({
+        await prisma.patient.upsert({
             where: { email },
             update: { password },
             create: {
@@ -73,16 +73,12 @@ async function main() {
                 name,
                 rut,
                 password,
-                role: Role.PATIENT,
-                patientProfile: {
-                    create: {
-                        commune,
-                        birthDate,
-                        diagnosisDate: new Date(),
-                        gender,
-                        address: `Calle ${i + 1} # ${Math.floor(Math.random() * 1000)}, ${commune}`
-                    }
-                }
+                active: true,
+                commune,
+                birthDate,
+                diagnosisDate: new Date(),
+                gender,
+                address: `Calle ${i + 1} # ${Math.floor(Math.random() * 1000)}, ${commune}`
             }
         });
     }

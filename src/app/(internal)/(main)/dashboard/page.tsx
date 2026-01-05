@@ -4,15 +4,6 @@ import DashboardContent from "@/components/DashboardContent";
 
 export default async function DashboardPage() {
     const patients = await prisma.patient.findMany({
-        include: {
-            user: {
-                select: {
-                    name: true,
-                    email: true,
-                    rut: true,
-                },
-            },
-        },
     });
 
     const systemUsers = await prisma.user.findMany({
@@ -40,11 +31,7 @@ export default async function DashboardPage() {
     const appointments = await prisma.appointment.findMany({
         include: {
             patient: {
-                include: {
-                    user: {
-                        select: { name: true, email: true, rut: true }
-                    }
-                }
+                select: { name: true, email: true, rut: true }
             }
         },
         orderBy: { date: 'desc' },
