@@ -29,19 +29,18 @@ export async function bookAppointment(prevState: any, formData: FormData) {
         // date is YYYY-MM-DD, timeBlock is HH:mm
         const appointmentDate = new Date(`${rawDate}T${timeBlock}:00`)
 
-        // Get Patient Profile ID
-        const user = await prisma.user.findUnique({
-            where: { id: session.user.id },
-            include: { patientProfile: true }
+        // Verify Patient exists (direct check)
+        const patient = await prisma.patient.findUnique({
+            where: { id: session.user.id }
         })
 
-        if (!user?.patientProfile) {
+        if (!patient) {
             return { error: "Perfil de paciente no encontrado", message: "" }
         }
 
         await prisma.appointment.create({
             data: {
-                patientId: user.patientProfile.id,
+                patientId: session.user.id,
                 date: appointmentDate,
                 status: "CONFIRMED",
                 notes: "Reserva web confirmada"
@@ -62,15 +61,14 @@ export async function getMyAppointments() {
     const session = await auth()
     if (!session?.user?.id) return []
 
-    const user = await prisma.user.findUnique({
-        where: { id: session.user.id },
-        include: { patientProfile: true }
+    const patient = await prisma.patient.findUnique({
+        where: { id: session.user.id }
     })
 
-    if (!user?.patientProfile) return []
+    if (!patient) return []
 
     const appointments = await prisma.appointment.findMany({
-        where: { patientId: user.patientProfile.id },
+        where: { patientId: session.user.id },
         orderBy: { date: 'desc' }
     })
 
