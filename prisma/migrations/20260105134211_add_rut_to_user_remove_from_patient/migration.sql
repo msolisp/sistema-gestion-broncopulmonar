@@ -15,7 +15,7 @@ ALTER TABLE "Patient" DROP COLUMN "rut";
 ALTER TABLE "User" ADD COLUMN     "rut" TEXT;
 
 -- CreateTable
-CREATE TABLE "PasswordResetToken" (
+CREATE TABLE IF NOT EXISTS "PasswordResetToken" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "token" TEXT NOT NULL,
@@ -26,10 +26,10 @@ CREATE TABLE "PasswordResetToken" (
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "PasswordResetToken_token_key" ON "PasswordResetToken"("token");
+CREATE UNIQUE INDEX IF NOT EXISTS "PasswordResetToken_token_key" ON "PasswordResetToken"("token");
 
 -- CreateIndex
-CREATE INDEX "PasswordResetToken_email_idx" ON "PasswordResetToken"("email");
+CREATE INDEX IF NOT EXISTS "PasswordResetToken_email_idx" ON "PasswordResetToken"("email");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_rut_key" ON "User"("rut");
