@@ -20,6 +20,7 @@ const config: Config = {
     moduleNameMapper: {
         '^@/(.*)$': '<rootDir>/src/$1',
         '^next-auth$': '<rootDir>/__mocks__/next-auth.js',
+        '^next-auth/react$': '<rootDir>/__mocks__/next-auth-react.js',
     },
 }
 
