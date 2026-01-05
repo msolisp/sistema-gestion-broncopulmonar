@@ -68,12 +68,8 @@ export async function getPulmonaryHistory(patientId: string) {
     // RBAC: Admin/Kin can see all. Patient can only see their own.
     if (userRole === 'PATIENT') {
         // IDOR Check: Verify if the requested patientId belongs to the current user
-        const patientProfile = await prisma.patient.findUnique({
-            where: { id: patientId },
-            select: { userId: true }
-        });
-
-        if (!patientProfile || patientProfile.userId !== session.user.id) {
+        // For patients, the session ID IS the patient ID
+        if (patientId !== session.user.id) {
             console.warn(`IDOR Attempt blocked: User ${session.user.id} tried to access patient ${patientId}`);
             return [];
         }
