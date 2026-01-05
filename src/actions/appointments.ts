@@ -13,7 +13,7 @@ const BookingSchema = z.object({
 export async function bookAppointment(prevState: any, formData: FormData) {
     const session = await auth()
     if (!session?.user?.id) {
-        return { error: "No autorizado" }
+        return { error: "No autorizado", message: "" }
     }
 
     const rawDate = formData.get("date") as string
@@ -21,7 +21,7 @@ export async function bookAppointment(prevState: any, formData: FormData) {
 
     // Simple validation
     if (!rawDate || !timeBlock) {
-        return { error: "Faltan datos de la reserva" }
+        return { error: "Faltan datos de la reserva", message: "" }
     }
 
     try {
@@ -36,7 +36,7 @@ export async function bookAppointment(prevState: any, formData: FormData) {
         })
 
         if (!user?.patientProfile) {
-            return { error: "Perfil de paciente no encontrado" }
+            return { error: "Perfil de paciente no encontrado", message: "" }
         }
 
         await prisma.appointment.create({
@@ -50,11 +50,11 @@ export async function bookAppointment(prevState: any, formData: FormData) {
 
         revalidatePath("/portal")
         revalidatePath("/portal/citas")
-        return { message: "Success" }
+        return { message: "Success", error: "" }
 
     } catch (error) {
         console.error("Booking error:", error)
-        return { error: "Error al crear la reserva" }
+        return { error: "Error al crear la reserva", message: "" }
     }
 }
 
