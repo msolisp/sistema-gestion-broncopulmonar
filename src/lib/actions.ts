@@ -144,6 +144,18 @@ export async function authenticate(
 
 export async function registerPatient(prevState: any, formData: FormData) {
     const rawData = Object.fromEntries(formData);
+
+    // Combine RUT
+    const rutBody = formData.get('rutBody') as string;
+    const rutDv = formData.get('rutDv') as string;
+
+    if (rutBody && rutDv) {
+        // Simple formatting
+        const cleanBody = rutBody.replace(/\D/g, '');
+        const formattedBody = cleanBody.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        rawData.rut = `${formattedBody}-${rutDv.toUpperCase()}`;
+    }
+
     const validation = RegisterPatientSchema.safeParse(rawData);
 
     if (!validation.success) {

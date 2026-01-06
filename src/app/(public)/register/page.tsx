@@ -43,17 +43,32 @@ export default function RegisterPage() {
                         </div>
 
                         <div>
-                            <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="rut">
+                            <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="rutBody">
                                 RUT
                             </label>
-                            <input
-                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all duration-200"
-                                id="rut"
-                                type="text"
-                                name="rut"
-                                placeholder="12.345.678-9"
-                                required
-                            />
+                            <div className="flex gap-2">
+                                <input
+                                    className="flex-1 rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all duration-200"
+                                    id="rutBody"
+                                    type="text"
+                                    name="rutBody"
+                                    placeholder="12345678"
+                                    maxLength={8}
+                                    pattern="\d*"
+                                    title="Ingrese solo números"
+                                    required
+                                />
+                                <span className="flex items-center text-zinc-400">-</span>
+                                <input
+                                    className="w-16 rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 transition-all duration-200 text-center"
+                                    id="rutDv"
+                                    type="text"
+                                    name="rutDv"
+                                    placeholder="K"
+                                    maxLength={1}
+                                    required
+                                />
+                            </div>
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
