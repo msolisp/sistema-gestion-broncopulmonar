@@ -128,12 +128,22 @@ export const getRealtimeGlobalAQI = async (): Promise<AQIData[]> => {
 
             // Extract Raw Value
             if (pollutant && pollutant.info && pollutant.info.rows && pollutant.info.rows.length > 0) {
-                const latestRow = pollutant.info.rows[pollutant.info.rows.length - 1];
-                if (latestRow && latestRow.c) {
+                // Iterate backwards to find the latest VALID reading
+                let validRow = null;
+                for (let i = pollutant.info.rows.length - 1; i >= 0; i--) {
+                    const row = pollutant.info.rows[i];
+                    // Check if tooltip contains valid data (not "no disponible")
+                    if (row.c[3]?.v && !row.c[3].v.includes('no disponible')) {
+                        validRow = row;
+                        break;
+                    }
+                }
+
+                if (validRow && validRow.c) {
                     // c[1] is usually the ICAP value (Chilean Index), NOT the raw concentration.
                     // The raw concentration is often hidden in the HTML tooltip in c[3].
                     // Format: "<strong>13 &micro;g&#8260;m<sup>3</sup></strong> 26 ICAP..."
-                    const tooltip = latestRow.c[3]?.v || '';
+                    const tooltip = validRow.c[3]?.v || '';
                     const match = tooltip.match(/<strong>(\d+(?:[.,]\d+)?) &micro;g/);
 
                     if (match && match[1]) {
@@ -141,7 +151,7 @@ export const getRealtimeGlobalAQI = async (): Promise<AQIData[]> => {
                         rawValue = parseFloat(match[1].replace(',', '.'));
                     } else {
                         // Fallback to c[1] if extraction fails, though it might be ICAP
-                        rawValue = parseFloat(latestRow.c[1]?.v) || 0;
+                        rawValue = parseFloat(validRow.c[1]?.v) || 0;
                     }
                 }
             } else if (pollutantPM10 && pollutantPM10.info && pollutantPM10.info.rows && pollutantPM10.info.rows.length > 0) {
