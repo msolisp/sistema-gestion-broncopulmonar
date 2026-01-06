@@ -22,7 +22,7 @@ export default function PatientProfileForm({ user }: { user: any }) {
     const [state, formAction, isPending] = useActionState(updatePatientProfile, null);
     const router = useRouter();
     const [successMessage, setSuccessMessage] = useState<string | null>(null);
-    const patient = user.patientProfile || {};
+    const patient = user; // The user object passed IS the patient profile data
 
     const [selectedRegion, setSelectedRegion] = useState<string>('');
     const [selectedCommune, setSelectedCommune] = useState<string>('');
