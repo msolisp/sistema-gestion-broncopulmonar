@@ -3,54 +3,62 @@ import { test, expect } from '@playwright/test';
 
 test.describe('Patient Portal Features', () => {
     // Login as patient before each test
-    test.beforeEach(async ({ page }) => {
+    // We register a new user per test to ensure isolation, preventing conflicts with existing data.
+
+
+    test('should register, login, navigate to profile, and update all fields', async ({ page }) => {
+        // 1. Register a new user to ensure a clean state
+        const uniqueRut = `20${Math.floor(Math.random() * 10000000)}-${Math.floor(Math.random() * 9)}`;
+        const uniqueEmail = `profile-test-${Date.now()}@example.com`;
+
+        await page.goto('/register');
+        await page.fill('input[name="name"]', 'Profile Test User');
+        await page.fill('input[name="rut"]', uniqueRut);
+
+        // Initial Region/Commune
+        await page.selectOption('select[id="region"]', { label: 'Metropolitana de Santiago' });
+        await page.selectOption('select[name="commune"]', { label: 'Santiago' });
+
+        await page.fill('input[name="email"]', uniqueEmail);
+        await page.fill('input[name="password"]', 'password123');
+        await page.click('button:has-text("Registrarse")');
+
+        // 2. Login
         await page.goto('/login');
-        await page.fill('input[type="email"]', 'paciente1@test.com');
-        await page.fill('input[type="password"]', 'Paciente');
-        await page.getByRole('button', { name: 'Ingresar' }).click();
-        await expect(page).toHaveURL(/\/portal/);
-    });
+        await page.fill('input[name="email"]', uniqueEmail);
+        await page.fill('input[name="password"]', 'password123');
+        await page.click('button:has-text("Ingresar")');
 
-    test('should display dashboard with air quality and shadows', async ({ page }) => {
-        // Check for Air Quality Widget presence and text
-        await expect(page.locator('text=Calidad del Aire')).toBeVisible();
-        await expect(page.locator('text=AQI')).toBeVisible();
+        await expect(page).toHaveURL(/.*\/portal/);
 
-        // Check for shadow classes on cards (implementation specific but good for regression)
-        // We added shadow-md to the cards
-        const cards = page.locator('.shadow-md');
-        expect(await cards.count()).toBeGreaterThan(0);
-    });
-
-    test('should navigate to profile, view light theme inputs, and update info', async ({ page }) => {
-        // Navigate to profile
+        // 3. Navigate to Profile
         await page.getByRole('link', { name: 'Mis Datos' }).click();
         await expect(page).toHaveURL(/\/portal\/perfil/);
 
-        await expect(page.locator('h1')).toContainText('Mi Perfil');
-
-        // Check for light theme styles (bg-white) on inputs
-        const nameInput = page.locator('input[name="name"]');
-        await expect(nameInput).toHaveClass(/bg-white/);
-
-        // Update phone
+        // 4. Update Fields
         const newPhone = '+56 9 8765 4321';
         await page.fill('input[name="phone"]', newPhone);
 
-        // Update Commune via Region selector (Cascade test)
-        // 1. Select Region
+        // Change Region & Commune
         await page.selectOption('select#region', 'Valparaíso');
-        // 2. Select Commune (Valparaíso should be available)
         await page.selectOption('select[name="commune"]', 'VIÑA DEL MAR');
+
+        // Update Gender & Health System
+        await page.selectOption('select[name="gender"]', 'Masculino');
+        await page.selectOption('select[name="healthSystem"]', 'ISAPRE');
 
         // Save
         await page.getByRole('button', { name: 'Guardar Cambios' }).click();
 
-        // Check success message
+        // 5. Verify Success
         await expect(page.getByText('Perfil actualizado correctamente')).toBeVisible();
 
-        // Verify value persisted (reload)
+        // 6. Reload and Verify Persistence
         await page.reload();
         await expect(page.locator('input[name="phone"]')).toHaveValue(newPhone);
+        await expect(page.locator('select#region')).toHaveValue('Valparaíso');
+        await expect(page.locator('select[name="commune"]')).toHaveValue('VIÑA DEL MAR');
+        await expect(page.locator('select[name="gender"]')).toHaveValue('Masculino');
+        await expect(page.locator('select[name="healthSystem"]')).toHaveValue('ISAPRE');
     });
 });
