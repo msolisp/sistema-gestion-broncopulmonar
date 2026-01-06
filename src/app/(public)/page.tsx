@@ -152,9 +152,9 @@ export default function Home() {
             <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-6 group-hover:bg-indigo-500/20 transition-colors">
               <Calendar className="h-6 w-6 text-indigo-400" />
             </div>
-            <h3 className="text-xl font-bold text-white mb-3">Gestión de Citas Inteligente</h3>
+            <h3 className="text-xl font-bold text-white mb-3">Reserva Fácil y Rápida</h3>
             <p className="text-slate-400 text-sm leading-relaxed">
-              Sistema automatizado de reservas y recordatorios para optimizar la adherencia al tratamiento y el seguimiento.
+              Agenda tus controles médicos de forma sencilla y rápida desde cualquier dispositivo, sin complicaciones.
             </p>
           </div>
 
