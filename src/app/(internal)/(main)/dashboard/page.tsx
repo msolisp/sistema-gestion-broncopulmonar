@@ -50,8 +50,11 @@ export default async function DashboardPage() {
         take: 100 // Limit for performance
     });
     const appointments = appointmentsRaw.map(apt => ({
-        ...apt,
-        date: apt.date.toISOString()
+        id: apt.id,
+        date: apt.date.toISOString(),
+        status: apt.status,
+        notes: apt.notes,
+        patient: apt.patient
     }));
 
     // Transform permissions for Matrix [Action][Role] = boolean
