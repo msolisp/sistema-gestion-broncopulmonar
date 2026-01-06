@@ -126,6 +126,7 @@ export default function RegisterPage() {
                                 id="email"
                                 type="email"
                                 name="email"
+                                autoComplete="off"
                                 required
                             />
                         </div>
@@ -138,6 +139,7 @@ export default function RegisterPage() {
                                 id="password"
                                 type="password"
                                 name="password"
+                                autoComplete="new-password"
                                 required
                             />
                         </div>
