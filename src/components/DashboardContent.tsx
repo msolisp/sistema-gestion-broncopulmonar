@@ -85,7 +85,7 @@ function PermissionMatrix({ initialData }: { initialData: any[] }) {
                 </tr>
             </thead>
             <tbody className="divide-y divide-zinc-50">
-                {permissions.map((p, i) => (
+                {permissions?.map((p, i) => (
                     <tr key={i} className="hover:bg-zinc-50 transition-colors">
                         <td className="py-3 px-4 font-medium text-zinc-700">{p.action}</td>
 
@@ -305,7 +305,7 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100">
-                                    {appointments.map((apt) => (
+                                    {appointments?.map((apt) => (
                                         <tr key={apt.id} className="hover:bg-zinc-50/50">
                                             <td className="px-6 py-4 font-medium text-zinc-900" suppressHydrationWarning>
                                                 {new Date(apt.date).toLocaleDateString('es-CL')}
@@ -370,7 +370,7 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-zinc-100">
-                                    {users.map(user => (
+                                    {users?.map(user => (
                                         <tr key={user.id} className="hover:bg-zinc-50/50">
                                             <td className="px-6 py-4 font-medium text-zinc-900">{user.name}</td>
                                             <td className="px-6 py-4 text-zinc-500">{user.email}</td>
@@ -470,7 +470,7 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
                         </div>
                         <div className="divide-y divide-zinc-100">
                             <div className="divide-y divide-zinc-100">
-                                {logs.map((log) => (
+                                {logs?.map((log) => (
                                     <div key={log.id} className="px-6 py-3 flex items-center justify-between hover:bg-zinc-50 text-sm">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-2 h-2 rounded-full ${log.action.includes('FAILURE') ? 'bg-red-500' : 'bg-emerald-500'}`}></div>

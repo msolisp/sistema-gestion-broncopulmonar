@@ -13,7 +13,7 @@ export default async function InternalLayout({
 
     return (
         <div className="flex h-screen bg-zinc-50">
-            <SessionTimeout />
+            {/* <SessionTimeout /> */}
             {/* Sidebar */}
             <aside className="w-64 bg-white border-r border-zinc-200 hidden md:flex flex-col shadow-sm z-10">
                 <div className="p-6 flex items-start gap-3">
