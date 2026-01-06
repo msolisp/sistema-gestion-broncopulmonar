@@ -7,18 +7,7 @@ import { adminCreateSystemUser, adminUpdateSystemUser, toggleRolePermission, see
 import { useRouter } from "next/navigation";
 
 interface DashboardContentProps {
-    patients: Array<{
-        id: string;
-        commune: string;
-        diagnosisDate: Date | null;
-        gender: string | null;
-        birthDate: Date | null;
-        user: { name: string | null; email: string; rut: string | null }; // Deprecated or remove
-        // Use direct properties
-        name: string | null;
-        email: string;
-        rut: string | null;
-    }>;
+
     initialUsers: Array<{
         id: string;
         name: string | null;
@@ -119,7 +108,7 @@ function PermissionMatrix({ initialData }: { initialData: any[] }) {
     )
 }
 
-export default function DashboardContent({ patients, initialUsers, logs, initialPermissions, appointments = [] }: DashboardContentProps) {
+export default function DashboardContent({ initialUsers, logs, initialPermissions, appointments = [] }: DashboardContentProps) {
     const [activeTab, setActiveTab] = useState('Agendamiento')
     const router = useRouter();
 
@@ -318,10 +307,10 @@ export default function DashboardContent({ patients, initialUsers, logs, initial
                                 <tbody className="divide-y divide-zinc-100">
                                     {appointments.map((apt) => (
                                         <tr key={apt.id} className="hover:bg-zinc-50/50">
-                                            <td className="px-6 py-4 font-medium text-zinc-900">
+                                            <td className="px-6 py-4 font-medium text-zinc-900" suppressHydrationWarning>
                                                 {new Date(apt.date).toLocaleDateString('es-CL')}
                                             </td>
-                                            <td className="px-6 py-4 text-zinc-600">
+                                            <td className="px-6 py-4 text-zinc-600" suppressHydrationWarning>
                                                 {new Date(apt.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
                                             </td>
                                             <td className="px-6 py-4">
@@ -485,7 +474,7 @@ export default function DashboardContent({ patients, initialUsers, logs, initial
                                     <div key={log.id} className="px-6 py-3 flex items-center justify-between hover:bg-zinc-50 text-sm">
                                         <div className="flex items-center gap-3">
                                             <div className={`w-2 h-2 rounded-full ${log.action.includes('FAILURE') ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
-                                            <span className="font-mono text-zinc-600">
+                                            <span className="font-mono text-zinc-600" suppressHydrationWarning>
                                                 {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                             </span>
                                             <span className="font-medium text-zinc-900">{log.action}</span>

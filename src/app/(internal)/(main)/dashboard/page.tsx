@@ -52,7 +52,6 @@ export default async function DashboardPage() {
     });
 
     return <DashboardContent
-        patients={patients}
         initialUsers={systemUsers}
         logs={logs}
         initialPermissions={permissionMatrix}
