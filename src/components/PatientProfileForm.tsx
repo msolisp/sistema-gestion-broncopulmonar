@@ -38,10 +38,11 @@ export default function PatientProfileForm({ user }: { user: any }) {
     useEffect(() => {
         if (state?.message === 'Success') {
             setSuccessMessage("Perfil actualizado correctamente");
+            router.refresh(); // Force server component re-fetch
             const timer = setTimeout(() => setSuccessMessage(null), 3000);
             return () => clearTimeout(timer);
         }
-    }, [state]);
+    }, [state, router]);
 
     // Initialize Region and Commune based on existing data
     useEffect(() => {

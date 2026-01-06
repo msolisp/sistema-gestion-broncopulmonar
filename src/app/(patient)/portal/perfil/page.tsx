@@ -1,46 +1,20 @@
-'use client';
-
-import { useEffect, useState } from "react";
 import PatientProfileForm from "@/components/PatientProfileForm";
-import { Loader2 } from "lucide-react";
 import { getPatientProfile } from "@/actions/patient-profile";
-import { useRouter } from "next/navigation";
+import { redirect } from "next/navigation";
 
-export default function ProfilePage() {
-    const [user, setUser] = useState<any>(null);
-    const [loading, setLoading] = useState(true);
-    const router = useRouter();
+export default async function ProfilePage() {
+    const result = await getPatientProfile();
 
-    useEffect(() => {
-        async function fetchProfile() {
-            try {
-                const result = await getPatientProfile();
-                if (result.error) {
-                    // Redirect to login if unauthorized? Or show error.
-                    // If strictly unauthorized, maybe redirect.
-                    console.error(result.error);
-                } else if (result.user) {
-                    setUser(result.user);
-                }
-            } catch (err) {
-                console.error("Failed to load profile");
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchProfile();
-    }, []);
-
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-20">
-                <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
-            </div>
-        );
+    if (result.error === "No autorizado") {
+        redirect('/login');
     }
 
-    if (!user) {
-        return <div>Usuario no encontrado</div>;
+    if (!result.user) {
+        return (
+            <div className="flex justify-center items-center py-20 text-red-500">
+                Error: {result.error || "Perfil no encontrado"}
+            </div>
+        );
     }
 
     return (
@@ -50,7 +24,7 @@ export default function ProfilePage() {
                 <p className="text-zinc-500">Actualiza tu información personal y de contacto.</p>
             </div>
 
-            <PatientProfileForm user={user} />
+            <PatientProfileForm user={result.user} />
         </div>
     );
 }
