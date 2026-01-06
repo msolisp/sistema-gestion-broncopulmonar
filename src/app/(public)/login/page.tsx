@@ -25,6 +25,7 @@ export default function LoginPage() {
                                 type="email"
                                 name="email"
                                 placeholder="m@example.com"
+                                autoComplete="off"
                                 required
                             />
                         </div>
@@ -37,6 +38,7 @@ export default function LoginPage() {
                                 id="password"
                                 type="password"
                                 name="password"
+                                autoComplete="off"
                                 required
                             />
                         </div>
