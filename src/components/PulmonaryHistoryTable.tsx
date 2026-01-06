@@ -241,7 +241,7 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
             {/* PDF Preview Modal */}
             {previewUrl && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden animate-zoom-in">
                         <div className="p-4 border-b border-zinc-200 flex justify-between items-center bg-zinc-50">
                             <h3 className="text-lg font-bold text-zinc-900">Vista Previa del Informe</h3>
                             <button
