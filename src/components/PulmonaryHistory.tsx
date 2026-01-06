@@ -50,25 +50,25 @@ export async function PulmonaryHistory({ patientId }: { patientId: string }) {
                         <tbody className="divide-y divide-zinc-100">
                             {[...history].reverse().map((record) => (
                                 <tr key={record.id} className="hover:bg-zinc-50 transition-colors">
-                                    <td className="px-6 py-4 font-medium">
+                                    <td className="px-6 py-4 font-medium text-zinc-900">
                                         {format(record.date, 'dd MMM yyyy', { locale: es })}
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 text-emerald-700 font-medium">
                                         {record.walkDistance ? `${record.walkDistance} m` : '-'}
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 text-emerald-700 font-medium">
                                         {record.spo2Rest && record.spo2Final
                                             ? `${record.spo2Rest}% -> ${record.spo2Final}%`
                                             : '-'
                                         }
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 text-blue-700 font-medium">
                                         {record.cvfPercent ? `${record.cvfPercent}%` : '-'}
                                     </td>
-                                    <td className="px-6 py-4">
+                                    <td className="px-6 py-4 text-blue-700 font-medium">
                                         {record.vef1Percent ? `${record.vef1Percent}%` : '-'}
                                     </td>
-                                    <td className="px-6 py-4 font-bold text-orange-600">
+                                    <td className="px-6 py-4 font-bold text-orange-700">
                                         {record.dlcoPercent ? `${record.dlcoPercent}%` : '-'}
                                     </td>
                                     <td className="px-6 py-4 text-zinc-500 max-w-[200px] truncate" title={record.notes || ''}>
