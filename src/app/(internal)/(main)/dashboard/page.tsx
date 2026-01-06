@@ -29,14 +29,18 @@ export default async function DashboardPage() {
         }
     });
 
-    const logs = await prisma.systemLog.findMany({
+    const logsRaw = await prisma.systemLog.findMany({
         orderBy: { createdAt: 'desc' },
         take: 50
     });
+    const logs = logsRaw.map(log => ({
+        ...log,
+        createdAt: log.createdAt.toISOString()
+    }));
 
     const permissions = await prisma.rolePermission.findMany();
 
-    const appointments = await prisma.appointment.findMany({
+    const appointmentsRaw = await prisma.appointment.findMany({
         include: {
             patient: {
                 select: { name: true, email: true, rut: true }
@@ -45,6 +49,10 @@ export default async function DashboardPage() {
         orderBy: { date: 'desc' },
         take: 100 // Limit for performance
     });
+    const appointments = appointmentsRaw.map(apt => ({
+        ...apt,
+        date: apt.date.toISOString()
+    }));
 
     // Transform permissions for Matrix [Action][Role] = boolean
     // Client expects: { action: string, kine: boolean, recep: boolean }[]

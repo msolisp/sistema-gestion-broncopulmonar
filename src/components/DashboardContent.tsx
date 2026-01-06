@@ -20,7 +20,7 @@ interface DashboardContentProps {
         action: string;
         details: string | null;
         userEmail: string | null;
-        createdAt: Date;
+        createdAt: string;
     }>;
     initialPermissions: Array<{
         action: string;
@@ -29,7 +29,7 @@ interface DashboardContentProps {
     }>;
     appointments: Array<{
         id: string;
-        date: Date;
+        date: string;
         status: string;
         notes: string | null;
         patient: {
