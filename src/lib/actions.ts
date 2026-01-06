@@ -251,8 +251,9 @@ export async function updatePatientProfile(prevState: any, formData: FormData) {
             }
         });
 
-        revalidatePath('/portal');
+        revalidatePath('/portal', 'layout');
         revalidatePath('/portal/perfil');
+        revalidatePath('/', 'layout'); // Just to be safe
         return { message: 'Success' };
     } catch (e) {
         console.error(e);
