@@ -52,7 +52,7 @@ export function AddPulmonaryModal({ patientId }: { patientId: string }) {
                                             name="date"
                                             type="date"
                                             required
-                                            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                         />
                                     </div>
                                 </div>
@@ -66,15 +66,15 @@ export function AddPulmonaryModal({ patientId }: { patientId: string }) {
                                     <div className="grid grid-cols-3 gap-4">
                                         <div className="space-y-2">
                                             <label className="block text-sm font-medium text-emerald-800">Distancia (m)</label>
-                                            <input name="walkDistance" type="number" step="0.1" placeholder="ej. 350" className="w-full rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                                            <input name="walkDistance" type="number" step="0.1" placeholder="ej. 350" className="w-full rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="block text-sm font-medium text-emerald-800">SpO2 Basal (%)</label>
-                                            <input name="spo2Rest" type="number" placeholder="94" className="w-full rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                                            <input name="spo2Rest" type="number" placeholder="94" className="w-full rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="block text-sm font-medium text-emerald-800">SpO2 Final (%)</label>
-                                            <input name="spo2Final" type="number" placeholder="88" className="w-full rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                                            <input name="spo2Final" type="number" placeholder="88" className="w-full rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500" />
                                         </div>
                                     </div>
                                 </div>
@@ -88,19 +88,19 @@ export function AddPulmonaryModal({ patientId }: { patientId: string }) {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className="block text-sm font-medium text-blue-800">CVF (% Teórico)</label>
-                                            <input name="cvfPercent" type="number" placeholder="ej. 78" className="w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                            <input name="cvfPercent" type="number" placeholder="ej. 78" className="w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="block text-sm font-medium text-blue-800">VEF1 (% Teórico)</label>
-                                            <input name="vef1Percent" type="number" placeholder="ej. 65" className="w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                            <input name="vef1Percent" type="number" placeholder="ej. 65" className="w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="block text-sm font-medium text-blue-800">CVF (Litros)</label>
-                                            <input name="cvfValue" type="number" step="0.01" placeholder="ej. 2.34" className="w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                            <input name="cvfValue" type="number" step="0.01" placeholder="ej. 2.34" className="w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                                         </div>
                                         <div className="space-y-2">
                                             <label className="block text-sm font-medium text-blue-800">VEF1 (Litros)</label>
-                                            <input name="vef1Value" type="number" step="0.01" placeholder="ej. 1.85" className="w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
+                                            <input name="vef1Value" type="number" step="0.01" placeholder="ej. 1.85" className="w-full rounded-md border border-blue-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500" />
                                         </div>
                                     </div>
                                 </div>
@@ -114,7 +114,7 @@ export function AddPulmonaryModal({ patientId }: { patientId: string }) {
                                     <div className="grid grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <label className="block text-sm font-medium text-orange-800">DLCO (% del predicho)</label>
-                                            <input name="dlcoPercent" type="number" placeholder="ej. 56" className="w-full rounded-md border border-orange-200 bg-white px-3 py-2 text-sm focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500" />
+                                            <input name="dlcoPercent" type="number" placeholder="ej. 56" className="w-full rounded-md border border-orange-200 bg-white px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-orange-500 focus:outline-none focus:ring-1 focus:ring-orange-500" />
                                         </div>
                                     </div>
                                 </div>
@@ -126,7 +126,7 @@ export function AddPulmonaryModal({ patientId }: { patientId: string }) {
                                         name="notes"
                                         rows={3}
                                         placeholder="ej. P 42 mmHg, desaturación importante."
-                                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                        className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
                                     />
                                 </div>
                             </form>
