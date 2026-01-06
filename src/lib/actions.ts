@@ -238,7 +238,7 @@ export async function updatePatientProfile(prevState: any, formData: FormData) {
 
     try {
         await prisma.patient.update({
-            where: { email: session.user.email },
+            where: { id: session.user.id },
             data: {
                 name,
                 phone,
