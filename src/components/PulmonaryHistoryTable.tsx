@@ -54,6 +54,8 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
         XLSX.writeFile(wb, `historial_pulmonar_${format(new Date(), 'yyyy-MM-dd')}.xlsx`);
     };
 
+    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
     const handleGeneratePDF = (record: PulmonaryRecord) => {
         const doc = new jsPDF();
 
@@ -127,7 +129,9 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
         doc.setTextColor(150, 150, 150);
         doc.text("Sistema de Gestión Broncopulmonar", 20, 280);
 
-        doc.save(`reporte_pulmonar_${format(new Date(record.date), 'yyyy-MM-dd')}.pdf`);
+        const blob = doc.output('blob');
+        const url = URL.createObjectURL(blob);
+        setPreviewUrl(url);
     };
 
     return (
@@ -193,7 +197,7 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
                                         className="p-1 text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
                                         title="Generar PDF"
                                     >
-                                        <FileDown className="h-4 w-4" />
+                                        <FileText className="h-4 w-4" />
                                     </button>
                                 </td>
                             </tr>
@@ -230,6 +234,55 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
                         >
                             <ChevronRight className="h-4 w-4" />
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* PDF Preview Modal */}
+            {previewUrl && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+                    <div className="bg-white rounded-xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
+                        <div className="p-4 border-b border-zinc-200 flex justify-between items-center bg-zinc-50">
+                            <h3 className="text-lg font-bold text-zinc-900">Vista Previa del Informe</h3>
+                            <button
+                                onClick={() => setPreviewUrl(null)}
+                                className="text-zinc-500 hover:text-zinc-700 p-2 hover:bg-zinc-200 rounded-full transition-colors"
+                            >
+                                <span className="sr-only">Cerrar</span>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        <div className="flex-1 bg-zinc-100 p-4 overflow-hidden relative">
+                            <iframe
+                                src={previewUrl}
+                                className="w-full h-full rounded-lg shadow-sm bg-white"
+                                title="PDF Preview"
+                            />
+                        </div>
+                        <div className="p-4 border-t border-zinc-200 bg-white flex justify-end gap-3">
+                            <button
+                                onClick={() => setPreviewUrl(null)}
+                                className="px-4 py-2 text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors font-medium"
+                            >
+                                Cerrar
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const iframe = document.querySelector('iframe');
+                                    if (iframe?.contentWindow) {
+                                        iframe.contentWindow.print();
+                                    }
+                                }}
+                                className="px-4 py-2 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg transition-colors font-medium flex items-center gap-2"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+                                </svg>
+                                Imprimir
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
