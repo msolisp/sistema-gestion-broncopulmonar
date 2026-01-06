@@ -248,7 +248,7 @@ export default function PatientProfileForm({ user }: { user: any }) {
                         <Button type="button" variant="outline" onClick={() => router.back()}>
                             Cancelar
                         </Button>
-                        <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 min-w-[150px]" disabled={isPending}>
+                        <Button type="submit" className="bg-indigo-600 hover:bg-indigo-700 min-w-[150px] text-white" disabled={isPending}>
                             {isPending ? "Guardando..." : "Guardar Cambios"}
                         </Button>
                     </div>
