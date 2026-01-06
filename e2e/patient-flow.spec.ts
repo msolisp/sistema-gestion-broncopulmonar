@@ -20,11 +20,14 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     const regionSelect = page.locator('select#region');
     await regionSelect.selectOption({ label: 'Metropolitana de Santiago' });
 
-    // Wait for the hydration/state update
-    await page.waitForTimeout(1000);
+    // Wait for the state update
+    await page.waitForTimeout(2000);
 
-    // Validate that the option exists before selecting
-    await expect(page.locator('select[name="commune"] option[value="SANTIAGO"]')).toBeAttached();
+    // Explicitly wait for options to be populated (length > 1)
+    await page.waitForFunction(() => {
+        const select = document.querySelector('select[name="commune"]') as HTMLSelectElement;
+        return select && select.options.length > 1;
+    });
 
     const communeSelect = page.locator('select[name="commune"]');
     await communeSelect.selectOption({ value: 'SANTIAGO' });
@@ -76,4 +79,18 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     await page.click('button:has-text("Confirmar Reserva")');
 
     await expect(page.getByText('¡Hora reservada exitosamente!')).toBeVisible({ timeout: 15000 });
+
+    // 6. Verify "Mis Reservas"
+    await page.click('text=Mis Reservas');
+    await expect(page.getByRole('heading', { name: 'Mis Reservas' })).toBeVisible();
+    await expect(page.getByText('Pendiente')).toBeVisible();
+
+    // 7. Edit Profile
+    await page.click('text=Mi Perfil');
+    await expect(page.getByRole('heading', { name: 'Mi Perfil' })).toBeVisible();
+
+    // Change Phone
+    await page.fill('input[name="phone"]', '912345678');
+    await page.click('button:has-text("Guardar Cambios")');
+    await expect(page.getByText('Perfil actualizado correctamente')).toBeVisible();
 });

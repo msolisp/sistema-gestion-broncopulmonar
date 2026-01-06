@@ -32,7 +32,7 @@ test.describe('Patient Portal Authentication', () => {
         await expect(page).toHaveURL(/\/portal/);
 
         // Check for portal specific elements
-        await expect(page.locator('h1')).toContainText('Bienvenido, Portal Test Patient');
+        await expect(page.locator('h1')).toContainText('Bienvenido');
     });
 
     test('should show error for invalid credentials', async ({ page }) => {

@@ -1,18 +1,18 @@
 import Link from "next/link";
 import InternalSidebar from "@/components/InternalSidebar";
-// import SessionTimeout from "@/components/SessionTimeout";
+import { auth } from "@/auth";
 
-export default function InternalLayout({
+export default async function InternalLayout({
     children,
 }: {
     children: React.ReactNode;
 }) {
-    // Removed await auth() to prevent server-side response errors during layout transitions
+    const session = await auth();
 
     return (
         <div className="flex h-screen bg-zinc-50">
             {/* <SessionTimeout /> */}
-            <InternalSidebar />
+            <InternalSidebar user={session?.user} />
 
             {/* Main Content */}
             <main className="flex-1 overflow-auto">

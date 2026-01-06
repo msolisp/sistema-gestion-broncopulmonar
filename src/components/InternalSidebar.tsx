@@ -2,12 +2,23 @@
 
 import Link from "next/link";
 import { LogOut, Activity, Users, FileText, Settings } from "lucide-react";
-import { useSession, signOut } from "next-auth/react";
+import { signOut, useSession } from "next-auth/react";
 
-export default function InternalSidebar() {
+interface InternalSidebarProps {
+    user?: {
+        name?: string | null;
+        role?: string | null;
+    }
+}
+
+export default function InternalSidebar({ user }: InternalSidebarProps) {
     const { data: session } = useSession();
-    const userName = session?.user?.name || 'Usuario';
-    const userRole = session?.user?.role || 'Role';
+
+    // Hybrid check: Use prop if available (Server Component), fallback to Client Session
+    const effectiveUser = user || session?.user;
+
+    const userName = effectiveUser?.name || 'Usuario';
+    const userRole = effectiveUser?.role || 'Role';
 
     return (
         <aside className="w-64 bg-white border-r border-zinc-200 hidden md:flex flex-col shadow-sm z-10">
@@ -31,7 +42,7 @@ export default function InternalSidebar() {
                     Reportes BI
                 </Link>
                 {/* Admin Only Link */}
-                {session?.user?.role === 'ADMIN' && (
+                {userRole === 'ADMIN' && (
                     <Link href="/dashboard" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
                         <Settings className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
                         Administración
