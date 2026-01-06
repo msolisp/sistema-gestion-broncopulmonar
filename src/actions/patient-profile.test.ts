@@ -8,7 +8,7 @@ import { auth } from '@/auth';
 
 // Mock dependencies
 jest.mock('@/lib/prisma', () => ({
-    user: {
+    patient: {
         findUnique: jest.fn(),
     },
 }));
@@ -32,37 +32,34 @@ describe('getPatientProfile', () => {
 
     it('should return user and patient profile', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'user-1' }
+            user: { id: 'patient-1' }
         });
 
-        const mockUser = {
-            id: 'user-1',
-            name: 'Test User',
+        const mockPatient = {
+            id: 'patient-1',
+            name: 'Test Patient',
             email: 'test@example.com',
-            patientProfile: {
-                id: 'patient-1',
-                rut: '12345678-9',
-                commune: 'SANTIAGO'
-            }
+            rut: '12345678-9',
+            commune: 'SANTIAGO'
         };
 
-        (prisma.user.findUnique as jest.Mock).mockResolvedValue(mockUser);
+        (prisma.patient.findUnique as jest.Mock).mockResolvedValue(mockPatient);
 
         const result = await getPatientProfile();
 
-        expect(result).toEqual({ user: mockUser });
+        expect(result).toEqual({ user: mockPatient });
     });
 
     it('should return error if user not found in DB', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'user-1' }
+            user: { id: 'patient-1' }
         });
 
-        (prisma.user.findUnique as jest.Mock).mockResolvedValue(null);
+        (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null);
 
         const result = await getPatientProfile();
 
-        expect(result).toEqual({ error: "Usuario no encontrado" });
+        expect(result).toEqual({ error: "Perfil no encontrado" });
     });
 
     it('should return error if DB fails', async () => {
@@ -70,7 +67,7 @@ describe('getPatientProfile', () => {
             user: { id: 'user-1' }
         });
 
-        (prisma.user.findUnique as jest.Mock).mockRejectedValue(new Error('DB Error'));
+        (prisma.patient.findUnique as jest.Mock).mockRejectedValue(new Error('DB Error'));
 
         const result = await getPatientProfile();
 

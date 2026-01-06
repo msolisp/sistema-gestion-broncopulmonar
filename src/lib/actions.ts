@@ -231,6 +231,7 @@ export async function updatePatientProfile(prevState: any, formData: FormData) {
     const validation = UpdatePatientProfileSchema.safeParse(rawData);
 
     if (!validation.success) {
+        console.error("Profile Update Validation Error:", validation.error.format());
         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
     }
 
@@ -412,18 +413,18 @@ export async function uploadMedicalExam(formData: FormData) {
     if (file.type !== 'application/pdf') return { message: 'Solo se permiten archivos PDF' };
 
     // 2. Check Magic Bytes (Secure check)
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    // file-type is ESM, so we import dynamically
-    const { fileTypeFromBuffer } = await import('file-type');
-    const type = await fileTypeFromBuffer(buffer);
-
-    if (!type || type.mime !== 'application/pdf') {
-        return { message: 'El archivo no es un PDF válido (Firma digital incorrecta).' };
-    }
-
     try {
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+
+        // file-type is ESM, so we import dynamically
+        const { fileTypeFromBuffer } = await import('file-type');
+        const type = await fileTypeFromBuffer(buffer);
+
+        if (!type || type.mime !== 'application/pdf') {
+            return { message: 'El archivo no es un PDF válido (Firma digital incorrecta).' };
+        }
+
         const timestamp = Date.now();
         const safeName = file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
         const fileName = `${timestamp}-${safeName}`;
@@ -448,9 +449,9 @@ export async function uploadMedicalExam(formData: FormData) {
 
         revalidatePath(`/patients/${patientId}/history`);
         return { success: true };
-    } catch (error) {
-        console.error('Upload Error:', error);
-        return { message: `Error al subir el archivo: ${(error as Error).message}` };
+    } catch (e) {
+        console.error(e);
+        return { message: 'Error al procesar el archivo: ' + (e as Error).message };
     }
 }
 

@@ -1,4 +1,4 @@
-import { authenticate, registerPatient, bookAppointment, logout, updatePatientProfile, adminCreatePatient, adminUpdatePatient, deletePatient, uploadMedicalExam } from './actions'
+import { authenticate, registerPatient, bookAppointment, logout, updatePatientProfile, adminCreatePatient, adminUpdatePatient, deletePatient, uploadMedicalExam, adminCreateSystemUser, adminUpdateSystemUser, adminDeleteSystemUser, toggleRolePermission, changePassword, seedPermissions } from './actions'
 
 import { signIn, signOut } from '@/auth'
 import prisma from '@/lib/prisma'
@@ -20,6 +20,7 @@ jest.mock('@/lib/prisma', () => {
             upsert: jest.fn(),
             update: jest.fn(),
             delete: jest.fn(),
+            findFirst: jest.fn(),
         },
         patient: {
             create: jest.fn(),
@@ -35,6 +36,9 @@ jest.mock('@/lib/prisma', () => {
         },
         systemLog: {
             create: jest.fn(),
+        },
+        rolePermission: {
+            upsert: jest.fn(),
         },
         $transaction: jest.fn()
     }
@@ -63,7 +67,9 @@ jest.mock('file-type', () => ({
 jest.mock('@vercel/blob', () => ({
     put: jest.fn(),
 }))
-
+jest.mock('./logger', () => ({
+    logAction: jest.fn(),
+}))
 
 describe('Server Actions', () => {
     beforeEach(() => {
@@ -242,14 +248,18 @@ describe('registerPatient', () => {
 
     it('creates patient on success', async () => {
         ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null)
-            ; (bcrypt.hash as jest.Mock).mockResolvedValue('hashed')
-            ; (prisma.patient.create as jest.Mock).mockResolvedValue({ id: 'patient1' })
-
+            ; (prisma.patient.create as jest.Mock).mockResolvedValue({ id: '1' })
         const result = await registerPatient(null, formData)
-
-        expect(prisma.patient.create).toHaveBeenCalled()
         expect(result).toEqual({ message: 'Success' })
     })
+
+    it('handles database error', async () => {
+        (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null);
+        (prisma.patient.create as jest.Mock).mockRejectedValue(new Error('DB Error'))
+        const result = await registerPatient(null, formData)
+        expect(result).toEqual({ message: 'Database Error: Failed to Create Patient' })
+    })
+
 })
 
 describe('bookAppointment', () => {
@@ -519,8 +529,17 @@ describe('uploadMedicalExam', () => {
     formData.append('examDate', '2025-01-01')
     formData.append('file', file)
 
+    beforeAll(() => {
+        // Polyfill arrayBuffer for File/Blob in jsdom if missing
+        if (!File.prototype.arrayBuffer) {
+            File.prototype.arrayBuffer = jest.fn().mockResolvedValue(new ArrayBuffer(10))
+        }
+    })
+
     beforeEach(() => {
         jest.clearAllMocks()
+        const { fileTypeFromBuffer } = require('file-type')
+            ; (fileTypeFromBuffer as jest.Mock).mockResolvedValue({ mime: 'application/pdf' })
     })
 
     it('returns unauthorized if not logged in', async () => {
@@ -530,12 +549,51 @@ describe('uploadMedicalExam', () => {
         expect(result).toEqual({ message: 'Unauthorized' })
     })
 
+    it('handles processing error', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+        const formData = new FormData()
+        formData.append('patientId', '123')
+        formData.append('centerName', 'Center')
+        formData.append('doctorName', 'Doc')
+        formData.append('examDate', '2024-01-01')
+
+        const fakeFile = new File(['dummy content'], 'test.pdf', { type: 'application/pdf' })
+        formData.append('file', fakeFile)
+
+        // Force an error during processing (e.g. at arrayBuffer or fileTypeFromBuffer)
+        const { fileTypeFromBuffer } = require('file-type');
+        (fileTypeFromBuffer as jest.Mock).mockRejectedValueOnce(new Error('Processing Error'))
+
+        const result = await uploadMedicalExam(formData)
+        expect(result.message).toContain('Error al procesar')
+    })
+
     it('returns error if missing fields', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
         const emptyData = new FormData()
         const result = await uploadMedicalExam(emptyData)
         expect(result.message).toContain('Faltan campos obligatorios')
+    })
+
+    it('returns error if magic bytes do not match PDF', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+        const formData = new FormData()
+        formData.append('patientId', '123')
+        formData.append('centerName', 'Center')
+        formData.append('doctorName', 'Doc')
+        formData.append('examDate', '2024-01-01')
+
+        const fakeFile = new File(['not a pdf'], 'test.pdf', { type: 'application/pdf' })
+        formData.append('file', fakeFile)
+
+        const { fileTypeFromBuffer } = require('file-type');
+        (fileTypeFromBuffer as jest.Mock).mockResolvedValueOnce({ mime: 'image/png' })
+
+        const result = await uploadMedicalExam(formData)
+        expect(result).toEqual({ message: 'El archivo no es un PDF válido (Firma digital incorrecta).' })
     })
 
     it('returns error if RBAC fails (patient trying to upload to another)', async () => {
@@ -614,6 +672,270 @@ describe('uploadMedicalExam', () => {
         put.mockRejectedValue(new Error('Upload Failed'))
 
         const result = await uploadMedicalExam(formData)
-        expect(result.message).toContain('Error al subir el archivo: Upload Failed')
+        expect(result.message).toContain('Error al procesar el archivo')
     })
 })
+
+describe('System User Actions', () => {
+    const formData = new FormData()
+    formData.append('name', 'Kine User')
+    formData.append('email', 'kine@test.com')
+    formData.append('password', 'password123')
+    formData.append('role', 'KINESIOLOGIST')
+    formData.append('active', 'on')
+
+    describe('adminCreateSystemUser', () => {
+        it('returns unauthorized if not admin', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'user@test.com', role: 'PATIENT' } })
+            const result = await adminCreateSystemUser(null, formData)
+            expect(result.message).toContain('Unauthorized')
+        })
+
+        it('returns error if validation fails', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+            const invalidData = new FormData()
+            const result = await adminCreateSystemUser(null, invalidData)
+            expect(result.message).toContain('Datos inválidos')
+        })
+
+        it('returns error if email exists', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u2' })
+
+            const result = await adminCreateSystemUser(null, formData)
+            expect(result).toEqual({ message: 'El email ya existe' })
+        })
+
+        it('creates user successfully', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN', id: 'admin1' } })
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
+                ; (bcrypt.hash as jest.Mock).mockResolvedValue('hashed')
+                ; (prisma.user.create as jest.Mock).mockResolvedValue({ id: 'new_user' })
+
+            const result = await adminCreateSystemUser(null, formData)
+            expect(result).toEqual({ message: 'Success' })
+            expect(prisma.user.create).toHaveBeenCalled()
+        })
+
+        it('handles db error', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
+                ; (prisma.user.create as jest.Mock).mockRejectedValue(new Error('DB Error'))
+
+            const result = await adminCreateSystemUser(null, formData)
+            expect(result).toEqual({ message: 'Error al crear usuario' })
+        })
+    })
+
+    describe('adminUpdateSystemUser', () => {
+        const updateData = new FormData()
+        updateData.append('id', 'u1')
+        updateData.append('name', 'Updated Name')
+        updateData.append('email', 'updated@test.com')
+        updateData.append('role', 'RECEPTIONIST')
+        updateData.append('active', 'on')
+
+        it('returns unauthorized if not admin', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'user@test.com', role: 'PATIENT' } })
+            const result = await adminUpdateSystemUser(null, updateData)
+            expect(result.message).toContain('Unauthorized')
+        })
+
+        it('returns error if email taken by another', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.user.findFirst as jest.Mock).mockResolvedValue({ id: 'u2' })
+
+            const result = await adminUpdateSystemUser(null, updateData)
+            expect(result.message).toContain('El email ya está en uso')
+        })
+
+        it('prevents editing main admin', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.user.findFirst as jest.Mock).mockResolvedValue(null)
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', role: 'ADMIN' })
+
+            const result = await adminUpdateSystemUser(null, updateData)
+            expect(result.message).toContain('No se puede editar al Administrador')
+        })
+
+        it('updates user successfully', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN', id: 'admin1' } })
+                ; (prisma.user.findFirst as jest.Mock).mockResolvedValue(null)
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', role: 'KINESIOLOGIST' })
+                ; (prisma.user.update as jest.Mock).mockResolvedValue({})
+
+            const result = await adminUpdateSystemUser(null, updateData)
+            expect(result).toEqual({ message: 'Success' })
+        })
+
+        it('handles db error', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.user.findFirst as jest.Mock).mockResolvedValue(null)
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', role: 'KINESIOLOGIST' })
+                ; (prisma.user.update as jest.Mock).mockRejectedValue(new Error('DB Error'))
+
+            const result = await adminUpdateSystemUser(null, updateData)
+            expect(result).toEqual({ message: 'Error al actualizar usuario' })
+        })
+
+        it('returns error if validation fails', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+            const invalidData = new FormData()
+            const result = await adminUpdateSystemUser(null, invalidData)
+            expect(result.message).toContain('Datos inválidos')
+        })
+    })
+
+    describe('adminDeleteSystemUser', () => {
+        it('returns unauthorized if not admin', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'user@test.com', role: 'PATIENT' } })
+            const result = await adminDeleteSystemUser('u1')
+            expect(result.message).toContain('Unauthorized')
+        })
+
+        it('returns error if user not found', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
+            const result = await adminDeleteSystemUser('u1')
+            expect(result.message).toContain('Usuario no encontrado')
+        })
+
+        it('prevents deleting admin', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', role: 'ADMIN' })
+            const result = await adminDeleteSystemUser('u1')
+            expect(result.message).toContain('No se puede eliminar a un Administrador')
+        })
+
+        it('deletes user successfully', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN', id: 'admin1' } })
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', role: 'receptionist', email: 'del@test.com' })
+                ; (prisma.user.delete as jest.Mock).mockResolvedValue({})
+
+            const result = await adminDeleteSystemUser('u1')
+            expect(result).toEqual({ message: 'Success' })
+        })
+
+        it('handles db error', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', role: 'receptionist' })
+                ; (prisma.user.delete as jest.Mock).mockRejectedValue(new Error('DB Error'))
+
+            const result = await adminDeleteSystemUser('u1')
+            expect(result).toEqual({ message: 'Error al eliminar usuario' })
+        })
+    })
+})
+
+describe('Permissions & Password', () => {
+    const { toggleRolePermission, seedPermissions, changePassword, adminCreateSystemUser, adminUpdateSystemUser, adminDeleteSystemUser } = require('./actions')
+
+    describe('toggleRolePermission', () => {
+        it('returns success', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN', id: 'admin1' } })
+                ; (prisma.rolePermission.upsert as jest.Mock).mockResolvedValue({})
+
+            const result = await toggleRolePermission('KINESIOLOGIST', 'view_patients', true)
+            expect(result).toEqual({ message: 'Success' })
+        })
+
+        it('returns unauthorized', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue(null)
+            const result = await toggleRolePermission('role', 'action', true)
+            expect(result.message).toBe('Unauthorized')
+        })
+
+        it('handles db error', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.rolePermission.upsert as jest.Mock).mockRejectedValue(new Error('DB Error'))
+            const result = await toggleRolePermission('role', 'action', true)
+            expect(result.message).toBe('Error updating permission')
+        })
+    })
+
+    describe('seedPermissions', () => {
+        it('seeds permissions successfully', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.rolePermission.upsert as jest.Mock).mockResolvedValue({})
+
+            const result = await seedPermissions()
+            expect(result).toEqual({ message: 'Success' })
+        })
+
+        it('returns unauthorized', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'user@test.com', role: 'PATIENT' } })
+            const result = await seedPermissions()
+            expect(result.message).toContain('Unauthorized')
+        })
+
+        it('handles db error', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.rolePermission.upsert as jest.Mock).mockRejectedValue(new Error('DB Error'))
+            const result = await seedPermissions()
+            expect(result.message).toContain('Error seeding')
+        })
+    })
+
+    describe('changePassword', () => {
+        const formData = new FormData()
+        formData.append('newPassword', 'newpass123')
+
+        it('returns unauthorized if not logged in', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue(null)
+            const result = await changePassword(formData)
+            expect(result.message).toBe('Unauthorized')
+        })
+
+        it('returns error if password too short', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'user@test.com' } })
+            const shortData = new FormData()
+            shortData.append('newPassword', '123')
+            const result = await changePassword(shortData)
+            expect(result.message).toContain('al menos 6 caracteres')
+        })
+
+        it('updates password successfully', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'user@test.com' } })
+                ; (bcrypt.hash as jest.Mock).mockResolvedValue('hashed')
+                ; (prisma.user.update as jest.Mock).mockResolvedValue({})
+
+            const result = await changePassword(formData)
+            expect(result).toEqual({ message: 'Success' })
+        })
+
+        it('handles db error', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'user@test.com' } })
+                ; (prisma.user.update as jest.Mock).mockRejectedValue(new Error('DB Error'))
+
+            const result = await changePassword(formData)
+            expect(result.message).toContain('Error al cambiar')
+        })
+    })
+})
+

@@ -179,4 +179,66 @@ describe('PatientsTable Component', () => {
         const hiddenRut = document.getElementById('rut_hidden') as HTMLInputElement
         expect(hiddenRut.value).toBe('12345678-K')
     })
+
+    it('shows no results message', () => {
+        render(<PatientsTable patients={mockPatients} />)
+        const searchInput = screen.getByPlaceholderText('Buscar por nombre, RUT, email...')
+        fireEvent.change(searchInput, { target: { value: 'NonExistent' } })
+        expect(screen.getByText('No se encontraron pacientes que coincidan con su búsqueda.')).toBeInTheDocument()
+    })
+
+    it('calculates age correctly', () => {
+        const today = new Date()
+        const birthdayPassed = new Date(today.getFullYear() - 20, today.getMonth() - 1, 1)
+        const birthdayNotPassed = new Date(today.getFullYear() - 20, today.getMonth() + 1, 1)
+        const birthdayToday = new Date(today.getFullYear() - 20, today.getMonth(), today.getDate())
+
+        const patientsWithAges = [
+            { ...mockPatients[0], id: 'p1', birthDate: birthdayPassed, name: 'Passed' },
+            { ...mockPatients[0], id: 'p2', birthDate: birthdayNotPassed, name: 'NotPassed' },
+            { ...mockPatients[0], id: 'p3', birthDate: birthdayToday, name: 'Today' },
+        ]
+
+        render(<PatientsTable patients={patientsWithAges} />)
+
+        // Use a more specific finder for the age cell to ensure we are not matching random text
+        // Row for 'Passed' -> 20
+        const rowPassed = screen.getByText('Passed').closest('tr')
+        expect(rowPassed).toHaveTextContent('20')
+
+        // Row for 'NotPassed' -> 19
+        const rowNotPassed = screen.getByText('NotPassed').closest('tr')
+        expect(rowNotPassed).toHaveTextContent('19')
+
+        // Row for 'Today' -> 20
+        const rowToday = screen.getByText('Today').closest('tr')
+        expect(rowToday).toHaveTextContent('20')
+    })
+
+    it('closes modals on success action state', () => {
+        render(<PatientsTable patients={mockPatients} />)
+        fireEvent.click(screen.getByText('Nuevo Paciente'))
+        expect(screen.getByText('Nuevo Paciente', { selector: 'h3' })).toBeInTheDocument()
+
+        // Close via Cancel button
+        fireEvent.click(screen.getByText('Cancelar'))
+        expect(screen.queryByText('Nuevo Paciente', { selector: 'h3' })).not.toBeInTheDocument()
+    })
+    it('renders patient with missing optional fields', () => {
+        const minimalPatient = [{
+            ...mockPatients[0],
+            id: 'min1',
+            name: null,
+            rut: null,
+            email: 'minimal@test.com',
+            birthDate: null,
+            commune: 'Santiago'
+        } as any] // Force type casting for testing fallback logic
+
+        render(<PatientsTable patients={minimalPatient} />)
+        // Should render without crashing
+        expect(screen.getByText('minimal@test.com')).toBeInTheDocument()
+        // Should show hyphen for age
+        expect(screen.getAllByText('-').length).toBeGreaterThan(0)
+    })
 })

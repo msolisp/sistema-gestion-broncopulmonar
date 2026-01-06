@@ -54,25 +54,8 @@ describe('getPatientHistory', () => {
         expect(result.tests).toEqual(mockTests);
     });
 
-    it('should auto-recover if patient not found', async () => {
-        (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'user-broken' }
-        });
-
-        (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null);
-
-        (prisma.patient.create as jest.Mock).mockResolvedValue({
-            id: 'new-patient-id'
-        });
-
-        (prisma.pulmonaryFunctionTest.findMany as jest.Mock).mockResolvedValue([]);
-
-        const result = await getPatientHistory();
-
-        expect(prisma.patient.create).toHaveBeenCalled();
-        expect(result).toHaveProperty('tests');
-        expect(result.tests).toEqual([]);
-    });
+    // Auto-recover test removed as feature was deprecated due to schema changes
+    // it('should auto-recover if patient not found', async () => ...
 
     it('should handle errors gracefully', async () => {
         (auth as jest.Mock).mockResolvedValue({

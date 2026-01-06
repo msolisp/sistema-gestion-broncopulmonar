@@ -20,12 +20,16 @@ export const BookAppointmentSchema = z.object({
 
 export const UpdatePatientProfileSchema = z.object({
     name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
-    phone: z.string().optional(),
-    address: z.string().optional(),
-    commune: z.string().optional(),
-    gender: z.string().optional(),
-    healthSystem: z.string().optional(),
-    birthDate: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), { message: 'Fecha de nacimiento inválida' }),
+    phone: z.string().optional().or(z.literal('')),
+    address: z.string().optional().or(z.literal('')),
+    commune: z.string().optional().or(z.literal('')),
+    gender: z.string().optional().or(z.literal('')),
+    healthSystem: z.string().optional().or(z.literal('')),
+    birthDate: z.string().optional().or(z.literal('')).refine((val) => {
+        if (!val) return true;
+        const date = new Date(val);
+        return !isNaN(date.getTime());
+    }, { message: 'Fecha de nacimiento inválida' }),
 });
 
 export const AdminCreatePatientSchema = z.object({
