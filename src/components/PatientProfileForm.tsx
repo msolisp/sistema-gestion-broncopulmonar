@@ -26,6 +26,8 @@ export default function PatientProfileForm({ user }: { user: any }) {
 
     const [selectedRegion, setSelectedRegion] = useState<string>('');
     const [selectedCommune, setSelectedCommune] = useState<string>('');
+    const [gender, setGender] = useState<string>('');
+    const [healthSystem, setHealthSystem] = useState<string>('');
 
     // Derived state - simpler and less error prone
     const availableCommunes = selectedRegion
@@ -44,19 +46,22 @@ export default function PatientProfileForm({ user }: { user: any }) {
         }
     }, [state, router]);
 
-    // Initialize Region and Commune based on existing data
+    // Initialize Region, Commune, Gender, and Health System
     useEffect(() => {
         // Only run on mount or if patient data fundamentally changes from outside
-        if (isInitialLoad && patient.commune) {
-            const region = findRegionByCommune(patient.commune);
-            if (region) {
-                setSelectedRegion(region);
-                // We verify that the formatted commune matches our expected uppercase format
-                setSelectedCommune(patient.commune.toUpperCase());
+        if (isInitialLoad) {
+            if (patient.commune) {
+                const region = findRegionByCommune(patient.commune);
+                if (region) {
+                    setSelectedRegion(region);
+                    setSelectedCommune(patient.commune.toUpperCase());
+                }
             }
+            if (patient.gender) setGender(patient.gender);
+            if (patient.healthSystem) setHealthSystem(patient.healthSystem);
         }
         setIsInitialLoad(false);
-    }, [patient.commune, isInitialLoad]);
+    }, [patient.commune, patient.gender, patient.healthSystem, isInitialLoad]);
 
     // Explicitly handle "User Changed Region" to reset commune
     const handleRegionChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -206,12 +211,14 @@ export default function PatientProfileForm({ user }: { user: any }) {
                                 <select
                                     id="gender"
                                     name="gender"
-                                    defaultValue={patient.gender || ''}
+                                    value={gender}
+                                    onChange={(e) => setGender(e.target.value)}
                                     className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all hover:border-zinc-300 text-zinc-900"
                                 >
                                     <option value="">Seleccionar</option>
                                     <option value="Masculino">Masculino</option>
                                     <option value="Femenino">Femenino</option>
+                                    <option value="Otro">Otro</option>
                                 </select>
                             </div>
                         </div>
@@ -224,7 +231,8 @@ export default function PatientProfileForm({ user }: { user: any }) {
                                 <select
                                     id="healthSystem"
                                     name="healthSystem"
-                                    defaultValue={patient.healthSystem || ''}
+                                    value={healthSystem}
+                                    onChange={(e) => setHealthSystem(e.target.value)}
                                     className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pl-9 transition-all hover:border-zinc-300 text-zinc-900"
                                 >
                                     <option value="">Seleccionar</option>
@@ -244,8 +252,8 @@ export default function PatientProfileForm({ user }: { user: any }) {
                             {isPending ? "Guardando..." : "Guardar Cambios"}
                         </Button>
                     </div>
-                </form>
-            </CardContent>
-        </Card>
+                </form >
+            </CardContent >
+        </Card >
     );
 }
