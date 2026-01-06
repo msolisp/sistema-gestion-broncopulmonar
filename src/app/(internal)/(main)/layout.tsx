@@ -2,6 +2,8 @@ import Link from "next/link";
 import InternalSidebar from "@/components/InternalSidebar";
 import { auth } from "@/auth";
 
+export const dynamic = 'force-dynamic';
+
 export default async function InternalLayout({
     children,
 }: {
