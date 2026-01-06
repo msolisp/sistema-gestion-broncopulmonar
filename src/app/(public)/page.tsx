@@ -1,70 +1,195 @@
 import Link from "next/link";
-import { ArrowRight, Activity, Calendar, Shield } from "lucide-react";
+import { ArrowRight, Activity, Calendar, Shield, HeartPulse, Stethoscope, Users } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col min-h-screen bg-[#0B1120] text-white selection:bg-emerald-500/30">
+      {/* Background Gradients */}
+      <div className="fixed inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-[800px] h-[600px] bg-indigo-600/20 rounded-full blur-[120px] -translate-y-1/2 translate-x-1/4" />
+        <div className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-emerald-600/10 rounded-full blur-[100px] translate-y-1/4 -translate-x-1/4" />
+      </div>
+
       {/* Navbar */}
-      <header className="px-6 py-4 flex items-center justify-between border-b border-zinc-100">
-        <div className="flex items-center space-x-2">
-          <Activity className="h-6 w-6 text-indigo-600" />
-          <span className="text-xl font-bold text-zinc-900">Broncopulmonar</span>
+      <header className="relative z-50 px-6 py-6">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <div className="p-2 bg-gradient-to-tr from-emerald-500 to-indigo-600 rounded-lg">
+              <Activity className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
+              Broncopulmonar
+            </span>
+          </div>
+          <nav className="flex items-center space-x-6">
+            <Link href="/login" className="text-sm font-medium text-slate-300 hover:text-white transition-colors">
+              Iniciar Sesión
+            </Link>
+            <Link
+              href="/register"
+              className="text-sm font-medium px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/10 rounded-full transition-all backdrop-blur-sm"
+            >
+              Registrarse
+            </Link>
+          </nav>
         </div>
-        <nav className="flex items-center space-x-4">
-          <Link href="/login" className="text-sm font-medium text-zinc-600 hover:text-indigo-600">
-            Iniciar Sesión
-          </Link>
-          <Link href="/register" className="text-sm font-medium px-4 py-2 bg-indigo-600 text-white rounded-full hover:bg-indigo-500">
-            Registrarse
-          </Link>
-        </nav>
       </header>
 
       {/* Hero Section */}
-      <main className="flex-1 flex flex-col items-center justify-center text-center px-4 py-20 bg-gradient-to-b from-indigo-50/50 to-white">
-        <div className="max-w-3xl space-y-6">
-          <h1 className="text-5xl font-bold tracking-tight text-zinc-900 sm:text-6xl">
-            Gestión Integral de <span className="text-indigo-600">Fibrosis Pulmonar</span>
-          </h1>
-          <p className="text-lg text-zinc-600 leading-relaxed">
-            Una plataforma unificada para el seguimiento de pacientes, gestión de citas y análisis de datos en tiempo real. Diseñada para mejorar la calidad de vida.
-          </p>
-          <div className="flex items-center justify-center space-x-4 pt-4">
-            <Link href="/register" className="flex items-center px-6 py-3 text-base font-medium bg-indigo-600 text-white rounded-xl hover:bg-indigo-500 shadow-lg shadow-indigo-600/20 transition-all">
-              Comenzar Ahora
-              <ArrowRight className="ml-2 h-5 w-5" />
-            </Link>
-            <Link href="/login" className="px-6 py-3 text-base font-medium text-indigo-700 bg-indigo-50 rounded-xl hover:bg-indigo-100">
-              Portal Pacientes
-            </Link>
+      <main className="relative z-10 flex-1 flex flex-col justify-center px-6 py-12 lg:py-20">
+        <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+
+          {/* Left Content */}
+          <div className="space-y-8 text-center lg:text-left">
+            <div className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
+              Sistema con Foco Clínico
+            </div>
+
+            <h1 className="text-5xl lg:text-7xl font-bold tracking-tight leading-tight">
+              Gestión Integral de <br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-indigo-400">
+                Fibrosis Pulmonar
+              </span>
+            </h1>
+
+            <p className="text-lg text-slate-400 leading-relaxed max-w-xl mx-auto lg:mx-0">
+              Plataforma especializada diseñada para el seguimiento exhaustivo de pacientes respiratorios.
+              Optimiza la gestión clínica y mejora la calidad de vida a través de datos precisos.
+            </p>
+
+            <div className="flex flex-col sm:flex-row items-center gap-4 justify-center lg:justify-start pt-4">
+              <Link
+                href="/register"
+                className="group w-full sm:w-auto flex items-center justify-center px-8 py-4 text-base font-bold bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-500 hover:to-indigo-400 rounded-2xl shadow-lg shadow-indigo-600/25 transition-all transform hover:-translate-y-0.5"
+              >
+                Ver Demo Clínica
+                <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
+              </Link>
+              <Link
+                href="/contact"
+                className="w-full sm:w-auto px-8 py-4 text-base font-medium text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 rounded-2xl transition-all"
+              >
+                Contacto Profesional
+              </Link>
+            </div>
+          </div>
+
+          {/* Right Visuals (Glass Cards) */}
+          <div className="relative h-[500px] w-full hidden lg:block perspective-1000">
+            {/* Main Glass Card - Lungs/Graph Representation */}
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-6 flex flex-col justify-between group hover:border-white/20 transition-all duration-500">
+              {/* Decorative Graph Line */}
+              <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-indigo-600/20 to-transparent pointer-events-none" />
+              <div className="absolute bottom-10 left-0 right-0 h-0.5 bg-indigo-500/30">
+                <div className="absolute top-1/2 left-[20%] w-2 h-2 bg-indigo-500 rounded-full -translate-y-1/2 shadow-lg shadow-indigo-500/50" />
+                <div className="absolute top-1/2 left-[60%] w-2 h-2 bg-emerald-500 rounded-full -translate-y-1/2 shadow-lg shadow-emerald-500/50" />
+              </div>
+
+              {/* Header of Card */}
+              <div className="flex justify-between items-start">
+                <div className="flex items-center space-x-3">
+                  <div className="p-2 bg-indigo-500/20 rounded-lg">
+                    <Stethoscope className="h-5 w-5 text-indigo-400" />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold">Estado Paciente</h4>
+                    <p className="text-xs text-slate-400">Monitorización en tiempo real</p>
+                  </div>
+                </div>
+                <span className="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs font-mono">EN LÍNEA</span>
+              </div>
+
+              {/* Fake Chart Visual */}
+              <div className="flex-1 mt-6 flex items-end gap-2 pb-6 px-2">
+                {[40, 65, 45, 80, 55, 70, 45, 60, 75, 50, 65, 85].map((h, i) => (
+                  <div
+                    key={i}
+                    className="flex-1 bg-gradient-to-t from-indigo-600/20 to-indigo-500/40 rounded-t-sm hover:from-indigo-500/40 hover:to-emerald-400/60 transition-all duration-300"
+                    style={{ height: `${h}%` }}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Floating Stat Card 1 - SpO2 */}
+            <div className="absolute top-[10%] left-0 w-48 p-4 bg-slate-800/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl animate-float-slow">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-slate-400 font-medium">SpO2 Promedio</span>
+                <HeartPulse className="h-4 w-4 text-rose-500" />
+              </div>
+              <div className="text-2xl font-bold text-white">96%</div>
+              <div className="text-xs text-emerald-400 mt-1 flex items-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1" />
+                Estable
+              </div>
+            </div>
+
+            {/* Floating Stat Card 2 - TM6M */}
+            <div className="absolute bottom-[20%] right-0 w-52 p-4 bg-slate-800/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl animate-float-delayed">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-slate-400 font-medium">Distancia TM6M</span>
+                <Activity className="h-4 w-4 text-emerald-500" />
+              </div>
+              <div className="text-2xl font-bold text-white">450m</div>
+              <div className="text-xs text-indigo-400 mt-1">
+                +12% vs mes anterior
+              </div>
+            </div>
           </div>
         </div>
       </main>
 
-      {/* Features Grid */}
-      <section className="px-6 py-20 max-w-7xl mx-auto w-full">
+      {/* Features Grid Dark */}
+      <section className="relative z-10 px-6 py-24 max-w-7xl mx-auto w-full">
+        <div className="text-center mb-16">
+          <h2 className="text-3xl lg:text-4xl font-bold mb-4">Tecnología al Servicio de la Salud</h2>
+          <p className="text-slate-400 max-w-2xl mx-auto">Herramientas diseñadas específicamente para neumólogos y equipos multidisciplinarios.</p>
+        </div>
+
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-100">
-            <Calendar className="h-8 w-8 text-indigo-600 mb-4" />
-            <h3 className="text-xl font-semibold text-zinc-900 mb-2">Reserva de Horas</h3>
-            <p className="text-zinc-500">Agenda tus controles médicos de forma rápida y sencilla desde cualquier dispositivo.</p>
+          <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 hover:bg-slate-800/60 hover:border-emerald-500/30 transition-all duration-300 group">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center mb-6 group-hover:bg-indigo-500/20 transition-colors">
+              <Calendar className="h-6 w-6 text-indigo-400" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">Gestión de Citas Inteligente</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Sistema automatizado de reservas y recordatorios para optimizar la adherencia al tratamiento y el seguimiento.
+            </p>
           </div>
-          <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-100">
-            <Activity className="h-8 w-8 text-indigo-600 mb-4" />
-            <h3 className="text-xl font-semibold text-zinc-900 mb-2">Monitoreo Constante</h3>
-            <p className="text-zinc-500">Seguimiento detallado de tu historial médico y evolución del tratamiento.</p>
+
+          <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 hover:bg-slate-800/60 hover:border-emerald-500/30 transition-all duration-300 group">
+            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center mb-6 group-hover:bg-emerald-500/20 transition-colors">
+              <Activity className="h-6 w-6 text-emerald-400" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">Variables Clínicas</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Registro y visualización evolutiva de SpO2, TM6M, DLCO y Espirometría con alertas automáticas.
+            </p>
           </div>
-          <div className="p-6 rounded-2xl bg-zinc-50 border border-zinc-100">
-            <Shield className="h-8 w-8 text-indigo-600 mb-4" />
-            <h3 className="text-xl font-semibold text-zinc-900 mb-2">Seguridad Total</h3>
-            <p className="text-zinc-500">Tus datos están protegidos con los más altos estándares de seguridad y privacidad.</p>
+
+          <div className="p-8 rounded-3xl bg-slate-800/40 border border-white/5 hover:bg-slate-800/60 hover:border-emerald-500/30 transition-all duration-300 group">
+            <div className="w-12 h-12 rounded-2xl bg-rose-500/10 flex items-center justify-center mb-6 group-hover:bg-rose-500/20 transition-colors">
+              <Users className="h-6 w-6 text-rose-400" />
+            </div>
+            <h3 className="text-xl font-bold text-white mb-3">Expediente Centralizado</h3>
+            <p className="text-slate-400 text-sm leading-relaxed">
+              Toda la información del paciente en un solo lugar, accesible de forma segura por el equipo tratante.
+            </p>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="py-8 text-center text-sm text-zinc-400 border-t border-zinc-100">
-        © 2025 Sistema de Gestión Broncopulmonar. Todos los derechos reservados.
+      <footer className="relative z-10 py-12 text-center text-sm text-slate-500 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
+          <p>© 2025 Sistema de Gestión Broncopulmonar.</p>
+          <div className="flex space-x-6 mt-4 md:mt-0">
+            <a href="#" className="hover:text-white transition-colors">Privacidad</a>
+            <a href="#" className="hover:text-white transition-colors">Términos</a>
+            <a href="#" className="hover:text-white transition-colors">Soporte</a>
+          </div>
+        </div>
       </footer>
     </div>
   );
