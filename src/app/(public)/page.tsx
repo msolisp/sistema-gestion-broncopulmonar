@@ -15,20 +15,7 @@ export default function Home() {
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <div className="flex items-center space-x-2">
             <div className="p-2 bg-gradient-to-tr from-emerald-500 to-indigo-600 rounded-lg">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-6 w-6 text-white"
-              >
-                <path d="M17.5 19c0-1.7-1.3-3-3-3-.9 0-1.7.4-2.2 1.1-.5-.7-1.3-1.1-2.2-1.1-1.7 0-3 1.3-3 3 0 .4.1.8.3 1.2-1.4.3-2.4 1.5-2.4 3 0 1.7 1.3 3 3 3 1.3 0 2.4-.8 2.8-2 .5.4 1.1.6 1.8.6.7 0 1.4-.2 1.9-.6.4 1.2 1.5 2 2.8 2 1.7 0 3-1.3 3-3 0-1.5-1-2.7-2.4-3 .2-.4.3-.8.3-1.2z" />
-                <path d="M7 4C4.2 4 2 6.2 2 9v5c0 2.8 2.2 5 5 5a2.5 2.5 0 0 0 0-5V9c0-1.7 1.3-3 3-3h1" />
-                <path d="M17 4c2.8 0 5 2.2 5 5v5c0 2.8-2.2 5-5 5a2.5 2.5 0 0 1 0-5V9c0-1.7 1.3-3-3-3h-1" />
-              </svg>
+              <Activity className="h-6 w-6 text-white" />
             </div>
             <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
               Broncopulmonar
@@ -95,38 +82,38 @@ export default function Home() {
               alt="Visualización Pulmonar Avanzada"
               className="w-full h-full object-contain filter drop-shadow-2xl animate-float-slow"
             />
-          </div>
+            {/* REMOVED PREMATURE CLOSING DIV HERE */}
 
-          {/* Floating Stat Card 1 - SpO2 */}
-          <div className="absolute top-[10%] left-0 w-48 p-4 bg-slate-800/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl animate-float-slow">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-slate-400 font-medium">SpO2 Promedio</span>
-              <HeartPulse className="h-4 w-4 text-rose-500" />
+            {/* Floating Stat Card 1 - SpO2 */}
+            <div className="absolute top-[10%] left-0 w-48 p-4 bg-slate-800/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl animate-float-slow">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-slate-400 font-medium">SpO2 Promedio</span>
+                <HeartPulse className="h-4 w-4 text-rose-500" />
+              </div>
+              <div className="text-2xl font-bold text-white">96%</div>
+              <div className="text-xs text-emerald-400 mt-1 flex items-center">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1" />
+                Estable
+              </div>
             </div>
-            <div className="text-2xl font-bold text-white">96%</div>
-            <div className="text-xs text-emerald-400 mt-1 flex items-center">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1" />
-              Estable
-            </div>
-          </div>
 
-          {/* Floating Stat Card 2 - TM6M */}
-          <div className="absolute bottom-[20%] right-0 w-52 p-4 bg-slate-800/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl animate-float-delayed">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs text-slate-400 font-medium">Distancia TM6M</span>
-              <Activity className="h-4 w-4 text-emerald-500" />
-            </div>
-            <div className="text-2xl font-bold text-white">450m</div>
-            <div className="text-xs text-indigo-400 mt-1">
-              +12% vs mes anterior
+            {/* Floating Stat Card 2 - TM6M */}
+            <div className="absolute bottom-[20%] right-0 w-52 p-4 bg-slate-800/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl animate-float-delayed">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs text-slate-400 font-medium">Distancia TM6M</span>
+                <Activity className="h-4 w-4 text-emerald-500" />
+              </div>
+              <div className="text-2xl font-bold text-white">450m</div>
+              <div className="text-xs text-indigo-400 mt-1">
+                +12% vs mes anterior
+              </div>
             </div>
           </div>
         </div>
-    </div>
       </main >
 
-    {/* Features Grid Dark */ }
-    < section className = "relative z-10 px-6 py-24 max-w-7xl mx-auto w-full" >
+      {/* Features Grid Dark */}
+      < section className="relative z-10 px-6 py-24 max-w-7xl mx-auto w-full" >
         <div className="text-center mb-16">
           <h2 className="text-3xl lg:text-4xl font-bold mb-4">Tecnología al Servicio de la Salud</h2>
           <p className="text-slate-400 max-w-2xl mx-auto">Herramientas diseñadas específicamente para neumólogos y equipos multidisciplinarios.</p>
@@ -165,16 +152,16 @@ export default function Home() {
         </div>
       </section >
 
-    {/* Footer */ }
-    < footer className = "relative z-10 py-12 text-center text-sm text-slate-500 border-t border-white/5" >
-      <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
-        <p>© 2025 Sistema de Gestión Broncopulmonar.</p>
-        <div className="flex space-x-6 mt-4 md:mt-0">
-          <a href="#" className="hover:text-white transition-colors">Privacidad</a>
-          <a href="#" className="hover:text-white transition-colors">Términos</a>
-          <a href="#" className="hover:text-white transition-colors">Soporte</a>
+      {/* Footer */}
+      < footer className="relative z-10 py-12 text-center text-sm text-slate-500 border-t border-white/5" >
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
+          <p>© 2025 Sistema de Gestión Broncopulmonar.</p>
+          <div className="flex space-x-6 mt-4 md:mt-0">
+            <a href="#" className="hover:text-white transition-colors">Privacidad</a>
+            <a href="#" className="hover:text-white transition-colors">Términos</a>
+            <a href="#" className="hover:text-white transition-colors">Soporte</a>
+          </div>
         </div>
-      </div>
       </footer >
     </div >
   );
