@@ -12,7 +12,7 @@ describe('Landing Page', () => {
 
     it('renders call to action buttons', () => {
         render(<Home />)
-        expect(screen.getByRole('link', { name: /Comenzar Ahora/i })).toBeInTheDocument()
-        expect(screen.getByRole('link', { name: /Portal Pacientes/i })).toBeInTheDocument()
+        expect(screen.getByRole('link', { name: /Ver Demo Clínica/i })).toBeInTheDocument()
+        expect(screen.getByRole('link', { name: /Contacto Profesional/i })).toBeInTheDocument()
     })
 })

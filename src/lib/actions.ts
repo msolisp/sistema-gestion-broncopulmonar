@@ -442,12 +442,19 @@ export async function uploadMedicalExam(formData: FormData) {
         const safeName = file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
         const fileName = `${timestamp}-${safeName}`;
 
-        // Upload to Vercel Blob
-        const blob = await put(fileName, file, {
-            access: 'public',
-        });
+        let fileUrl = '';
 
-        const fileUrl = blob.url;
+        // Bypass Vercel Blob in Development/Test if no token
+        if ((process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') && !process.env.BLOB_READ_WRITE_TOKEN) {
+            console.warn('Using Mock Upload (No BLOB_READ_WRITE_TOKEN provided)');
+            fileUrl = `https://mock-storage.local/${fileName}`;
+        } else {
+            // Upload to Vercel Blob
+            const blob = await put(fileName, file, {
+                access: 'public',
+            });
+            fileUrl = blob.url;
+        }
 
         await prisma.medicalExam.create({
             data: {

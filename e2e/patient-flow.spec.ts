@@ -7,8 +7,8 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /Gestión Integral/i })).toBeVisible();
 
     // 2. Register
-    await page.click('text=Portal Pacientes');
-    await page.click('text=Regístrate');
+    // 2. Register
+    await page.click('text=Registrarse');
 
     const uniqueRut = `12.${Math.floor(Math.random() * 900) + 100}.${Math.floor(Math.random() * 900) + 100}-${Math.floor(Math.random() * 9)}`;
     const uniqueEmail = `patient_${Date.now()}@test.com`;

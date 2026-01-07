@@ -29,6 +29,7 @@ jest.mock('@/lib/actions', () => ({
     deletePatient: jest.fn(),
 }))
 
+// Mock Recharts ResponsiveContainer to avoid size issues in JSDOM
 describe('BiReportsContent Component', () => {
     const mockPatients = [
         {
@@ -86,7 +87,11 @@ describe('BiReportsContent Component', () => {
     }
 
     it('renders stats and map', () => {
-        render(<BiReportsContent patients={mockPatients} />)
+        render(
+            <div style={{ width: 1024, height: 768 }}>
+                <BiReportsContent patients={mockPatients} />
+            </div>
+        )
         // New Clinical KPIs
         expect(screen.getByText('Intensidad (Ex/Pac)')).toBeInTheDocument()
         expect(screen.getByText(/Carga Invernal/)).toBeInTheDocument()

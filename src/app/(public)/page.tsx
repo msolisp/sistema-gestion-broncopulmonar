@@ -77,11 +77,18 @@ export default function Home() {
 
           {/* Right Visuals (Glass Cards) */}
           <div className="relative h-[500px] w-full hidden lg:block perspective-1000">
-            <img
-              src="/hero-lungs.png"
-              alt="Visualización Pulmonar Avanzada"
-              className="w-full h-full object-contain filter drop-shadow-2xl animate-float-slow"
-            />
+            {/* Image Container with Blend Masks */}
+            <div className="relative w-full h-full">
+              <img
+                src="/hero-lungs.png"
+                alt="Visualización Pulmonar Avanzada"
+                className="w-full h-full object-contain filter drop-shadow-2xl animate-float-slow opacity-90"
+              />
+              {/* Radial gradient overlay for seamless blending */}
+              <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-transparent to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-b from-[#0B1120]/50 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-r from-[#0B1120]/80 via-transparent to-[#0B1120]/80 pointer-events-none" />
+            </div>
             {/* REMOVED PREMATURE CLOSING DIV HERE */}
 
             {/* Floating Stat Card 1 - SpO2 */}
