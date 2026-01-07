@@ -90,71 +90,43 @@ export default function Home() {
 
           {/* Right Visuals (Glass Cards) */}
           <div className="relative h-[500px] w-full hidden lg:block perspective-1000">
-            {/* Main Glass Card - Lungs/Graph Representation */}
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[80%] h-[80%] bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl border border-white/10 rounded-3xl shadow-2xl p-6 flex flex-col justify-between group hover:border-white/20 transition-all duration-500">
-              {/* Decorative Graph Line */}
-              <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-indigo-600/20 to-transparent pointer-events-none" />
-              <div className="absolute bottom-10 left-0 right-0 h-0.5 bg-indigo-500/30">
-                <div className="absolute top-1/2 left-[20%] w-2 h-2 bg-indigo-500 rounded-full -translate-y-1/2 shadow-lg shadow-indigo-500/50" />
-                <div className="absolute top-1/2 left-[60%] w-2 h-2 bg-emerald-500 rounded-full -translate-y-1/2 shadow-lg shadow-emerald-500/50" />
-              </div>
+            <img
+              src="/hero-lungs.png"
+              alt="Visualización Pulmonar Avanzada"
+              className="w-full h-full object-contain filter drop-shadow-2xl animate-float-slow"
+            />
+          </div>
 
-              {/* Header of Card */}
-              <div className="flex justify-between items-start">
-                <div className="flex items-center space-x-3">
-                  <div className="p-2 bg-indigo-500/20 rounded-lg">
-                    <Stethoscope className="h-5 w-5 text-indigo-400" />
-                  </div>
-                  <div>
-                    <h4 className="font-semibold">Estado Paciente</h4>
-                    <p className="text-xs text-slate-400">Monitorización en tiempo real</p>
-                  </div>
-                </div>
-                <span className="px-2 py-1 rounded bg-green-500/20 text-green-400 text-xs font-mono">EN LÍNEA</span>
-              </div>
-
-              {/* Fake Chart Visual */}
-              <div className="flex-1 mt-6 flex items-end gap-2 pb-6 px-2">
-                {[40, 65, 45, 80, 55, 70, 45, 60, 75, 50, 65, 85].map((h, i) => (
-                  <div
-                    key={i}
-                    className="flex-1 bg-gradient-to-t from-indigo-600/20 to-indigo-500/40 rounded-t-sm hover:from-indigo-500/40 hover:to-emerald-400/60 transition-all duration-300"
-                    style={{ height: `${h}%` }}
-                  />
-                ))}
-              </div>
+          {/* Floating Stat Card 1 - SpO2 */}
+          <div className="absolute top-[10%] left-0 w-48 p-4 bg-slate-800/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl animate-float-slow">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-slate-400 font-medium">SpO2 Promedio</span>
+              <HeartPulse className="h-4 w-4 text-rose-500" />
             </div>
-
-            {/* Floating Stat Card 1 - SpO2 */}
-            <div className="absolute top-[10%] left-0 w-48 p-4 bg-slate-800/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl animate-float-slow">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-slate-400 font-medium">SpO2 Promedio</span>
-                <HeartPulse className="h-4 w-4 text-rose-500" />
-              </div>
-              <div className="text-2xl font-bold text-white">96%</div>
-              <div className="text-xs text-emerald-400 mt-1 flex items-center">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1" />
-                Estable
-              </div>
+            <div className="text-2xl font-bold text-white">96%</div>
+            <div className="text-xs text-emerald-400 mt-1 flex items-center">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-1" />
+              Estable
             </div>
+          </div>
 
-            {/* Floating Stat Card 2 - TM6M */}
-            <div className="absolute bottom-[20%] right-0 w-52 p-4 bg-slate-800/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl animate-float-delayed">
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-xs text-slate-400 font-medium">Distancia TM6M</span>
-                <Activity className="h-4 w-4 text-emerald-500" />
-              </div>
-              <div className="text-2xl font-bold text-white">450m</div>
-              <div className="text-xs text-indigo-400 mt-1">
-                +12% vs mes anterior
-              </div>
+          {/* Floating Stat Card 2 - TM6M */}
+          <div className="absolute bottom-[20%] right-0 w-52 p-4 bg-slate-800/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl animate-float-delayed">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-slate-400 font-medium">Distancia TM6M</span>
+              <Activity className="h-4 w-4 text-emerald-500" />
+            </div>
+            <div className="text-2xl font-bold text-white">450m</div>
+            <div className="text-xs text-indigo-400 mt-1">
+              +12% vs mes anterior
             </div>
           </div>
         </div>
-      </main>
+    </div>
+      </main >
 
-      {/* Features Grid Dark */}
-      <section className="relative z-10 px-6 py-24 max-w-7xl mx-auto w-full">
+    {/* Features Grid Dark */ }
+    < section className = "relative z-10 px-6 py-24 max-w-7xl mx-auto w-full" >
         <div className="text-center mb-16">
           <h2 className="text-3xl lg:text-4xl font-bold mb-4">Tecnología al Servicio de la Salud</h2>
           <p className="text-slate-400 max-w-2xl mx-auto">Herramientas diseñadas específicamente para neumólogos y equipos multidisciplinarios.</p>
@@ -191,19 +163,19 @@ export default function Home() {
             </p>
           </div>
         </div>
-      </section>
+      </section >
 
-      {/* Footer */}
-      <footer className="relative z-10 py-12 text-center text-sm text-slate-500 border-t border-white/5">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
-          <p>© 2025 Sistema de Gestión Broncopulmonar.</p>
-          <div className="flex space-x-6 mt-4 md:mt-0">
-            <a href="#" className="hover:text-white transition-colors">Privacidad</a>
-            <a href="#" className="hover:text-white transition-colors">Términos</a>
-            <a href="#" className="hover:text-white transition-colors">Soporte</a>
-          </div>
+    {/* Footer */ }
+    < footer className = "relative z-10 py-12 text-center text-sm text-slate-500 border-t border-white/5" >
+      <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center">
+        <p>© 2025 Sistema de Gestión Broncopulmonar.</p>
+        <div className="flex space-x-6 mt-4 md:mt-0">
+          <a href="#" className="hover:text-white transition-colors">Privacidad</a>
+          <a href="#" className="hover:text-white transition-colors">Términos</a>
+          <a href="#" className="hover:text-white transition-colors">Soporte</a>
         </div>
-      </footer>
-    </div>
+      </div>
+      </footer >
+    </div >
   );
 }
