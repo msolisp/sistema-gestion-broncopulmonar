@@ -89,7 +89,7 @@ export default function Home() {
             {/* REMOVED PREMATURE CLOSING DIV HERE */}
 
             {/* Floating Stat Card 1 - SpO2 */}
-            <div className="absolute top-[10%] left-0 w-48 p-4 bg-slate-800/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl animate-float-slow">
+            <div className="absolute top-[10%] left-0 w-48 p-4 bg-slate-800/60 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl animate-float-delayed">
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs text-slate-400 font-medium">SpO2 Promedio</span>
                 <HeartPulse className="h-4 w-4 text-rose-500" />
