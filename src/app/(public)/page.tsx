@@ -77,7 +77,7 @@ export default function Home() {
             {/* Image Container with Blend Masks */}
             <div className="relative w-full h-full">
               <img
-                src="/hero-lungs.png"
+                src="/hero-lungs-clean.png"
                 alt="Visualización Pulmonar Avanzada"
                 className="w-full h-full object-contain filter drop-shadow-2xl animate-float-slow opacity-90"
               />
