@@ -12,9 +12,9 @@ export default function PatientNavbar() {
 
     useEffect(() => {
         async function fetchName() {
-            if (session?.user?.id) {
+            if (session?.user?.email) {
                 // Optimistic update from session if available
-                if (session.user.name && session.user.name !== "Admin User") {
+                if (session.user.name && session.user.name !== "Admin User" && session.user.name !== "Paciente") {
                     setUserName(session.user.name.split(' ')[0]);
                 }
 
