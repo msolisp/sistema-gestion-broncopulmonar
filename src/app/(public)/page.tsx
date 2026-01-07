@@ -75,16 +75,14 @@ export default function Home() {
           {/* Right Visuals (Glass Cards) */}
           <div className="relative h-[500px] w-full hidden lg:block perspective-1000">
             {/* Image Container with Blend Masks */}
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full flex items-center justify-center">
+              {/* Radial mask to fade edges completely */}
+              <div className="absolute inset-0 z-10 bg-[#0B1120]/10 mix-blend-overlay pointer-events-none" />
               <img
                 src="/hero-lungs-clean.png"
                 alt="Visualización Pulmonar Avanzada"
-                className="w-full h-full object-contain filter drop-shadow-2xl animate-float-slow opacity-90"
+                className="w-full h-full object-contain animate-float-slow opacity-90 [mask-image:radial-gradient(circle_at_center,black_40%,transparent_70%)]"
               />
-              {/* Radial gradient overlay for seamless blending */}
-              <div className="absolute inset-0 bg-gradient-to-t from-[#0B1120] via-transparent to-transparent pointer-events-none" />
-              <div className="absolute inset-0 bg-gradient-to-b from-[#0B1120]/50 via-transparent to-transparent pointer-events-none" />
-              <div className="absolute inset-0 bg-gradient-to-r from-[#0B1120]/80 via-transparent to-[#0B1120]/80 pointer-events-none" />
             </div>
             {/* REMOVED PREMATURE CLOSING DIV HERE */}
 
