@@ -2,6 +2,8 @@ import PatientProfileForm from "@/components/PatientProfileForm";
 import { getPatientProfile } from "@/actions/patient-profile";
 import { redirect } from "next/navigation";
 
+export const dynamic = 'force-dynamic';
+
 export default async function ProfilePage() {
     const result = await getPatientProfile();
 

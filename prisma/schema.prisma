@@ -4,6 +4,7 @@
 
 generator client {
   provider = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
 }
 
 datasource db {
@@ -128,4 +129,13 @@ model PasswordResetToken {
   createdAt DateTime @default(now())
 
   @@index([email])
+}
+
+model MedicalKnowledge {
+  id        String   @id @default(cuid())
+  content   String
+  source    String   // Image filename
+  page      Int?
+  embedding Unsupported("vector(768)")?
+  createdAt DateTime @default(now())
 }
