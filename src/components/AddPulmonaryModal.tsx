@@ -14,7 +14,13 @@ export function AddPulmonaryModal({ patientId }: { patientId: string }) {
         const formData = new FormData(event.currentTarget);
         formData.append('patientId', patientId);
 
-        await addPulmonaryRecord(formData);
+        const result = await addPulmonaryRecord(formData);
+
+        if (result?.message && !result.message.includes('exitosamente')) {
+            alert(result.message); // Simple alert for now, or use a toast
+            setLoading(false);
+            return;
+        }
 
         setLoading(false);
         setOpen(false);

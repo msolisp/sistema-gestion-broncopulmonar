@@ -74,3 +74,52 @@ export async function getMyAppointments() {
 
     return appointments
 }
+
+export async function cancelAppointment(appointmentId: string, reason: string) {
+    const session = await auth()
+    if (!session?.user?.id) {
+        return { error: "No autorizado" }
+    }
+
+    try {
+        const appointment = await prisma.appointment.findUnique({
+            where: { id: appointmentId },
+            include: { patient: true }
+        })
+
+        if (!appointment) {
+            return { error: "Cita no encontrada" }
+        }
+
+        // Verify ownership
+        if (appointment.patientId !== session.user.id) {
+            return { error: "No tienes permiso para cancelar esta cita" }
+        }
+
+        // Verify status
+        if (appointment.status === 'CANCELLED') {
+            return { error: "La cita ya está cancelada" }
+        }
+
+        // Update status and append reason to notes
+        const newNotes = appointment.notes
+            ? `${appointment.notes}\n[Cancelada por Paciente]: ${reason}`
+            : `[Cancelada por Paciente]: ${reason}`;
+
+        await prisma.appointment.update({
+            where: { id: appointmentId },
+            data: {
+                status: 'CANCELLED',
+                notes: newNotes
+            }
+        })
+
+        revalidatePath("/portal")
+        revalidatePath("/portal/citas")
+        return { message: "Cita cancelada exitosamente" }
+
+    } catch (error) {
+        console.error("Cancel error:", error)
+        return { error: "Error al cancelar la cita" }
+    }
+}

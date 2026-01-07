@@ -12,6 +12,8 @@ export async function addPulmonaryRecord(formData: FormData) {
 
     // RBAC: Only ADMIN or KINESIOLOGIST can add records
     const userRole = (session.user as any).role;
+    console.log("DEBUG: User Role requesting add:", userRole);
+
     if (userRole !== 'ADMIN' && userRole !== 'KINESIOLOGIST') {
         return { message: 'No autorizado: Se requieren privilegios de administrador o kinesiólogo.' };
     }
@@ -19,6 +21,12 @@ export async function addPulmonaryRecord(formData: FormData) {
     const patientId = formData.get('patientId') as string;
     const date = formData.get('date') as string; // YYYY-MM-DD
     const notes = formData.get('notes') as string;
+
+    console.log("--- DEBUG: Adding Pulmonary Record ---");
+    console.log("PatientID:", patientId);
+    console.log("Date:", date);
+    console.log("WalkDistance Raw:", formData.get('walkDistance'));
+    console.log("Spo2Rest Raw:", formData.get('spo2Rest'));
 
     // TM6M
     const walkDistance = formData.get('walkDistance') ? parseFloat(formData.get('walkDistance') as string) : null;

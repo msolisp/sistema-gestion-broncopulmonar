@@ -1,6 +1,7 @@
 
 import { getMyAppointments } from '@/actions/appointments';
 import BookingForm from '@/components/appointments/BookingForm';
+import CancelAppointmentModal from '@/components/appointments/CancelAppointmentModal';
 import Link from 'next/link';
 
 export default async function AppointmentsPage() {
@@ -33,7 +34,7 @@ export default async function AppointmentsPage() {
                         </div>
                     ) : (
                         <div className="space-y-3">
-                            {appointments.map((apt) => (
+                            {appointments.map((apt: any) => (
                                 <div key={apt.id} className="p-4 bg-white border border-zinc-200 rounded-xl shadow-sm flex justify-between items-center">
                                     <div>
                                         <div className="font-medium text-zinc-900">
@@ -43,7 +44,11 @@ export default async function AppointmentsPage() {
                                             {new Date(apt.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })} hrs
                                         </div>
                                     </div>
-                                    <div>
+                                    {/* Actions */}
+                                    <div className="flex items-center gap-3">
+                                        {(apt.status === 'PENDING' || apt.status === 'CONFIRMED') && (
+                                            <CancelAppointmentModal appointmentId={apt.id} />
+                                        )}
                                         <span className={`px-3 py-1 rounded-full text-xs font-medium ${apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' :
                                             apt.status === 'CANCELLED' ? 'bg-red-100 text-red-700' :
                                                 'bg-yellow-100 text-yellow-700'
