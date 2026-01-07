@@ -15,14 +15,14 @@ export default function PatientNavbar() {
             if (session?.user?.id) {
                 // Optimistic update from session if available
                 if (session.user.name && session.user.name !== "Admin User") {
-                    setUserName(session.user.name);
+                    setUserName(session.user.name.split(' ')[0]);
                 }
 
                 // Fetch latest from DB to be sure
                 try {
                     const result = await getPatientProfile();
                     if (result?.user?.name) {
-                        setUserName(result.user.name);
+                        setUserName(result.user.name.split(' ')[0]);
                     }
                 } catch (e) {
                     console.error("Failed to fetch navbar name", e);
