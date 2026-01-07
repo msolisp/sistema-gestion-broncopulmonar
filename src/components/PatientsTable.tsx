@@ -254,15 +254,15 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                 <h3 className="text-lg font-bold text-zinc-900">Nuevo Paciente</h3>
                                 <button onClick={() => setIsCreateOpen(false)} className="text-zinc-400 hover:text-zinc-600"><X size={20} /></button>
                             </div>
-                            <form action={createAction} className="p-6 space-y-4">
+                            <form action={createAction} className="p-6 space-y-4" autoComplete="off">
                                 <div>
                                     <label className="block text-sm font-medium text-zinc-700 mb-1">Nombre Completo</label>
-                                    <input name="name" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
+                                    <input name="name" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" autoComplete="off" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
-                                        <input name="email" type="email" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
+                                        <input name="email" type="email" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" autoComplete="new-password" />
                                     </div>
                                     <div className="flex gap-2">
                                         <div className="flex-1">
@@ -273,6 +273,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                                 maxLength={8}
                                                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900"
                                                 placeholder="11111111"
+                                                autoComplete="off"
                                                 onChange={(e) => {
                                                     const num = e.target.value.replace(/[^0-9]/g, '');
                                                     const dv = (document.getElementById('rut_dv') as HTMLInputElement).value;
@@ -288,6 +289,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                                 maxLength={1}
                                                 className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 text-center uppercase"
                                                 placeholder="K"
+                                                autoComplete="off"
                                                 onChange={(e) => {
                                                     const dv = e.target.value.toUpperCase().replace(/[^0-9K]/g, '');
                                                     const num = (document.getElementById('rut_num') as HTMLInputElement).value;
@@ -300,7 +302,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-zinc-700 mb-1">Contraseña</label>
-                                    <input name="password" type="password" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" placeholder="********" />
+                                    <input name="password" type="password" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" placeholder="********" autoComplete="new-password" />
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-zinc-700 mb-1">Dirección</label>
