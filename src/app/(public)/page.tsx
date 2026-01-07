@@ -41,10 +41,7 @@ export default function Home() {
 
           {/* Left Content */}
           <div className="space-y-8 text-center lg:text-left">
-            <div className="inline-flex items-center px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2 animate-pulse"></span>
-              Sistema con Foco Clínico
-            </div>
+
 
             <h1 className="text-5xl lg:text-7xl font-bold tracking-tight leading-tight">
               Gestión Integral de <br />

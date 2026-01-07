@@ -27,7 +27,7 @@ export default function ContactPage() {
                             <User className="h-6 w-6 text-indigo-400" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Desarrollador Responsable</p>
+                            <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Contacto Principal</p>
                             <p className="text-lg font-medium text-white">Maximiliano Solis</p>
                         </div>
                     </div>
