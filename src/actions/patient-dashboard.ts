@@ -16,6 +16,7 @@ export async function getPatientDashboardData() {
             where: { id: session.user.id },
             select: {
                 id: true,
+                name: true,
                 commune: true
             }
         });

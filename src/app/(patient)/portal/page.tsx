@@ -9,7 +9,7 @@ import PatientAirQuality from "@/components/PatientAirQuality";
 import { AQIData } from "@/lib/air-quality";
 
 interface DashboardData {
-    patient: { id: string; commune: string; region: string };
+    patient: { id: string; name: string; commune: string; region: string };
     nextAppointment: { date: Date; status: string; timeBlock: string } | null;
     aqiData: AQIData | null;
 }
@@ -19,7 +19,7 @@ export default function PortalPage() {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
 
-    const userName = session?.user?.name || "Paciente";
+    const userName = data?.patient?.name || session?.user?.name || "Paciente";
 
     useEffect(() => {
         let isMounted = true;
