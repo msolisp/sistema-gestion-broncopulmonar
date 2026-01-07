@@ -3,10 +3,34 @@
 import Link from "next/link";
 import { LogOut, Activity, Calendar, FileText, Home, User } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import { useEffect, useState } from "react";
+import { getPatientProfile } from "@/actions/patient-profile";
 
 export default function PatientNavbar() {
     const { data: session } = useSession();
-    const userName = session?.user?.name || "Paciente";
+    const [userName, setUserName] = useState<string>("Paciente");
+
+    useEffect(() => {
+        async function fetchName() {
+            if (session?.user?.id) {
+                // Optimistic update from session if available
+                if (session.user.name && session.user.name !== "Admin User") {
+                    setUserName(session.user.name);
+                }
+
+                // Fetch latest from DB to be sure
+                try {
+                    const result = await getPatientProfile();
+                    if (result?.user?.name) {
+                        setUserName(result.user.name);
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch navbar name", e);
+                }
+            }
+        }
+        fetchName();
+    }, [session]);
 
     return (
         <nav className="bg-white border-b border-zinc-200 relative z-40">
