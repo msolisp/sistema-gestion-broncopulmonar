@@ -288,7 +288,7 @@ export async function adminCreatePatient(prevState: any, formData: FormData) {
         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
     }
 
-    const { name, email, rut, commune, address, gender, healthSystem, birthDate, password } = validation.data;
+    const { name, email, rut, commune, region, address, gender, healthSystem, birthDate, password } = validation.data;
 
     if (!password) {
         return { message: 'La contraseña es obligatoria para nuevos usuarios.' };
@@ -306,7 +306,9 @@ export async function adminCreatePatient(prevState: any, formData: FormData) {
                 password: hashedPassword,
                 name,
                 rut,
+                rut,
                 commune,
+                region,
                 address,
                 gender,
                 healthSystem,
@@ -338,7 +340,7 @@ export async function adminUpdatePatient(prevState: any, formData: FormData) {
         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
     }
 
-    const { id, name, rut, commune, address, gender, healthSystem, birthDate, diagnosisDate, active } = validation.data;
+    const { id, name, rut, commune, region, address, gender, healthSystem, birthDate, diagnosisDate, active } = validation.data;
 
     try {
         await prisma.patient.update({
@@ -348,6 +350,7 @@ export async function adminUpdatePatient(prevState: any, formData: FormData) {
                 rut,
                 active,
                 commune,
+                region,
                 address,
                 gender,
                 healthSystem,

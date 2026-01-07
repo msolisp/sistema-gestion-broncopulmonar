@@ -8,12 +8,14 @@ test.describe('Patient Portal Features', () => {
 
     test('should register, login, navigate to profile, and update all fields', async ({ page }) => {
         // 1. Register a new user to ensure a clean state
-        const uniqueRut = `20${Math.floor(Math.random() * 10000000)}-${Math.floor(Math.random() * 9)}`;
+        const uniqueRut = `${Math.floor(Math.random() * 10000000) + 10000000}-${Math.floor(Math.random() * 9)}`;
         const uniqueEmail = `profile-test-${Date.now()}@example.com`;
 
         await page.goto('/register');
         await page.fill('input[name="name"]', 'Profile Test User');
-        await page.fill('input[name="rut"]', uniqueRut);
+        const [rutBody, rutDv] = uniqueRut.split('-');
+        await page.fill('input[name="rutBody"]', rutBody);
+        await page.fill('input[name="rutDv"]', rutDv);
 
         // Initial Region/Commune
         await page.selectOption('select[id="region"]', { label: 'Metropolitana de Santiago' });

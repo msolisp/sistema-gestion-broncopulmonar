@@ -36,6 +36,7 @@ model Patient {
   
   phone         String?
   commune       String
+  region        String? // Nuevo campo
   gender        String?
   address       String?
   birthDate     DateTime?

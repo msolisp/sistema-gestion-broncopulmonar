@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { LogOut, Activity, Users, FileText, Settings } from "lucide-react";
+import { LogOut, Activity, Users, FileText, Settings, Sparkles } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 
 interface InternalSidebarProps {
@@ -40,6 +40,10 @@ export default function InternalSidebar({ user }: InternalSidebarProps) {
                 <Link href="/reports" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
                     <FileText className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
                     Reportes BI
+                </Link>
+                <Link href="/asistente" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
+                    <Sparkles className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
+                    Asistente IA
                 </Link>
                 {/* Admin Only Link */}
                 {userRole === 'ADMIN' && (

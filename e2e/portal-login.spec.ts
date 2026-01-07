@@ -10,13 +10,16 @@ test.describe('Patient Portal Authentication', () => {
         await page.goto('/register');
         const uniqueEmail = `portal_test_${Date.now()}@test.com`;
         await page.fill('input[name="name"]', 'Portal Test Patient');
-        await page.fill('input[name="rut"]', `10.000.000-${Math.floor(Math.random() * 9)}`);
+        const generatedRut = `${Math.floor(Math.random() * 10000000) + 10000000}-${Math.floor(Math.random() * 9)}`;
+        const [rutBody, rutDv] = generatedRut.split('-');
+        await page.fill('input[name="rutBody"]', rutBody);
+        await page.fill('input[name="rutDv"]', rutDv);
         await page.selectOption('select[id="region"]', { label: 'Metropolitana de Santiago' });
         await page.locator('select[name="commune"]').selectOption({ value: 'SANTIAGO' });
         await page.fill('input[name="email"]', uniqueEmail);
         await page.fill('input[name="password"]', 'password123');
         await page.click('button:has-text("Registrarse")');
-        await expect(page.getByText('Cuenta creada exitosamente')).toBeVisible();
+        await expect(page.getByText(/Cuenta creada exitosamente/)).toBeVisible();
 
         await page.goto('/login');
 
@@ -53,13 +56,16 @@ test.describe('Patient Portal Authentication', () => {
         await page.goto('/register');
         const uniqueEmail = `logout_test_${Date.now()}@test.com`;
         await page.fill('input[name="name"]', 'Logout Test Patient');
-        await page.fill('input[name="rut"]', `10.000.111-${Math.floor(Math.random() * 9)}`);
+        const generatedRut = `${Math.floor(Math.random() * 10000000) + 10000000}-${Math.floor(Math.random() * 9)}`;
+        const [rutBody, rutDv] = generatedRut.split('-');
+        await page.fill('input[name="rutBody"]', rutBody);
+        await page.fill('input[name="rutDv"]', rutDv);
         await page.selectOption('select[id="region"]', { label: 'Metropolitana de Santiago' });
         await page.locator('select[name="commune"]').selectOption({ value: 'SANTIAGO' });
         await page.fill('input[name="email"]', uniqueEmail);
         await page.fill('input[name="password"]', 'password123');
         await page.click('button:has-text("Registrarse")');
-        await expect(page.getByText('Cuenta creada exitosamente')).toBeVisible();
+        await expect(page.getByText(/Cuenta creada exitosamente/)).toBeVisible();
 
         await page.goto('/login');
         await page.fill('input[type="email"]', uniqueEmail);

@@ -11,20 +11,16 @@ export default async function MyReservationsPage() {
         redirect('/login?callbackUrl=/mis-reservas');
     }
 
-    const user = await prisma.user.findUnique({
+    const user = await prisma.patient.findUnique({
         where: { email: session.user.email },
         include: {
-            patientProfile: {
-                include: {
-                    appointments: {
-                        orderBy: { date: 'desc' }
-                    }
-                }
+            appointments: {
+                orderBy: { date: 'desc' }
             }
         }
     });
 
-    if (!user || !user.patientProfile) {
+    if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-zinc-50 p-4">
                 <div className="bg-white p-8 rounded-xl shadow-md border border-zinc-100 max-w-md w-full text-center">
@@ -36,7 +32,7 @@ export default async function MyReservationsPage() {
         );
     }
 
-    const appointments = user.patientProfile.appointments;
+    const appointments = user.appointments;
 
     return (
         <div className="min-h-screen bg-zinc-50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center">

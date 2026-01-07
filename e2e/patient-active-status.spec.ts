@@ -11,7 +11,7 @@ test.describe('Patient Management Workflow', () => {
         await page.click('button:has-text("Ingresar")');
 
         // Wait for redirect
-        await page.waitForURL('/dashboard');
+        await page.waitForURL(/\/dashboard/);
 
         // 2. Navigate to Patients
         await page.click('a[href="/patients"]');

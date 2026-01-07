@@ -8,13 +8,15 @@ test.describe('Authentication & Inactivity', () => {
 
     test('should allow user to login', async ({ page }) => {
         // Need a seeded user or register one. using register flow to be safe.
-        const uniqueRut = `20${Math.floor(Math.random() * 10000000)}-${Math.floor(Math.random() * 9)}`;
+        const uniqueRut = `${Math.floor(Math.random() * 10000000) + 10000000}-${Math.floor(Math.random() * 9)}`;
         const uniqueEmail = `test-${Date.now()}@example.com`;
 
         // Register
         await page.goto('/register');
         await page.fill('input[name="name"]', 'Test Auth User');
-        await page.fill('input[name="rut"]', uniqueRut);
+        const [rutBody, rutDv] = uniqueRut.split('-');
+        await page.fill('input[name="rutBody"]', rutBody);
+        await page.fill('input[name="rutDv"]', rutDv);
 
         // Handling the new Region/Commune UI
         const regionSelect = page.locator('select[id="region"]');
@@ -30,7 +32,7 @@ test.describe('Authentication & Inactivity', () => {
 
         // Should redirect to login or show success message
         // The current implementation shows a success message.
-        await expect(page.locator('text=Cuenta creada exitosamente')).toBeVisible();
+        await expect(page.getByText(/Cuenta creada exitosamente/)).toBeVisible();
 
         // Login
         await page.goto('/login');

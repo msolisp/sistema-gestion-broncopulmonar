@@ -10,6 +10,7 @@ import { adminCreatePatient, adminUpdatePatient, deletePatient } from "@/lib/act
 interface Patient {
     id: string
     commune: string
+    region: string | null
 
     diagnosisDate: Date | null
     gender: string | null
@@ -21,6 +22,25 @@ interface Patient {
     rut: string | null
     appointments: any[]
 }
+
+const CHILE_REGIONS = [
+    "Arica y Parinacota",
+    "Tarapacá",
+    "Antofagasta",
+    "Atacama",
+    "Coquimbo",
+    "Valparaíso",
+    "Metropolitana",
+    "O'Higgins",
+    "Maule",
+    "Ñuble",
+    "Biobío",
+    "Araucanía",
+    "Los Ríos",
+    "Los Lagos",
+    "Aysén",
+    "Magallanes"
+];
 
 interface PatientsTableProps {
     patients: Patient[]
@@ -88,6 +108,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
             'Nombre': p.name,
             'Email': p.email,
             'RUT': p.rut,
+            'Región': p.region,
             'Comuna': p.commune,
             'Edad': calculateAge(p.birthDate),
             'Estado': p.active ? 'Activo' : 'Inactivo',
@@ -304,12 +325,17 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                     <label className="block text-sm font-medium text-zinc-700 mb-1">Contraseña</label>
                                     <input name="password" type="password" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" placeholder="********" autoComplete="new-password" />
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-1">Dirección</label>
-                                    <input name="address" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" placeholder="Ej: Av. Providencia 1234" />
-                                </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div>
+                                    <div className="col-span-1">
+                                        <label className="block text-sm font-medium text-zinc-700 mb-1">Región</label>
+                                        <select name="region" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 bg-white">
+                                            <option value="">Seleccionar</option>
+                                            {CHILE_REGIONS.map(r => (
+                                                <option key={r} value={r}>{r}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div className="col-span-1">
                                         <label className="block text-sm font-medium text-zinc-700 mb-1">Comuna</label>
                                         <select name="commune" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none  text-zinc-900 bg-white">
                                             <option value="SANTIAGO">Santiago</option>
@@ -318,19 +344,24 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                             <option value="LAS CONDES">Las Condes</option>
                                         </select>
                                     </div>
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-zinc-700 mb-1">Dirección</label>
+                                    <input name="address" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" placeholder="Ej: Av. Providencia 1234" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
                                     <div>
                                         <label className="block text-sm font-medium text-zinc-700 mb-1">Género</label>
                                         <select name="gender" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 bg-white">
                                             <option value="">Seleccionar</option>
                                             <option value="Masculino">Masculino</option>
                                             <option value="Femenino">Femenino</option>
-                                            <option value="Otro">Otro</option>
                                         </select>
                                     </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-zinc-700 mb-1">Fecha de Nacimiento</label>
-                                    <input name="birthDate" type="date" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-700 mb-1">Fecha de Nacimiento</label>
+                                        <input name="birthDate" type="date" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
+                                    </div>
                                 </div>
 
                                 {createState?.message && createState.message !== 'Success' && <p className="text-red-500 text-sm">{createState.message}</p>}
@@ -370,6 +401,15 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                         <input name="address" defaultValue={selectedPatient.address || ''} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
                                     </div>
                                     <div>
+                                        <label className="block text-sm font-medium text-zinc-700 mb-1">Región</label>
+                                        <select name="region" defaultValue={selectedPatient.region} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 bg-white">
+                                            <option value="">Seleccionar</option>
+                                            {CHILE_REGIONS.map(r => (
+                                                <option key={r} value={r}>{r}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                    <div>
                                         <label className="block text-sm font-medium text-zinc-700 mb-1">Comuna</label>
                                         <select name="commune" defaultValue={selectedPatient.commune} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 bg-white">
                                             <option value="SANTIAGO">Santiago</option>
@@ -386,7 +426,6 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                             <option value="">Seleccionar</option>
                                             <option value="Masculino">Masculino</option>
                                             <option value="Femenino">Femenino</option>
-                                            <option value="Otro">Otro</option>
                                         </select>
                                     </div>
                                     <div>
