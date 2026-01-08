@@ -89,13 +89,34 @@ export default function AssistantPage() {
     return (
         <div className="h-[calc(100vh-4rem)] flex flex-col bg-zinc-50">
             {/* Header */}
-            <div className="bg-white border-b border-zinc-200 px-6 py-4 flex items-center gap-3 shadow-sm">
-                <div className="p-2 bg-indigo-100 rounded-lg text-indigo-600">
-                    <Sparkles className="w-6 h-6" />
-                </div>
-                <div>
-                    <h1 className="text-xl font-bold text-zinc-900">Asistente Clínico IA</h1>
-                    <p className="text-sm text-zinc-500">Basado en FPPocket - Preguntas y respuestas clave en fibrosis pulmonar progresiva</p>
+            <div className="bg-white border-b border-zinc-200 shadow-sm relative overflow-hidden">
+                <div className="absolute top-0 right-0 w-64 h-full bg-gradient-to-l from-indigo-50 to-transparent opacity-50" />
+                <div className="px-6 py-6 flex items-center justify-between relative z-10">
+                    <div className="flex items-start gap-4">
+                        <div className="p-3 bg-indigo-600 rounded-xl shadow-lg shadow-indigo-200 mt-1">
+                            <Sparkles className="w-6 h-6 text-white" />
+                        </div>
+                        <div className="max-w-xl">
+                            <h1 className="text-2xl font-bold text-zinc-900 tracking-tight">Asistente Clínico IA</h1>
+                            <p className="text-zinc-500 mt-1 text-sm leading-relaxed">
+                                Herramienta de apoyo basada en la guía clínica <strong>"FPPocket: Preguntas y respuestas clave en fibrosis pulmonar progresiva"</strong> (Fundación Aire).
+                                <span className="block mt-1 text-xs text-indigo-600 font-medium bg-indigo-50 w-fit px-2 py-0.5 rounded-full border border-indigo-100">
+                                    v2.4 • Base de Conocimiento Actualizada
+                                </span>
+                            </p>
+                        </div>
+                    </div>
+                    {/* Book Cover Image */}
+                    <div className="hidden md:block flex-shrink-0 ml-6">
+                        <div className="relative h-24 w-16 shadow-md rounded-sm overflow-hidden border border-zinc-200 transform rotate-1 hover:rotate-0 transition-transform duration-300">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img
+                                src="/images/fppocket-cover.jpg"
+                                alt="FPPocket Cover"
+                                className="object-cover w-full h-full"
+                            />
+                        </div>
+                    </div>
                 </div>
             </div>
 
