@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
             ],
             stream: true,
             temperature: 0.7,
-            max_tokens: 256,
+            max_tokens: 1000,
         });
 
         // Create a ReadableStream for the response
