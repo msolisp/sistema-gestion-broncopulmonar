@@ -4,7 +4,9 @@ import prisma from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
 import { openai } from '@/lib/openai';
 
+console.log('API: route.ts loaded');
 export async function POST(req: NextRequest) {
+    console.log('API: POST called');
     try {
         const session = await auth();
         if (!session?.user) {
@@ -26,6 +28,7 @@ export async function POST(req: NextRequest) {
             input: userQuery,
         });
         const vector = embedResponse.data[0].embedding;
+        console.log('API: Vector generated');
 
         // 2. Retrieve Relevant Context
         // Use raw query for cosine similarity (<=>) or inner product (<#>) or L2 (<->).
