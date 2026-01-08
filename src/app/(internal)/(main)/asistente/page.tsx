@@ -28,25 +28,28 @@ export default function AssistantPage() {
 
     // Prompts sugeridos: Optimizados para coincidir con la guía "FPPocket" (Fibrosis Pulmonar Progresiva)
     const SUGGESTED_PROMPTS = [
-        { label: '🤔 ¿Qué es la FPP?', query: '¿Qué es la fibrosis pulmonar progresiva (FPP)?' },
-        { label: '💊 Tratamiento Farmacológico', query: '¿Cuál es el tratamiento farmacológico de la fibrosis pulmonar progresiva?' },
-        { label: '📋 Criterios de FPP', query: '¿Cuáles son los criterios para definir una fibrosis pulmonar progresiva?' },
+        { label: '🤔 ¿Qué es la FPP?', query: '¿Qué es la fibrosis pulmonar progresiva (FPP)?', suffix: ' (Responde en máximo 5 líneas)' },
+        { label: '💊 Tratamiento Farmacológico', query: '¿Cuál es el tratamiento farmacológico de la fibrosis pulmonar progresiva?', suffix: ' (Responde en máximo 5 líneas)' },
+        { label: '📋 Criterios de FPP', query: '¿Cuáles son los criterios para definir una fibrosis pulmonar progresiva?', suffix: ' (Lista los criterios en máximo 5 líneas)' },
     ];
 
-    const handleSubmit = async (e?: React.FormEvent, manualQuery?: string) => {
+    const handleSubmit = async (e?: React.FormEvent, promptOverride?: { query: string, suffix?: string }) => {
         if (e) e.preventDefault();
-        const query = manualQuery || input.trim();
+
+        const query = promptOverride ? promptOverride.query : input.trim();
         if (!query || isLoading) return;
 
         setInput('');
         setMessages(prev => [...prev, { role: 'user', content: query }]);
         setIsLoading(true);
 
+        const apiContent = promptOverride?.suffix ? `${query} ${promptOverride.suffix}` : query;
+
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: [...messages, { role: 'user', content: query }] }),
+                body: JSON.stringify({ messages: [...messages, { role: 'user', content: apiContent }] }),
             });
 
             if (!response.ok) {
@@ -176,7 +179,7 @@ export default function AssistantPage() {
                     {SUGGESTED_PROMPTS.map((prompt, idx) => (
                         <button
                             key={idx}
-                            onClick={() => handleSubmit(undefined, prompt.query)}
+                            onClick={() => handleSubmit(undefined, prompt)}
                             disabled={isLoading}
                             className="px-4 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full border border-indigo-100 hover:bg-indigo-100 hover:border-indigo-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                         >
