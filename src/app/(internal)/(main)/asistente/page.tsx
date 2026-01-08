@@ -88,7 +88,7 @@ export default function AssistantPage() {
                 </div>
                 <div>
                     <h1 className="text-xl font-bold text-zinc-900">Asistente Clínico IA</h1>
-                    <p className="text-sm text-zinc-500">Basado en Guías de Fibrosis Pulmonar (Local)</p>
+                    <p className="text-sm text-zinc-500">Basado en FPPocket - Preguntas y respuestas clave en fibrosis pulmonar progresiva</p>
                 </div>
             </div>
 
