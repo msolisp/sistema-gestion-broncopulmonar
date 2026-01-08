@@ -135,6 +135,7 @@ model PasswordResetToken {
 model MedicalKnowledge {
   id        String   @id @default(cuid())
   content   String
+  imageUrl  String?
   source    String   // Image filename
   page      Int?
   embedding Unsupported("vector(1536)")?

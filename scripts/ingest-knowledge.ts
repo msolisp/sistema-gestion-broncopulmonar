@@ -9,6 +9,7 @@ import crypto from 'crypto';
 import { execSync } from 'child_process';
 import os from 'os';
 import cliProgress from 'cli-progress';
+import { put } from '@vercel/blob';
 
 // Instantiate clients
 const prisma = new PrismaClient();
@@ -30,6 +31,12 @@ async function main() {
     if (!fs.existsSync(KNOWLEDGE_BASE_DIR)) {
         console.error(`❌ Directory not found: ${KNOWLEDGE_BASE_DIR}`);
         process.exit(1);
+    }
+
+    // Check for Blob Token
+    const HAS_BLOB_TOKEN = !!process.env.BLOB_READ_WRITE_TOKEN;
+    if (!HAS_BLOB_TOKEN) {
+        console.warn("\n⚠️  Missing BLOB_READ_WRITE_TOKEN. Images will NOT be hosted for display (text-only mode).\n");
     }
 
     // 1. Clear existing data (Incompatible vectors)
@@ -75,8 +82,27 @@ async function main() {
             const base64Image = imageBuffer.toString('base64');
             const dataUrl = `data:image/jpeg;base64,${base64Image}`;
 
+            // Helper for retry
+            const runWithRetry = async (fn: () => Promise<any>, retries = 3, delay = 2000) => {
+                for (let i = 0; i < retries; i++) {
+                    try {
+                        return await fn();
+                    } catch (error: any) {
+                        if (error?.status === 429) {
+                            // Rate limit
+                            const waittime = delay * Math.pow(2, i);
+                            // console.log(`   ⏳ Rate limit hit, waiting ${waittime}ms...`);
+                            await new Promise(res => setTimeout(res, waittime));
+                        } else {
+                            throw error;
+                        }
+                    }
+                }
+                throw new Error("Max retries exceeded");
+            };
+
             // A. OCR / Description with GPT-4o-mini (Vision)
-            const ocrResponse = await openai.chat.completions.create({
+            const ocrResponse = await runWithRetry(() => openai.chat.completions.create({
                 model: "gpt-4o-mini",
                 messages: [
                     {
@@ -93,12 +119,29 @@ async function main() {
                     },
                 ],
                 max_tokens: 1000,
-            });
+            }));
 
             const content = ocrResponse.choices[0].message.content;
             if (!content || content.trim().length < 10) {
                 bar.increment();
                 continue;
+            }
+
+            // A-2. Upload to Vercel Blob (if token exists)
+            let publicImageUrl = null;
+            if (HAS_BLOB_TOKEN) {
+                try {
+                    // Upload the temp jpeg image
+                    // Use a unique path: 'knowledge-base/{filename}.jpg'
+                    const blob = await put(`knowledge-base/${file}.jpg`, fs.readFileSync(tempImage), {
+                        access: 'public',
+                        addRandomSuffix: true,
+                        token: process.env.BLOB_READ_WRITE_TOKEN
+                    });
+                    publicImageUrl = blob.url;
+                } catch (blobError) {
+                    console.error("   ❌ Blob upload failed:", blobError);
+                }
             }
 
             // B. Embedding with OpenAI (text-embedding-3-small)
@@ -114,8 +157,8 @@ async function main() {
             const id = crypto.randomUUID();
 
             await prisma.$executeRaw`
-        INSERT INTO "MedicalKnowledge" (id, content, source, page, embedding, "createdAt")
-        VALUES (${id}, ${content}, ${file}, 1, ${vectorString}::vector, NOW());
+        INSERT INTO "MedicalKnowledge" (id, content, "imageUrl", source, page, embedding, "createdAt")
+        VALUES (${id}, ${content}, ${publicImageUrl}, ${file}, 1, ${vectorString}::vector, NOW());
       `;
 
             bar.increment();

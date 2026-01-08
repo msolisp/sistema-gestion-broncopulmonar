@@ -4,12 +4,14 @@ const OpenAI = require('openai');
 const fs = require('fs');
 const path = require('path');
 
+const { put } = require('@vercel/blob');
 const prisma = new PrismaClient();
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const HAS_BLOB_TOKEN = !!process.env.BLOB_READ_WRITE_TOKEN;
 
 async function main() {
     // Use the absolute path to the uploaded image located in the user's gemini directory
-    const imagePath = "/Users/max/.gemini/antigravity/brain/af40181b-f1e7-4afd-ab47-838067685739/uploaded_image_1_1767868891531.png";
+    const imagePath = "/Users/max/.gemini/antigravity/brain/af40181b-f1e7-4afd-ab47-838067685739/uploaded_image_0_1767868891531.png";
 
     if (!fs.existsSync(imagePath)) {
         console.error(`❌ Image not found: ${imagePath}`);
@@ -53,6 +55,22 @@ async function main() {
         return;
     }
 
+    // 1.b Upload to Blob
+    let publicImageUrl = null;
+    if (HAS_BLOB_TOKEN) {
+        try {
+            const blob = await put(`knowledge-base/${path.basename(imagePath)}`, fs.readFileSync(imagePath), {
+                access: 'public',
+                addRandomSuffix: true,
+                token: process.env.BLOB_READ_WRITE_TOKEN
+            });
+            publicImageUrl = blob.url;
+            console.log(`📸 Image uploaded: ${publicImageUrl}`);
+        } catch (e) {
+            console.error("Blob Upload Error:", e);
+        }
+    }
+
     // 2. Embedding
     console.log("🧠 Generating Embeddings...");
     const embedResponse = await openai.embeddings.create({
@@ -69,8 +87,8 @@ async function main() {
     const sourceName = "Módulo VII - Novedades 2025 (Suplemento)";
 
     await prisma.$executeRaw`
-    INSERT INTO "MedicalKnowledge" (id, content, source, page, embedding, "createdAt")
-    VALUES (${id}, ${content}, ${sourceName}, 30, ${vectorString}::vector, NOW());
+    INSERT INTO "MedicalKnowledge" (id, content, "imageUrl", source, page, embedding, "createdAt")
+    VALUES (${id}, ${content}, ${publicImageUrl}, ${sourceName}, 30, ${vectorString}::vector, NOW());
   `;
 
     console.log("✅ Successfully ingested missing page!");

@@ -35,14 +35,20 @@ export async function POST(req: NextRequest) {
 
         // Cast to vector type for query
         const results = await prisma.$queryRaw`
-      SELECT content, source, page, (embedding <=> ${vectorString}::vector) as distance
+      SELECT content, imageUrl, source, page, (embedding <=> ${vectorString}::vector) as distance
       FROM "MedicalKnowledge"
       ORDER BY distance ASC
       LIMIT 3
     ` as any[];
 
         // 3. Construct Prompt
-        const contextText = results.map((r: any) => `[Source: ${r.source}, Page: ${r.page}] ${r.content}`).join('\n\n');
+        const contextText = results.map((r: any) => {
+            let text = `[Source: ${r.source}, Page: ${r.page}] ${r.content}`;
+            if (r.imageUrl) {
+                text += `\n[Reference Image]: ${r.imageUrl}`;
+            }
+            return text;
+        }).join('\n\n');
 
         // System instruction
         // System instruction (Optimized for speed)
@@ -51,8 +57,11 @@ export async function POST(req: NextRequest) {
     
     Instructions:
     1.  **Context First:** Always prioritize the provided 'Context' to answer the question. Cite the source if possible (e.g., "Según la guía...").
-    2.  **Greetings:** If the user greets you ("Hola", "Buenos días"), reply politely and ask how you can help.
-    3.  **Fallback:** If the Context does not answer the question effectively:
+    2.  **Images:** If the Context includes a "[Reference Image]: URL", you MUST display it in your response using Markdown format: \`![Figura o Diagrama Relevant](URL)\`.
+        *   Place the image near the relevant text.
+        *   Do not invent image URLs. Only use the ones from Context.
+    3.  **Greetings:** If the user greets you ("Hola", "Buenos días"), reply politely and ask how you can help.
+    4.  **Fallback:** If the Context does not answer the question effectively:
         *   **Do NOT** say "No information found" immediately.
         *   Provide a helpful answer based on your general general medical knowledge.
         *   **CRITICAL:** You MUST start your answer with a disclaimer: "⚠️ **Nota:** Esta información es general y no aparece explícitamente en las guías subidas."
