@@ -306,7 +306,6 @@ export async function adminCreatePatient(prevState: any, formData: FormData) {
                 password: hashedPassword,
                 name,
                 rut,
-                rut,
                 commune,
                 region,
                 address,

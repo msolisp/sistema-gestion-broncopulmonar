@@ -32,7 +32,7 @@ describe('getPatientProfile', () => {
 
     it('should return user and patient profile', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'patient-1' }
+            user: { id: 'patient-1', email: 'test@example.com' }
         });
 
         const mockPatient = {
@@ -52,7 +52,7 @@ describe('getPatientProfile', () => {
 
     it('should return error if user not found in DB', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'patient-1' }
+            user: { id: 'patient-1', email: 'test@example.com' }
         });
 
         (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null);
@@ -64,7 +64,7 @@ describe('getPatientProfile', () => {
 
     it('should return error if DB fails', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'user-1' }
+            user: { id: 'user-1', email: 'test@example.com' }
         });
 
         (prisma.patient.findUnique as jest.Mock).mockRejectedValue(new Error('DB Error'));

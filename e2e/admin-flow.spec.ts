@@ -47,12 +47,17 @@ test('Admin Flow: Create Patient and Upload Exam', async ({ page }) => {
     // Split RUT filling
     await page.fill('input[id="rut_num"]', uniqueRutNum);
     await page.fill('input[id="rut_dv"]', uniqueRutDv);
+    // Explicitly set hidden input because onChange might happen too fast or not trigger with programmatic fill sometimes
+    await page.evaluate(({ rut }) => {
+        (document.getElementById('rut_hidden') as HTMLInputElement).value = rut;
+    }, { rut: uniqueRut });
+
     await page.fill('input[name="password"]', 'Password123!');
     await page.fill('input[name="address"]', 'Calle Falsa 123');
     // Select Commune
     await page.selectOption('select[name="commune"]', 'PROVIDENCIA');
-    // Fill Address
-    // already filled above
+    // Select Region
+    await page.selectOption('select[name="region"]', 'Metropolitana');
     // Select Gender
     await page.selectOption('select[name="gender"]', 'Masculino');
     // Date

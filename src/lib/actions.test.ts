@@ -386,6 +386,7 @@ describe('Admin Actions', () => {
     formData.append('gender', 'Masculino')
     formData.append('healthSystem', 'FONASA')
     formData.append('birthDate', '1990-01-01')
+    formData.append('region', 'RM')
     formData.append('password', 'password123')
 
     it('adminCreatePatient checks admin role', async () => {
@@ -412,6 +413,7 @@ describe('Admin Actions', () => {
         noPassData.append('email', 'admin@created.com')
         noPassData.append('rut', '12345678-9')
         noPassData.append('commune', 'SANTIAGO')
+        noPassData.append('region', 'RM')
         const result = await adminCreatePatient(null, noPassData)
         expect(result.message).toContain('La contraseña es obligatoria')
     })
@@ -451,6 +453,7 @@ describe('Admin Actions', () => {
     patientData.append('name', 'Updated')
     patientData.append('rut', '11111111-1')
     patientData.append('commune', 'Arica')
+    patientData.append('region', 'xv')
     patientData.append('active', 'on')
 
     it('adminUpdatePatient succeeds', async () => {

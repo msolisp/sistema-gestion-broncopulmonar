@@ -1,37 +1,40 @@
 import { RateLimiterMemory } from 'rate-limiter-flexible';
 
-// Delegate variable that can be swapped per test
-let mockConsumeDelegate: jest.Mock;
-
-jest.mock('rate-limiter-flexible', () => {
-    return {
-        RateLimiterMemory: jest.fn().mockImplementation(() => ({
-            // Forward calls to the delegate
-            consume: (...args: any[]) => mockConsumeDelegate(...args)
-        }))
-    };
-});
-
 describe('rateLimit', () => {
     let rateLimit: (key: string) => Promise<void>;
+    let mockConsume: jest.Mock;
+    const originalEnv = process.env;
 
     beforeEach(async () => {
         jest.resetModules();
-        mockConsumeDelegate = jest.fn();
+        process.env = { ...originalEnv, NODE_ENV: 'production' };
 
-        // Dynamic import to trigger new instantiation which will use the mock factory above
+        mockConsume = jest.fn();
+
+        jest.doMock('rate-limiter-flexible', () => {
+            return {
+                RateLimiterMemory: jest.fn().mockImplementation(() => ({
+                    consume: mockConsume
+                }))
+            };
+        });
+
         const module = await import('./rate-limit');
         rateLimit = module.rateLimit;
     });
 
+    afterAll(() => {
+        process.env = originalEnv;
+    });
+
     it('consumes a point for the key', async () => {
-        mockConsumeDelegate.mockResolvedValue(true);
+        mockConsume.mockResolvedValue(true);
         await rateLimit('test-key');
-        expect(mockConsumeDelegate).toHaveBeenCalledWith('test-key');
+        expect(mockConsume).toHaveBeenCalledWith('test-key');
     });
 
     it('throws error when limit exceeded', async () => {
-        mockConsumeDelegate.mockRejectedValue(new Error('Too Many Requests'));
+        mockConsume.mockRejectedValue(new Error('Too Many Requests'));
         await expect(rateLimit('test-key')).rejects.toThrow('Too Many Requests');
     });
 });
