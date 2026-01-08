@@ -28,7 +28,7 @@ export default function AssistantPage() {
 
     // Prompts sugeridos
     const SUGGESTED_PROMPTS = [
-        { label: '🤔 ¿Qué es la fibrosis pulmonar?', query: '¿Qué es la fibrosis pulmonar?' },
+        { label: '🤔 ¿Qué es la fibrosis pulmonar progresiva?', query: '¿Qué es la fibrosis pulmonar progresiva?' },
         { label: '💊 Tratamientos utilizados', query: '¿Qué tipo de tratamientos se utilizan para la fibrosis pulmonar?' },
         { label: '📋 Criterios de diagnóstico', query: '¿Cuáles son los criterios de diagnóstico para la fibrosis pulmonar?' },
     ];
