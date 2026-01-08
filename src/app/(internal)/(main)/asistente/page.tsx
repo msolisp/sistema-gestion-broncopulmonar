@@ -26,20 +26,27 @@ export default function AssistantPage() {
         scrollToBottom();
     }, [messages]);
 
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!input.trim() || isLoading) return;
+    // Prompts sugeridos
+    const SUGGESTED_PROMPTS = [
+        { label: '🤔 ¿Qué es la fibrosis pulmonar?', query: '¿Qué es la fibrosis pulmonar?' },
+        { label: '💊 Tratamientos utilizados', query: '¿Qué tipo de tratamientos se utilizan para la fibrosis pulmonar?' },
+        { label: '📋 Criterios de diagnóstico', query: '¿Cuáles son los criterios de diagnóstico para la fibrosis pulmonar?' },
+    ];
 
-        const userMessage = input.trim();
+    const handleSubmit = async (e?: React.FormEvent, manualQuery?: string) => {
+        if (e) e.preventDefault();
+        const query = manualQuery || input.trim();
+        if (!query || isLoading) return;
+
         setInput('');
-        setMessages(prev => [...prev, { role: 'user', content: userMessage }]);
+        setMessages(prev => [...prev, { role: 'user', content: query }]);
         setIsLoading(true);
 
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: [...messages, { role: 'user', content: userMessage }] }),
+                body: JSON.stringify({ messages: [...messages, { role: 'user', content: query }] }),
             });
 
             if (!response.ok) {
@@ -143,7 +150,21 @@ export default function AssistantPage() {
 
             {/* Input Area */}
             <div className="p-4 bg-white border-t border-zinc-200">
-                <form onSubmit={handleSubmit} className="max-w-4xl mx-auto relative flex gap-2">
+                {/* Suggested Prompts */}
+                <div className="max-w-4xl mx-auto flex flex-wrap gap-2 mb-3">
+                    {SUGGESTED_PROMPTS.map((prompt, idx) => (
+                        <button
+                            key={idx}
+                            onClick={() => handleSubmit(undefined, prompt.query)}
+                            disabled={isLoading}
+                            className="px-4 py-2 bg-indigo-50 text-indigo-700 text-sm font-medium rounded-full border border-indigo-100 hover:bg-indigo-100 hover:border-indigo-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {prompt.label}
+                        </button>
+                    ))}
+                </div>
+
+                <form onSubmit={(e) => handleSubmit(e)} className="max-w-4xl mx-auto relative flex gap-2">
                     <input
                         type="text"
                         value={input}
