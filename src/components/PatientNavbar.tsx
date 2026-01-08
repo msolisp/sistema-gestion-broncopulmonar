@@ -6,9 +6,14 @@ import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { getPatientProfile } from "@/actions/patient-profile";
 
-export default function PatientNavbar() {
+interface PatientNavbarProps {
+    initialUserName?: string;
+}
+
+export default function PatientNavbar({ initialUserName }: PatientNavbarProps) {
     const { data: session, status } = useSession();
-    const [userName, setUserName] = useState<string>("");
+    // Initialize with prop if available, otherwise empty string (waiting for client session)
+    const [userName, setUserName] = useState<string>(initialUserName || "");
 
     useEffect(() => {
         async function fetchName() {
