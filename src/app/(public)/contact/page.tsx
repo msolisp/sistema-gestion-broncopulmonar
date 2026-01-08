@@ -18,7 +18,7 @@ export default function ContactPage() {
                     Volver al inicio
                 </Link>
 
-                <h1 className="text-3xl font-bold mb-2">Contacto Profesional</h1>
+                <h1 className="text-3xl font-bold mb-2">Contacto</h1>
                 <p className="text-slate-400 mb-8">Para consultas técnicas o soporte sobre la plataforma.</p>
 
                 <div className="space-y-6">
@@ -27,7 +27,7 @@ export default function ContactPage() {
                             <User className="h-6 w-6 text-indigo-400" />
                         </div>
                         <div>
-                            <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Contacto Principal</p>
+                            <p className="text-xs text-slate-400 uppercase tracking-wider font-semibold mb-1">Contacto</p>
                             <p className="text-lg font-medium text-white">Maximiliano Solis</p>
                         </div>
                     </div>

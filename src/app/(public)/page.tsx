@@ -67,7 +67,7 @@ export default function Home() {
                 href="/contact"
                 className="w-full sm:w-auto px-8 py-4 text-base font-medium text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 rounded-2xl transition-all"
               >
-                Contacto Profesional
+                Contacto
               </Link>
             </div>
           </div>
