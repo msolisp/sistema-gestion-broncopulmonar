@@ -7,15 +7,18 @@ import { useEffect, useState } from "react";
 import { getPatientProfile } from "@/actions/patient-profile";
 
 export default function PatientNavbar() {
-    const { data: session } = useSession();
-    const [userName, setUserName] = useState<string>("Paciente");
+    const { data: session, status } = useSession();
+    const [userName, setUserName] = useState<string>("");
 
     useEffect(() => {
         async function fetchName() {
+            if (status === 'loading') return;
+
             if (session?.user?.email) {
                 // Optimistic update from session if available
                 if (session.user.name && session.user.name !== "Admin User" && session.user.name !== "Paciente") {
                     setUserName(session.user.name.split(' ')[0]);
+                    return; // If we have a good name, no need to fetch immediately (or we can fetch in bg)
                 }
 
                 // Fetch latest from DB to be sure
@@ -23,14 +26,19 @@ export default function PatientNavbar() {
                     const result = await getPatientProfile();
                     if (result?.user?.name) {
                         setUserName(result.user.name.split(' ')[0]);
+                    } else {
+                        setUserName("Paciente");
                     }
                 } catch (e) {
                     console.error("Failed to fetch navbar name", e);
+                    setUserName("Paciente");
                 }
+            } else {
+                setUserName("Paciente"); // Fallback if no session/email
             }
         }
         fetchName();
-    }, [session]);
+    }, [session, status]);
 
     return (
         <nav className="bg-white border-b border-zinc-200 relative z-40">
@@ -63,7 +71,7 @@ export default function PatientNavbar() {
                         </div>
                     </div>
                     <div className="flex items-center">
-                        <span className="text-sm text-zinc-500 mr-4">Hola, {userName}</span>
+                        {userName && <span className="text-sm text-zinc-500 mr-4">Hola, {userName}</span>}
                         <button
                             onClick={() => signOut({ callbackUrl: '/login' })}
                             className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
