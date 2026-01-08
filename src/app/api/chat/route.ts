@@ -82,8 +82,15 @@ export async function POST(req: NextRequest) {
             headers: { 'Content-Type': 'text/plain; charset=utf-8' },
         });
 
-    } catch (error) {
+    } catch (error: any) {
         console.error('Chat API Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+        const errorMessage = error.message || 'Internal Server Error';
+
+        // Check for specific OpenAI errors
+        if (error.status === 401) {
+            return NextResponse.json({ error: 'Invalid API Key' }, { status: 401 });
+        }
+
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }

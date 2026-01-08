@@ -42,7 +42,11 @@ export default function AssistantPage() {
                 body: JSON.stringify({ messages: [...messages, { role: 'user', content: userMessage }] }),
             });
 
-            if (!response.ok) throw new Error('Network response was not ok');
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                const errorMessage = errorData.error || 'Error en el servidor';
+                throw new Error(errorMessage);
+            }
             if (!response.body) throw new Error('No response body');
 
             const reader = response.body.getReader();
@@ -68,7 +72,8 @@ export default function AssistantPage() {
             }
         } catch (error) {
             console.error('Error fetching chat response:', error);
-            setMessages(prev => [...prev, { role: 'assistant', content: 'Lo siento, hubo un error al procesar tu solicitud. Por favor verifica que el servicio de IA local esté activo.' }]);
+            const msg = error instanceof Error ? error.message : 'Error desconocido';
+            setMessages(prev => [...prev, { role: 'assistant', content: `❌ Error: ${msg}` }]);
         } finally {
             setIsLoading(false);
         }
@@ -102,8 +107,8 @@ export default function AssistantPage() {
 
                         <div
                             className={`max-w-[80%] rounded-2xl px-5 py-3 shadow-sm ${msg.role === 'user'
-                                    ? 'bg-indigo-600 text-white rounded-br-none'
-                                    : 'bg-white border border-zinc-200 text-zinc-800 rounded-bl-none prose prose-sm prose-indigo'
+                                ? 'bg-indigo-600 text-white rounded-br-none'
+                                : 'bg-white border border-zinc-200 text-zinc-800 rounded-bl-none prose prose-sm prose-indigo'
                                 }`}
                         >
                             {msg.role === 'user' ? (
