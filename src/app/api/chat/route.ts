@@ -38,7 +38,7 @@ export async function POST(req: NextRequest) {
 
         // Cast to vector type for query
         const results = await prisma.$queryRaw`
-      SELECT content, imageUrl, source, page, (embedding <=> ${vectorString}::vector) as distance
+      SELECT content, "imageUrl", source, page, (embedding <=> ${vectorString}::vector) as distance
       FROM "MedicalKnowledge"
       ORDER BY distance ASC
       LIMIT 3
