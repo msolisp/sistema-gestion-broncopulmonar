@@ -1,6 +1,6 @@
 
 import { PrismaClient } from '@prisma/client';
-import ollama from 'ollama';
+import OpenAI from 'openai';
 import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 import fs from 'fs';
@@ -10,17 +10,32 @@ import { execSync } from 'child_process';
 import os from 'os';
 import cliProgress from 'cli-progress';
 
+// Instantiate clients
 const prisma = new PrismaClient();
+
+if (!process.env.OPENAI_API_KEY) {
+    console.error("❌ Missing OPENAI_API_KEY in environment variables.");
+    process.exit(1);
+}
+
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
 
 const KNOWLEDGE_BASE_DIR = path.join(process.cwd(), 'knowledge-base/education');
 
 async function main() {
-    console.log('🚀 Starting Knowledge Ingestion (SIPS Edition)...');
+    console.log('🚀 Starting Knowledge Ingestion (OpenAI Edition)...');
 
     if (!fs.existsSync(KNOWLEDGE_BASE_DIR)) {
         console.error(`❌ Directory not found: ${KNOWLEDGE_BASE_DIR}`);
         process.exit(1);
     }
+
+    // 1. Clear existing data (Incompatible vectors)
+    console.log('🧹 Clearing old data (Vectors 768 -> 1536)...');
+    await prisma.$executeRaw`TRUNCATE TABLE "MedicalKnowledge";`;
+    console.log('✅ Database cleared.');
 
     const files = fs.readdirSync(KNOWLEDGE_BASE_DIR).filter(f => f.toLowerCase().endsWith('.pdf'));
     console.log(`found ${files.length} PDF files.`);
@@ -36,17 +51,7 @@ async function main() {
     bar.start(files.length, 0, { filename: 'Initializing...' });
 
     for (const file of files) {
-        // bar.update(null, { filename: file }); -> Incorrect type
-        bar.increment(0, { filename: file }); // Update payload without incrementing value yet
-
-        const existing = await prisma.medicalKnowledge.findFirst({
-            where: { source: file }
-        });
-
-        if (existing) {
-            bar.increment();
-            continue;
-        }
+        bar.increment(0, { filename: file });
 
         const tempImage = path.join(os.tmpdir(), `${file}_temp.jpg`);
 
@@ -55,33 +60,47 @@ async function main() {
             execSync(`sips -s format jpeg "${path.join(KNOWLEDGE_BASE_DIR, file)}" --out "${tempImage}" > /dev/null 2>&1`);
 
             if (!fs.existsSync(tempImage)) {
-                // console.error(`   ❌ Failed to convert PDF to Image.`);
                 bar.increment();
                 continue;
             }
 
             const imageBuffer = fs.readFileSync(tempImage);
+            const base64Image = imageBuffer.toString('base64');
+            const dataUrl = `data:image/jpeg;base64,${base64Image}`;
 
-            // A. OCR / Description with LLaVA
-            const ocrResponse = await ollama.generate({
-                model: 'llava',
-                prompt: 'Act as a medical scribe. Transcribe the text in this image exactly. If there are diagrams, describe them in detail including labels and values. Output ONLY the content, no conversational filler.',
-                images: [imageBuffer]
+            // A. OCR / Description with GPT-4o-mini (Vision)
+            const ocrResponse = await openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: "Act as a medical scribe. Transcribe the text in this image exactly. If there are diagrams, describe them in detail including labels and values. Output ONLY the content, no conversational filler." },
+                            {
+                                type: "image_url",
+                                image_url: {
+                                    url: dataUrl,
+                                }
+                            }
+                        ],
+                    },
+                ],
+                max_tokens: 1000,
             });
 
-            const content = ocrResponse.response;
+            const content = ocrResponse.choices[0].message.content;
             if (!content || content.trim().length < 10) {
                 bar.increment();
                 continue;
             }
 
-            // B. Embedding with Nomic
-            const embedResponse = await ollama.embeddings({
-                model: 'nomic-embed-text',
-                prompt: content,
+            // B. Embedding with OpenAI (text-embedding-3-small)
+            const embedResponse = await openai.embeddings.create({
+                model: "text-embedding-3-small",
+                input: content,
             });
 
-            const vector = embedResponse.embedding; // number[]
+            const vector = embedResponse.data[0].embedding; // number[]
 
             // C. Save to DB
             const vectorString = `[${vector.join(',')}]`;
@@ -95,8 +114,8 @@ async function main() {
             bar.increment();
 
         } catch (e) {
-            // console.error(`   ❌ Error processing file ${file}:`, e);
-            bar.increment(); // Ensure progress check continues even on error
+            console.error(`\n❌ Error processing file ${file}:`, e);
+            bar.increment();
         } finally {
             if (fs.existsSync(tempImage)) {
                 fs.unlinkSync(tempImage);

@@ -137,6 +137,6 @@ model MedicalKnowledge {
   content   String
   source    String   // Image filename
   page      Int?
-  embedding Unsupported("vector(768)")?
+  embedding Unsupported("vector(1536)")?
   createdAt DateTime @default(now())
 }

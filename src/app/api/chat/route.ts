@@ -2,7 +2,7 @@
 import { auth } from '@/auth';
 import prisma from '@/lib/prisma';
 import { NextRequest, NextResponse } from 'next/server';
-import ollama from 'ollama';
+import { openai } from '@/lib/openai';
 
 export async function POST(req: NextRequest) {
     try {
@@ -21,11 +21,11 @@ export async function POST(req: NextRequest) {
         const userQuery = lastMessage.content;
 
         // 1. Generate Embedding for Query
-        const embedResponse = await ollama.embeddings({
-            model: 'nomic-embed-text',
-            prompt: userQuery,
+        const embedResponse = await openai.embeddings.create({
+            model: "text-embedding-3-small",
+            input: userQuery,
         });
-        const vector = embedResponse.embedding;
+        const vector = embedResponse.data[0].embedding;
 
         // 2. Retrieve Relevant Context
         // Use raw query for cosine similarity (<=>) or inner product (<#>) or L2 (<->).
@@ -53,28 +53,25 @@ export async function POST(req: NextRequest) {
     If no answer found, say "No information found." Be concise.`;
 
         // 4. Generate Response Streaming
-        // Ollama supports streaming.
-        const stream = await ollama.chat({
-            model: 'llama3',
+        const response = await openai.chat.completions.create({
+            model: "gpt-4o-mini",
             messages: [
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userQuery }
             ],
             stream: true,
-            options: {
-                num_ctx: 2048, // Limit context window to save RAM
-                num_predict: 256, // Limit max output tokens for speed
-                temperature: 0.7,
-            },
+            temperature: 0.7,
+            max_tokens: 256,
         });
 
         // Create a ReadableStream for the response
         const encoder = new TextEncoder();
         const readable = new ReadableStream({
             async start(controller) {
-                for await (const part of stream) {
-                    if (part.message.content) {
-                        controller.enqueue(encoder.encode(part.message.content));
+                for await (const part of response) {
+                    const content = part.choices[0]?.delta?.content || '';
+                    if (content) {
+                        controller.enqueue(encoder.encode(content));
                     }
                 }
                 controller.close();
