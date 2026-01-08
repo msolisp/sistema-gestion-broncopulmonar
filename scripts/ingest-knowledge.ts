@@ -35,6 +35,13 @@ async function main() {
     // 1. Clear existing data (Incompatible vectors)
     console.log('🧹 Clearing old data (Vectors 768 -> 1536)...');
     await prisma.$executeRaw`TRUNCATE TABLE "MedicalKnowledge";`;
+    // Force update vector dimension if it was created with 768
+    try {
+        await prisma.$executeRaw`ALTER TABLE "MedicalKnowledge" ALTER COLUMN embedding TYPE vector(1536);`;
+        console.log('✅ Vector column updated to 1536 dimensions.');
+    } catch (e) {
+        console.log('⚠️ Could not alter column (might already be correct or index issue), proceeding...', e);
+    }
     console.log('✅ Database cleared.');
 
     const files = fs.readdirSync(KNOWLEDGE_BASE_DIR).filter(f => f.toLowerCase().endsWith('.pdf'));
