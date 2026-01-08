@@ -29,7 +29,7 @@ export default function AssistantPage() {
     // Prompts sugeridos: Optimizados para coincidir con la guía "FPPocket" (Fibrosis Pulmonar Progresiva)
     const SUGGESTED_PROMPTS = [
         { label: '🤔 ¿Qué es la FPP?', query: '¿Qué es la fibrosis pulmonar progresiva (FPP)?', suffix: ' (Responde en máximo 5 líneas)' },
-        { label: '💊 Tratamiento Farmacológico', query: '¿Cuál es el tratamiento farmacológico de la fibrosis pulmonar progresiva?', suffix: ' (Responde en máximo 5 líneas)' },
+        { label: '💊 Tratamiento Farmacológico', query: '¿Cuál es el manejo farmacológico de la fibrosis pulmonar progresiva (nintedanib y pirfenidona)?', suffix: ' (Responde en máximo 5 líneas)' },
         { label: '📋 Criterios de FPP', query: '¿Cuáles son los criterios para definir una fibrosis pulmonar progresiva?', suffix: ' (Lista los criterios en máximo 5 líneas)' },
     ];
 
