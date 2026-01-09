@@ -20,6 +20,7 @@ interface DashboardContentProps {
         action: string;
         details: string | null;
         userEmail: string | null;
+        ipAddress: string | null;
         createdAt: string;
     }>;
     initialPermissions: Array<{
@@ -479,7 +480,13 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
                                             </span>
                                             <span className="font-medium text-zinc-900">{log.action}</span>
                                         </div>
-                                        <div className="flex gap-4 text-zinc-500 text-xs">
+                                        <div className="flex gap-4 text-zinc-500 text-xs items-center">
+                                            {/* IP Address Display */}
+                                            {log.ipAddress && (
+                                                <span className="bg-zinc-100 px-2 py-1 rounded text-zinc-500 font-mono">
+                                                    {log.ipAddress === '::1' ? 'Localhost' : log.ipAddress}
+                                                </span>
+                                            )}
                                             <span>User: {log.userEmail || 'System'}</span>
                                             <span className="text-zinc-400 italic truncate max-w-[200px]" title={log.details || ''}>{log.details}</span>
                                         </div>

@@ -120,7 +120,12 @@ export async function authenticate(
             redirectTo
         });
 
-        await logAction('LOGIN_SUCCESS', `User ${email} logged in`, null, email);
+        // Capture IP for Audit
+        const { headers } = await import('next/headers');
+        const headersList = await headers();
+        const ip = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || "Unknown IP";
+
+        await logAction('LOGIN_SUCCESS', `User ${email} logged in`, null, email, ip);
 
 
     } catch (error) {
@@ -136,7 +141,10 @@ export async function authenticate(
                     return 'Algo salió mal.';
             }
         }
-        await logAction('LOGIN_FAILURE', `Failed login attempt for ${email}`, null, email);
+        const { headers } = await import('next/headers');
+        const headersList = await headers();
+        const ip = headersList.get("x-forwarded-for") || "Unknown IP";
+        await logAction('LOGIN_FAILURE', `Failed login attempt for ${email}`, null, email, ip);
         console.error('Login Error:', error);
         throw error;
     }
