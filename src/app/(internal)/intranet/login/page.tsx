@@ -1,14 +1,14 @@
-
 'use client'
 
-import { useActionState, useEffect, useState } from 'react'
+import { Suspense, useEffect, useState } from 'react'
+import { useActionState } from 'react-dom'
 import { useFormStatus } from 'react-dom'
 import { authenticate } from '@/lib/actions'
 import { Monitor } from 'lucide-react'
 import { useSearchParams } from 'next/navigation'
 
-export default function InternalLoginPage() {
-    const [errorMessage, dispatch] = useActionState(authenticate, undefined)
+// This component will contain the logic that uses useSearchParams
+function LoginContent() {
     const searchParams = useSearchParams()
     const [successMessage, setSuccessMessage] = useState('')
 
@@ -78,6 +78,14 @@ export default function InternalLoginPage() {
                 </div>
             </div>
         </div>
+    )
+}
+
+export default function InternalLoginPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen flex items-center justify-center">Cargando...</div>}>
+            <LoginContent />
+        </Suspense>
     )
 }
 
