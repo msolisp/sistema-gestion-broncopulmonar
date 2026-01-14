@@ -25,6 +25,12 @@ jest.mock('./logger', () => ({
     logAction: jest.fn(),
 }));
 
+jest.mock('next/headers', () => ({
+    headers: jest.fn().mockResolvedValue({
+        get: jest.fn().mockReturnValue('127.0.0.1'),
+    }),
+}));
+
 describe('authenticate action', () => {
     beforeEach(() => {
         jest.clearAllMocks();

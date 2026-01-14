@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { LogOut, Activity, Users, FileText, Settings, Sparkles } from "lucide-react";
+import { LogOut, Activity, Users, FileText, Settings, Sparkles, Calendar } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 
 interface InternalSidebarProps {
@@ -33,6 +33,10 @@ export default function InternalSidebar({ user }: InternalSidebarProps) {
             </div>
 
             <nav className="flex-1 px-4 space-y-1">
+                <Link href="/dashboard?tab=Agendamiento" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
+                    <Calendar className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
+                    Agendamiento
+                </Link>
                 <Link href="/patients" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
                     <Users className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
                     Pacientes
@@ -47,11 +51,15 @@ export default function InternalSidebar({ user }: InternalSidebarProps) {
                 </Link>
                 {/* Admin Only Link */}
                 {userRole === 'ADMIN' && (
-                    <Link href="/dashboard" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
+                    <Link href="/dashboard?tab=Agendamiento" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
                         <Settings className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
                         Administración
                     </Link>
                 )}
+                <Link href="/hl7" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
+                    <Activity className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
+                    Estándar HL7
+                </Link>
             </nav>
 
             <div className="p-4 border-t border-zinc-200">

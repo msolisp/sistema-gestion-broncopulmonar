@@ -25,6 +25,14 @@ export const UpdatePatientProfileSchema = z.object({
     commune: z.string().optional().or(z.literal('')),
     gender: z.string().optional().or(z.literal('')),
     healthSystem: z.string().optional().or(z.literal('')),
+    cota: z.string().optional().or(z.literal('')).transform((val) => {
+        if (!val || val === '') return undefined;
+        const num = parseFloat(val);
+        if (isNaN(num)) return undefined;
+        // Round to 1 decimal place
+        return parseFloat(num.toFixed(1));
+    }),
+    rut: z.string().optional().or(z.literal('')),
     birthDate: z.string().optional().or(z.literal('')).refine((val) => {
         if (!val) return true;
         const date = new Date(val);

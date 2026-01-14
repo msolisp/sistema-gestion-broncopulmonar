@@ -5,7 +5,9 @@ import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { logAction } from './logger';
+import { loggers } from './structured-logger';
 import { put } from '@vercel/blob';
 import {
     LoginSchema,
@@ -126,7 +128,7 @@ export async function authenticate(
         const ip = headersList.get("x-forwarded-for") || headersList.get("x-real-ip") || "Unknown IP";
 
         await logAction('LOGIN_SUCCESS', `User ${email} logged in`, null, email, ip);
-
+        loggers.auth.loginSuccess(email, ip);
 
     } catch (error) {
         if ((error as any).message === 'NEXT_REDIRECT' || (error as any).digest?.startsWith('NEXT_REDIRECT')) {
@@ -145,7 +147,8 @@ export async function authenticate(
         const headersList = await headers();
         const ip = headersList.get("x-forwarded-for") || "Unknown IP";
         await logAction('LOGIN_FAILURE', `Failed login attempt for ${email}`, null, email, ip);
-        console.error('Login Error:', error);
+        loggers.auth.loginFailed(email, error instanceof AuthError ? error.type : 'Unknown', ip);
+        loggers.error.api('/authenticate', error as Error, email);
         throw error;
     }
 }
@@ -255,7 +258,7 @@ export async function updatePatientProfile(prevState: any, formData: FormData) {
         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
     }
 
-    const { name, phone, address, commune, gender, healthSystem, birthDate } = validation.data;
+    const { name, phone, address, commune, gender, healthSystem, cota, rut, birthDate } = validation.data;
 
     try {
         await prisma.patient.update({
@@ -267,6 +270,8 @@ export async function updatePatientProfile(prevState: any, formData: FormData) {
                 commune,
                 gender,
                 healthSystem,
+                cota,
+                rut,
                 birthDate: birthDate ? new Date(birthDate) : undefined
             }
         });
@@ -457,7 +462,8 @@ export async function uploadMedicalExam(formData: FormData) {
         // Bypass Vercel Blob in Development/Test if no token
         if ((process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') && !process.env.BLOB_READ_WRITE_TOKEN) {
             console.warn('Using Mock Upload (No BLOB_READ_WRITE_TOKEN provided)');
-            fileUrl = `https://mock-storage.local/${fileName}`;
+            // Use localhost API route instead of mock-storage.local for iframe compatibility
+            fileUrl = `http://localhost:3000/api/mock-storage/${fileName}`;
         } else {
             // Upload to Vercel Blob
             const blob = await put(fileName, file, {
@@ -562,24 +568,58 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
 
     // Check if target user is ADMIN
     const targetUser = await prisma.user.findUnique({ where: { id } });
+
+    // If editing an ADMIN, only allow name, email, and password changes
+    // Prevent changing role or active status
     if (targetUser?.role === 'ADMIN') {
-        // Prevent editing OTHER admins, or any admin? 
-        // Request says "protege de edicion al administrador". 
-        // Assuming we should NOT edit admins from this generic UI.
-        return { message: 'No se puede editar al Administrador Principal desde esta vista.' }
+        // Force ADMIN role and active status to remain unchanged
+        const updateData: any = {
+            name,
+            email,
+            role: 'ADMIN', // Force keep ADMIN role
+            active: true   // Force keep active
+        };
 
+        // Add password if provided in formData
+        const rawPassword = formData.get('password');
+        if (rawPassword && typeof rawPassword === 'string' && rawPassword.trim() !== '') {
+            const hashedPassword = await bcrypt.hash(rawPassword, 10);
+            updateData.password = hashedPassword;
+        }
 
+        try {
+            await prisma.user.update({
+                where: { id },
+                data: updateData
+            });
+            await logAction('UPDATE_ADMIN_USER', `Admin user updated: ${email}`, (session.user as any).id, session.user.email);
+            revalidatePath('/dashboard');
+            return { message: 'Success' };
+        } catch (e) {
+            console.error(e);
+            return { message: 'Error al actualizar administrador' };
+        }
+    }
+
+    // For non-admin users, allow full edits
+    const updateData: any = {
+        name,
+        email,
+        role,
+        active
+    };
+
+    // Add password if provided
+    const rawPassword = formData.get('password');
+    if (rawPassword && typeof rawPassword === 'string' && rawPassword.trim() !== '') {
+        const hashedPassword = await bcrypt.hash(rawPassword, 10);
+        updateData.password = hashedPassword;
     }
 
     try {
         await prisma.user.update({
             where: { id },
-            data: {
-                name,
-                email,
-                role,
-                active
-            }
+            data: updateData
         });
         await logAction('UPDATE_SYSTEM_USER', `User updated: ${email}, Role: ${role}`, (session.user as any).id, session.user.email);
         revalidatePath('/dashboard');
@@ -615,7 +655,9 @@ export async function changePassword(formData: FormData) {
     const session = await auth();
 
     // Safety check: User must be logged in
-    if (!session?.user?.email) return { message: 'Unauthorized' };
+    if (!session?.user?.email) {
+        return { message: 'Unauthorized' };
+    }
 
     const newPassword = formData.get('newPassword') as string;
 
@@ -635,12 +677,16 @@ export async function changePassword(formData: FormData) {
         });
 
         await logAction('PASSWORD_CHANGE', `User ${session.user.email} changed password`, null, session.user.email);
-
-        return { message: 'Success' };
     } catch (e) {
-        console.error(e);
+        console.error('[changePassword] Error:', e);
         return { message: 'Error al cambiar la contraseña' };
     }
+
+    // Sign out to refresh session (JWT token needs to be regenerated)
+    await signOut({ redirect: false });
+    
+    // Redirect to login with success message
+    redirect('/intranet/login?passwordChanged=true');
 }
 
 export async function seedPermissions() {

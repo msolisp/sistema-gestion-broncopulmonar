@@ -3,6 +3,12 @@ import DashboardContent from './DashboardContent'
 import '@testing-library/jest-dom'
 
 // Mock Data
+global.fetch = jest.fn(() =>
+    Promise.resolve({
+        json: () => Promise.resolve([]),
+    })
+) as jest.Mock;
+
 const mockProps = {
     patients: [
         {
@@ -30,7 +36,8 @@ const mockProps = {
             action: 'LOGIN_SUCCESS',
             details: 'User logged in',
             userEmail: 'admin@test.com',
-            createdAt: new Date()
+            ipAddress: '127.0.0.1',
+            createdAt: new Date().toISOString()
         }
     ],
     initialPermissions: [
@@ -40,7 +47,7 @@ const mockProps = {
     appointments: [
         {
             id: 'apt1',
-            date: new Date(),
+            date: new Date().toISOString(),
             status: 'PENDING',
             notes: 'Test appointment',
             patient: {
@@ -68,6 +75,11 @@ jest.mock("next/navigation", () => ({
             refresh: jest.fn(),
         };
     },
+    useSearchParams() {
+        return {
+            get: jest.fn().mockReturnValue(null),
+        }
+    },
 }));
 
 describe('DashboardContent Component', () => {
@@ -76,9 +88,11 @@ describe('DashboardContent Component', () => {
         expect(screen.getByText('Administración Central')).toBeInTheDocument()
     })
 
-    it('displays Agendamiento tab by default', () => {
+    it('displays Patients Management tab by default', async () => {
         render(<DashboardContent {...mockProps} />)
-        expect(screen.getByText('Reservas Web')).toBeInTheDocument()
+        await waitFor(() => {
+            expect(screen.getByText('Gestion de Pacientes', { selector: 'h2' })).toBeInTheDocument()
+        })
     })
 
     it('navigates to User Management', () => {

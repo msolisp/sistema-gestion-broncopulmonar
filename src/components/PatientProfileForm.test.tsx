@@ -74,4 +74,94 @@ describe('PatientProfileForm Component', () => {
         // Commune should be reset to empty
         expect(communeSelect.value).toBe('');
     });
+
+    describe('RUT Fields - Separated Input', () => {
+        const mockUserWithRut = {
+            ...mockUser,
+            rut: '12345678-9',
+        };
+
+        it('should render RUT number and verification digit fields separately', () => {
+            render(<PatientProfileForm user={mockUserWithRut} />);
+
+            expect(screen.getByText('RUT')).toBeInTheDocument();
+            expect(screen.getByPlaceholderText('12345678')).toBeInTheDocument();
+            expect(screen.getByPlaceholderText('K')).toBeInTheDocument();
+        });
+
+        it('should populate RUT fields when user has existing RUT', () => {
+            render(<PatientProfileForm user={mockUserWithRut} />);
+
+            const rutNumInput = screen.getByPlaceholderText('12345678') as HTMLInputElement;
+            const rutDvInput = screen.getByPlaceholderText('K') as HTMLInputElement;
+
+            expect(rutNumInput.defaultValue).toBe('12345678');
+            expect(rutDvInput.defaultValue).toBe('9');
+        });
+
+        it('should only accept numbers in RUT number field', () => {
+            render(<PatientProfileForm user={{ ...mockUser, rut: '' }} />);
+
+            const rutNumInput = screen.getByPlaceholderText('12345678') as HTMLInputElement;
+
+            fireEvent.change(rutNumInput, { target: { value: 'abc123xyz' } });
+
+            // Should filter out non-numeric characters
+            expect(rutNumInput.value).toBe('123');
+        });
+
+        it('should only accept numbers and K in verification digit field', () => {
+            render(<PatientProfileForm user={{ ...mockUser, rut: '' }} />);
+
+            const rutDvInput = screen.getByPlaceholderText('K') as HTMLInputElement;
+
+            fireEvent.change(rutDvInput, { target: { value: 'X' } });
+            expect(rutDvInput.value).toBe('');
+
+            fireEvent.change(rutDvInput, { target: { value: '5' } });
+            expect(rutDvInput.value).toBe('5');
+
+            fireEvent.change(rutDvInput, { target: { value: 'k' } });
+            expect(rutDvInput.value).toBe('K');
+        });
+
+        it('should combine RUT number and DV into hidden field', () => {
+            render(<PatientProfileForm user={{ ...mockUser, rut: '' }} />);
+
+            const rutNumInput = screen.getByPlaceholderText('12345678') as HTMLInputElement;
+            const rutDvInput = screen.getByPlaceholderText('K') as HTMLInputElement;
+
+            fireEvent.change(rutNumInput, { target: { value: '11111111' } });
+            fireEvent.change(rutDvInput, { target: { value: 'K' } });
+
+            const hiddenInput = document.getElementById('rut_hidden') as HTMLInputElement;
+            expect(hiddenInput).toBeTruthy();
+            expect(hiddenInput.value).toBe('11111111-K');
+        });
+
+        it('should limit RUT number to 8 digits', () => {
+            render(<PatientProfileForm user={{ ...mockUser, rut: '' }} />);
+
+            const rutNumInput = screen.getByPlaceholderText('12345678') as HTMLInputElement;
+
+            expect(rutNumInput).toHaveAttribute('maxLength', '8');
+        });
+
+        it('should limit verification digit to 1 character', () => {
+            render(<PatientProfileForm user={{ ...mockUser, rut: '' }} />);
+
+            const rutDvInput = screen.getByPlaceholderText('K') as HTMLInputElement;
+
+            expect(rutDvInput).toHaveAttribute('maxLength', '1');
+        });
+
+        it('should have proper styling for mobile (w-20 for DV field)', () => {
+            render(<PatientProfileForm user={mockUserWithRut} />);
+
+            const rutDvInput = screen.getByPlaceholderText('K') as HTMLInputElement;
+            const dvContainer = rutDvInput.parentElement;
+
+            expect(dvContainer?.className).toContain('w-20');
+        });
+    });
 });

@@ -5,6 +5,7 @@ import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { registerPatient } from '@/lib/actions'
 import { REGIONS } from '@/lib/chile-data'
+import { Eye, EyeOff } from 'lucide-react'
 
 const initialState = {
     message: '',
@@ -13,6 +14,18 @@ const initialState = {
 export default function RegisterPage() {
     const [state, dispatch] = useActionState(registerPatient, initialState)
     const [selectedRegion, setSelectedRegion] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [passwordError, setPasswordError] = useState<string | null>(null);
+
+    // Password validation function
+    const validatePassword = (pwd: string): string | null => {
+        if (pwd.length < 8) return 'Mínimo 8 caracteres';
+        if (!/[A-Z]/.test(pwd)) return 'Debe contener una mayúscula';
+        if (!/[a-z]/.test(pwd)) return 'Debe contener una minúscula';
+        if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(pwd)) return 'Debe contener un carácter especial';
+        return null;
+    };
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
@@ -149,14 +162,68 @@ export default function RegisterPage() {
                             <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="password">
                                 Contraseña
                             </label>
-                            <input
-                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                id="password"
-                                type="password"
-                                name="password"
-                                autoComplete="new-password"
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    className={`w-full rounded-lg border pr-10 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:outline-none focus:ring-1 ${passwordError ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-zinc-200 focus:border-indigo-500 focus:ring-indigo-500'
+                                        }`}
+                                    id="password"
+                                    type={showPassword ? "text" : "password"}
+                                    name="password"
+                                    value={password}
+                                    onChange={(e) => {
+                                        setPassword(e.target.value);
+                                        setPasswordError(validatePassword(e.target.value));
+                                    }}
+                                    autoComplete="new-password"
+                                    required
+                                />
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors p-1"
+                                    aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                                >
+                                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                </button>
+                            </div>
+
+                            {/* Password requirements */}
+                            {password && (
+                                <div className="mt-2 space-y-1">
+                                    <div className="flex items-center gap-1 text-xs">
+                                        <span className={password.length >= 8 ? 'text-green-600' : 'text-zinc-400'}>
+                                            {password.length >= 8 ? '✓' : '○'}
+                                        </span>
+                                        <span className={password.length >= 8 ? 'text-zinc-700' : 'text-zinc-500'}>
+                                            Mínimo 8 caracteres
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs">
+                                        <span className={/[A-Z]/.test(password) ? 'text-green-600' : 'text-zinc-400'}>
+                                            {/[A-Z]/.test(password) ? '✓' : '○'}
+                                        </span>
+                                        <span className={/[A-Z]/.test(password) ? 'text-zinc-700' : 'text-zinc-500'}>
+                                            Una mayúscula
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs">
+                                        <span className={/[a-z]/.test(password) ? 'text-green-600' : 'text-zinc-400'}>
+                                            {/[a-z]/.test(password) ? '✓' : '○'}
+                                        </span>
+                                        <span className={/[a-z]/.test(password) ? 'text-zinc-700' : 'text-zinc-500'}>
+                                            Una minúscula
+                                        </span>
+                                    </div>
+                                    <div className="flex items-center gap-1 text-xs">
+                                        <span className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) ? 'text-green-600' : 'text-zinc-400'}>
+                                            {/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) ? '✓' : '○'}
+                                        </span>
+                                        <span className={/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password) ? 'text-zinc-700' : 'text-zinc-500'}>
+                                            Un carácter especial
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                         {state.message && (
                             <div className={`flex items-center space-x-2 text-sm ${state.message === 'Success' ? 'text-green-500' : 'text-red-500'}`}>

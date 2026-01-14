@@ -112,6 +112,52 @@ export default function PatientProfileForm({ user }: { user: any }) {
                         </div>
                     </div>
 
+                    {/* RUT - Número y Dígito Verificador */}
+                    <div className="space-y-2">
+                        <Label>RUT</Label>
+                        <div className="flex gap-2">
+                            <div className="flex-1">
+                                <Input
+                                    id="rut_num"
+                                    type="text"
+                                    maxLength={8}
+                                    defaultValue={patient.rut ? patient.rut.split('-')[0] : ''}
+                                    className="bg-white border-zinc-200 text-zinc-900 focus:ring-indigo-500 focus:border-indigo-500 transition-all hover:border-zinc-300"
+                                    placeholder="12345678"
+                                    onChange={(e) => {
+                                        const num = e.target.value.replace(/[^0-9]/g, '');
+                                        e.target.value = num;
+                                        const dv = (document.getElementById('rut_dv') as HTMLInputElement)?.value;
+                                        const hiddenInput = document.getElementById('rut_hidden') as HTMLInputElement;
+                                        if (hiddenInput) {
+                                            hiddenInput.value = num && dv ? `${num}-${dv}` : '';
+                                        }
+                                    }}
+                                />
+                            </div>
+                            <div className="w-20">
+                                <Input
+                                    id="rut_dv"
+                                    type="text"
+                                    maxLength={1}
+                                    defaultValue={patient.rut ? patient.rut.split('-')[1] : ''}
+                                    className="bg-white border-zinc-200 text-zinc-900 focus:ring-indigo-500 focus:border-indigo-500 transition-all hover:border-zinc-300 text-center uppercase"
+                                    placeholder="K"
+                                    onChange={(e) => {
+                                        const dv = e.target.value.toUpperCase().replace(/[^0-9K]/g, '');
+                                        e.target.value = dv;
+                                        const num = (document.getElementById('rut_num') as HTMLInputElement)?.value;
+                                        const hiddenInput = document.getElementById('rut_hidden') as HTMLInputElement;
+                                        if (hiddenInput) {
+                                            hiddenInput.value = num && dv ? `${num}-${dv}` : '';
+                                        }
+                                    }}
+                                />
+                            </div>
+                        </div>
+                        <input type="hidden" name="rut" id="rut_hidden" defaultValue={patient.rut || ''} />
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Phone */}
                         <div className="space-y-2">
@@ -241,6 +287,33 @@ export default function PatientProfileForm({ user }: { user: any }) {
                                     <option value="PARTICULAR">PARTICULAR</option>
                                 </select>
                             </div>
+                        </div>
+                    </div>
+
+                    {/* Cota Field - Full width */}
+                    <div className="space-y-2">
+                        <Label htmlFor="cota">Cota</Label>
+                        <div className="relative">
+                            <Heart className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                            <Input
+                                id="cota"
+                                name="cota"
+                                type="number"
+                                step="0.1"
+                                min="0"
+                                max="999.9"
+                                defaultValue={patient.cota || ''}
+                                className="pl-9 bg-white border-zinc-200 text-zinc-900 focus:ring-indigo-500 focus:border-indigo-500 transition-all hover:border-zinc-300"
+                                placeholder="0.0"
+                                onInput={(e) => {
+                                    const input = e.currentTarget;
+                                    const value = parseFloat(input.value);
+                                    if (!isNaN(value)) {
+                                        // Round to 1 decimal place
+                                        input.value = value.toFixed(1);
+                                    }
+                                }}
+                            />
                         </div>
                     </div>
 

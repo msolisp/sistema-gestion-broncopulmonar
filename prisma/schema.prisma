@@ -41,6 +41,7 @@ model Patient {
   address       String?
   birthDate     DateTime?
   healthSystem  String?  // FONASA, ISAPRE
+  cota          Float?   // Cota o copago (hasta 1 decimal)
   diagnosisDate DateTime?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt

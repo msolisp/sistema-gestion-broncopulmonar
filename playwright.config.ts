@@ -17,6 +17,19 @@ export default defineConfig({
             name: 'chromium',
             use: { ...devices['Desktop Chrome'] },
         },
+        // Mobile devices for testing responsive design
+        {
+            name: 'iPhone 14 Pro',
+            use: { ...devices['iPhone 14 Pro'] },
+        },
+        {
+            name: 'Samsung Galaxy S21',
+            use: { ...devices['Galaxy S21'] },
+        },
+        {
+            name: 'iPad Air',
+            use: { ...devices['iPad Pro'] },
+        },
     ],
     webServer: {
         command: 'E2E_TESTING=true npm run dev',

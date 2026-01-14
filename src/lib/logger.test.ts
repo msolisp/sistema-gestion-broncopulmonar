@@ -24,7 +24,8 @@ describe('logger', () => {
                 action: 'TEST_ACTION',
                 details: 'Details',
                 userId: 'user-id',
-                userEmail: 'user@test.com'
+                userEmail: 'user@test.com',
+                ipAddress: null
             }
         });
     });

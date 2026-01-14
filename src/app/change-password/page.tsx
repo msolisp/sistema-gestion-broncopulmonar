@@ -1,26 +1,12 @@
 'use client';
 
-import { useActionState } from 'react';
+import { useState } from 'react';
 import { useFormStatus } from 'react-dom';
 import { changePassword } from '@/lib/actions';
-import { useRouter } from 'next/navigation';
-
-const initialState = {
-    message: '',
-};
+import { Eye, EyeOff } from 'lucide-react';
 
 export default function ChangePasswordPage() {
-    const [state, dispatch] = useActionState(async (prev: any, formData: FormData) => {
-        const result = await changePassword(formData);
-        if (result.message === 'Success') {
-            // Redirect handled here or via effect?
-            // Since it's a server action, better to handle redirect on client if we want force reload or just use router.
-            // But valid way is to let the action success and client redirects.
-            window.location.href = '/dashboard'; // Force reload/redirect
-            return { message: 'Success' };
-        }
-        return result;
-    }, initialState);
+    const [showPassword, setShowPassword] = useState(false);
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
@@ -30,26 +16,30 @@ export default function ChangePasswordPage() {
                     <p className="text-zinc-500 mt-2">Por seguridad, debes cambiar tu contraseña antes de continuar.</p>
                 </div>
 
-                <form action={dispatch} className="space-y-6">
+                <form action={changePassword} className="space-y-6">
                     <div>
                         <label className="block text-sm font-medium text-zinc-700 mb-2">
                             Nueva Contraseña
                         </label>
-                        <input
-                            type="password"
-                            name="newPassword"
-                            required
-                            minLength={6}
-                            className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-zinc-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
-                            placeholder="Mínimo 6 caracteres"
-                        />
-                    </div>
-
-                    {state.message && state.message !== 'Success' && (
-                        <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm">
-                            {state.message}
+                        <div className="relative">
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                name="newPassword"
+                                required
+                                minLength={6}
+                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 pr-10 text-zinc-900 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                                placeholder="Mínimo 6 caracteres"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-600 transition-colors p-1"
+                                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+                            >
+                                {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                            </button>
                         </div>
-                    )}
+                    </div>
 
                     <SubmitButton />
                 </form>

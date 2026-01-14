@@ -48,3 +48,13 @@ next-env.d.ts
 
 # playwright
 test-results/
+
+# Test logs
+*.log
+unit_failures*.log
+e2e_results*.log
+
+# Playwright reports
+/test-results/
+/playwright-report/
+/playwright/.cache/

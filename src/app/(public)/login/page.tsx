@@ -16,11 +16,11 @@ export default function LoginPage() {
                     <p className="text-zinc-500 mb-8">Ingresa a tu cuenta para continuar</p>
                     <form action={dispatch} className="space-y-4">
                         <div>
-                            <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="email">
+                            <label className="block text-sm font-medium text-zinc-700 mb-2" htmlFor="email">
                                 Email
                             </label>
                             <input
-                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                className="w-full rounded-lg border border-zinc-200 px-4 py-3 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                                 id="email"
                                 type="email"
                                 name="email"
@@ -30,11 +30,11 @@ export default function LoginPage() {
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="password">
+                            <label className="block text-sm font-medium text-zinc-700 mb-2" htmlFor="password">
                                 Contraseña
                             </label>
                             <input
-                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                className="w-full rounded-lg border border-zinc-200 px-4 py-3 text-base text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                                 id="password"
                                 type="password"
                                 name="password"
@@ -52,7 +52,7 @@ export default function LoginPage() {
 
                     <div className="mt-6 text-center text-sm text-zinc-500">
                         ¿No tienes cuenta?{' '}
-                        <a href="/register" className="font-semibold text-indigo-600 hover:text-indigo-500">
+                        <a href="/register" className="font-semibold text-indigo-600 hover:text-indigo-500 transition-colors">
                             Regístrate
                         </a>
                     </div>
@@ -68,8 +68,9 @@ function LoginButton() {
     return (
         <button
             type="submit"
-            className="w-full rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50"
+            className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
             aria-disabled={pending}
+            disabled={pending}
         >
             {pending ? 'Ingresando...' : 'Ingresar'}
         </button>

@@ -71,6 +71,26 @@ jest.mock('./logger', () => ({
     logAction: jest.fn(),
 }))
 
+jest.mock('./structured-logger', () => ({
+    loggers: {
+        auth: {
+            loginSuccess: jest.fn(),
+            loginFailed: jest.fn(),
+        },
+        error: {
+            api: jest.fn(),
+            general: jest.fn(),
+        },
+    },
+}))
+
+// Mock next/headers to avoid "headers was called outside a request scope" errors
+jest.mock('next/headers', () => ({
+    headers: jest.fn(() => ({
+        get: jest.fn(() => 'test-ip')
+    }))
+}))
+
 describe('Server Actions', () => {
     beforeEach(() => {
         jest.clearAllMocks()
@@ -749,14 +769,26 @@ describe('System User Actions', () => {
             expect(result.message).toContain('El email ya está en uso')
         })
 
-        it('prevents editing main admin', async () => {
+        it('allows editing admin with restrictions on role and active', async () => {
             const { auth } = require('@/auth')
-            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN', id: 'admin1' } })
                 ; (prisma.user.findFirst as jest.Mock).mockResolvedValue(null)
                 ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', role: 'ADMIN' })
+                ; (prisma.user.update as jest.Mock).mockResolvedValue({})
 
             const result = await adminUpdateSystemUser(null, updateData)
-            expect(result.message).toContain('No se puede editar al Administrador')
+
+            // Should succeed
+            expect(result.message).toBe('Success')
+
+            // Verify role and active were forced to stay ADMIN and true
+            expect(prisma.user.update).toHaveBeenCalledWith({
+                where: { id: 'u1' },
+                data: expect.objectContaining({
+                    role: 'ADMIN', // Forced regardless of input
+                    active: true   // Forced regardless of input
+                })
+            })
         })
 
         it('updates user successfully', async () => {
@@ -917,8 +949,8 @@ describe('Permissions & Password', () => {
                 ; (bcrypt.hash as jest.Mock).mockResolvedValue('hashed')
                 ; (prisma.user.update as jest.Mock).mockResolvedValue({})
 
-            const result = await changePassword(formData)
-            expect(result).toEqual({ message: 'Success' })
+            // changePassword now uses redirect() which throws NEXT_REDIRECT
+            await expect(changePassword(formData)).rejects.toThrow('NEXT_REDIRECT')
         })
 
         it('handles db error', async () => {

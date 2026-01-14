@@ -1,13 +1,22 @@
 
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useEffect, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { authenticate } from '@/lib/actions'
 import { Monitor } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
 
 export default function InternalLoginPage() {
     const [errorMessage, dispatch] = useActionState(authenticate, undefined)
+    const searchParams = useSearchParams()
+    const [successMessage, setSuccessMessage] = useState('')
+
+    useEffect(() => {
+        if (searchParams.get('passwordChanged') === 'true') {
+            setSuccessMessage('Contraseña cambiada exitosamente. Por favor, inicia sesión nuevamente.')
+        }
+    }, [searchParams])
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
@@ -48,6 +57,11 @@ export default function InternalLoginPage() {
                                 required
                             />
                         </div>
+                        {successMessage && (
+                            <div className="flex items-center space-x-2 text-sm text-green-600 bg-green-50 p-3 rounded border border-green-100">
+                                <p>{successMessage}</p>
+                            </div>
+                        )}
                         {errorMessage && (
                             <div className="flex items-center space-x-2 text-sm text-red-600 bg-red-50 p-3 rounded border border-red-100">
                                 <p>{errorMessage}</p>
