@@ -503,10 +503,6 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
                                                     >
                                                         Eliminar
                                                     </button>
-                                                )}
-                                                {user.role === 'ADMIN' && (
-                                                    <span className="text-zinc-400 text-xs italic">No se puede eliminar</span>
-                                                )}
                                             </td>
                                         </tr>
                                     ))}

@@ -684,7 +684,7 @@ export async function changePassword(formData: FormData) {
 
     // Sign out to refresh session (JWT token needs to be regenerated)
     await signOut({ redirect: false });
-    
+
     // Redirect to login with success message
     redirect('/intranet/login?passwordChanged=true');
 }
@@ -748,9 +748,10 @@ export async function adminDeleteSystemUser(id: string) {
         const targetUser = await prisma.user.findUnique({ where: { id } });
         if (!targetUser) return { message: 'Usuario no encontrado' };
 
-        if (targetUser.role === 'ADMIN') {
-            return { message: 'No se puede eliminar a un Administrador.' };
-        }
+        // Admin deletion is now allowed
+        // if (targetUser.role === 'ADMIN') {
+        //     return { message: 'No se puede eliminar a un Administrador.' };
+        // }
 
         await prisma.user.delete({ where: { id } });
         await logAction('DELETE_SYSTEM_USER', `User deleted: ${targetUser.email}`, (session.user as any).id, session.user.email);
