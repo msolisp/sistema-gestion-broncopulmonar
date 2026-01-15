@@ -9,6 +9,7 @@ import { useSearchParams } from 'next/navigation'
 
 // This component will contain the logic that uses useSearchParams
 function LoginContent() {
+    const [errorMessage, dispatch] = useActionState(authenticate, undefined)
     const searchParams = useSearchParams()
     const [successMessage, setSuccessMessage] = useState('')
 
