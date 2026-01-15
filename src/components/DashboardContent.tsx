@@ -503,6 +503,7 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
                                                     >
                                                         Eliminar
                                                     </button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}
