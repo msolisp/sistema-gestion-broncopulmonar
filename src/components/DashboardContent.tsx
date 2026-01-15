@@ -496,12 +496,16 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
                                                 >
                                                     Editar
                                                 </button>
-                                                <button
-                                                    onClick={() => handleDeleteUser(user)}
-                                                    className="text-red-500 font-bold hover:text-red-700 transition-colors"
-                                                >
-                                                    Eliminar
-                                                </button>
+                                                {user.role !== 'ADMIN' ? (
+                                                    <button
+                                                        onClick={() => handleDeleteUser(user)}
+                                                        className="text-red-500 font-bold hover:text-red-700 transition-colors"
+                                                    >
+                                                        Eliminar
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-zinc-400 text-xs italic">No se puede eliminar</span>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

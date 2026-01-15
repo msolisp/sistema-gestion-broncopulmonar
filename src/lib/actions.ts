@@ -569,10 +569,14 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
     // Check if target user is ADMIN
     const targetUser = await prisma.user.findUnique({ where: { id } });
 
-    // If editing an ADMIN, only allow name, email, and password changes
-    // Prevent changing role or active status
+    // If editing an ADMIN, only allow the admin to edit themselves
     if (targetUser?.role === 'ADMIN') {
-        // Force ADMIN role and active status to remain unchanged
+        // Check if the current user is trying to edit another admin
+        if (session.user.email !== targetUser.email) {
+            return { message: 'Solo el administrador puede editar su propia cuenta.' };
+        }
+
+        // Allow name, email, and password changes for self-editing
         const updateData: any = {
             name,
             email,
@@ -748,10 +752,10 @@ export async function adminDeleteSystemUser(id: string) {
         const targetUser = await prisma.user.findUnique({ where: { id } });
         if (!targetUser) return { message: 'Usuario no encontrado' };
 
-        // Admin deletion is now allowed
-        // if (targetUser.role === 'ADMIN') {
-        //     return { message: 'No se puede eliminar a un Administrador.' };
-        // }
+        // Prevent deletion of admin users
+        if (targetUser.role === 'ADMIN') {
+            return { message: 'No se puede eliminar a un Administrador.' };
+        }
 
         await prisma.user.delete({ where: { id } });
         await logAction('DELETE_SYSTEM_USER', `User deleted: ${targetUser.email}`, (session.user as any).id, session.user.email);
