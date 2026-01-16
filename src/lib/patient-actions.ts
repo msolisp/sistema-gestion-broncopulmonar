@@ -86,17 +86,20 @@ export async function uploadPatientExam(
             },
         })
 
+        // TODO: Re-enable when Notification table exists in production
         // Create notification for internal portal
+        /*
         await prisma.notification.create({
-            data: {
-                type: 'EXAM_UPLOADED',
-                title: 'Nuevo examen subido',
-                message: `${patient.name} subió un examen médico de ${centerName.trim()}`,
-                patientId: patient.id,
-                examId: exam.id,
-                read: false,
-            },
+          data: {
+            type: 'EXAM_UPLOADED',
+            title: 'Nuevo examen subido',
+            message: `${patient.name} subió un examen médico de ${centerName.trim()}`,
+            patientId: patient.id,
+            examId: exam.id,
+            read: false,
+          },
         })
+        */
 
         return {
             message: 'Examen médico subido exitosamente.',
