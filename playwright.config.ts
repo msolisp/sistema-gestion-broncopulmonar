@@ -8,9 +8,17 @@ export default defineConfig({
     retries: process.env.CI ? 2 : 0,
     workers: process.env.CI ? 1 : undefined,
     reporter: 'html',
+
+    // Global setup to seed database before tests
+    globalSetup: require.resolve('./playwright.global-setup'),
+
+    // Increase timeouts for development environment
+    timeout: 180000, // 3 minutes per test
+
     use: {
         baseURL: 'http://localhost:3000',
         trace: 'on-first-retry',
+        actionTimeout: 60000, // 60 seconds per action
     },
     projects: [
         {
@@ -35,5 +43,6 @@ export default defineConfig({
         command: 'E2E_TESTING=true npm run dev',
         url: 'http://localhost:3000',
         reuseExistingServer: !process.env.CI,
+        timeout: 120000, // 2 minutes to start server
     },
 });
