@@ -4,6 +4,8 @@ import { auth } from '@/auth'
 import { getPatientExams } from '@/lib/patient-actions'
 import PatientExamsUpload from '@/components/PatientExamsUpload'
 import PatientExamsList from '@/components/PatientExamsList'
+import Link from 'next/link'
+import { ArrowLeft } from 'lucide-react'
 
 async function ExamsContent() {
     const session = await auth()
@@ -12,13 +14,21 @@ async function ExamsContent() {
         redirect('/login')
     }
 
-    // const exams = await getPatientExams()
-    const exams: any[] = [] // Temporary fix to allow page load while debugging DB
+    const exams = await getPatientExams()
+    // const exams: any[] = [] // Temporary fix removed
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
             <div className="max-w-6xl mx-auto px-4">
                 <div className="mb-8">
+                    <Link
+                        href="/portal"
+                        className="inline-flex items-center text-gray-600 hover:text-indigo-600 mb-6 transition-colors"
+                    >
+                        <ArrowLeft className="h-4 w-4 mr-2" />
+                        Volver al inicio
+                    </Link>
+
                     <h1 className="text-3xl font-bold text-gray-900 mb-2">
                         Mis Exámenes Médicos
                     </h1>
