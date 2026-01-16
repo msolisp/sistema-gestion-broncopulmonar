@@ -1,6 +1,8 @@
 import { auth } from '@/auth'
 import { put } from '@vercel/blob'
-import { prisma } from './db'
+import { PrismaClient } from '@prisma/client'
+
+const prisma = new PrismaClient()
 
 /**
  * Upload a medical exam from patient portal
