@@ -24,6 +24,7 @@ function SubmitButton() {
 
 export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => void }) {
     const [state, formAction] = useFormState(uploadPatientExam, initialState)
+    const [fileName, setFileName] = useState<string>('')
     const [isDragging, setIsDragging] = useState(false)
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
