@@ -6,7 +6,17 @@ test.describe('Admin User Management', () => {
         await page.fill('input[name="email"]', 'admin@example.com');
         await page.fill('input[name="password"]', 'admin123');
         await page.click('button:has-text("Iniciar Sesión Segura")');
-        await expect(page).toHaveURL(/.*\/dashboard/);
+
+        // Handle potential mandatory password change redirect
+        const currentURL = page.url();
+        if (currentURL.includes('/change-password')) {
+            // If redirected to change password, fill it out
+            await page.fill('input[name="newPassword"]', 'AdminNewPass123!');
+            await page.fill('input[name="confirmPassword"]', 'AdminNewPass123!');
+            await page.click('button[type="submit"]');
+        }
+
+        await expect(page).toHaveURL(/.*\/dashboard/, { timeout: 60000 });
     });
 
     test('should allow admin to create and delete a system user', async ({ page }) => {

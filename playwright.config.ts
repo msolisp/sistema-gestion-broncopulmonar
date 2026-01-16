@@ -10,7 +10,9 @@ export default defineConfig({
     reporter: 'html',
 
     // Global setup to seed database before tests
-    globalSetup: require.resolve('./playwright.global-setup'),
+    // TEMPORARILY DISABLED: DB push requires vector extension
+    // Uncomment when DB schema issues are resolved
+    // globalSetup: require.resolve('./playwright.global-setup'),
 
     // Increase timeouts for development environment
     timeout: 180000, // 3 minutes per test
