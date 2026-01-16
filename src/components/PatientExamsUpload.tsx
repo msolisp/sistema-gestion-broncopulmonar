@@ -101,8 +101,8 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
                     </label>
                     <div
                         className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${isDragging
-                                ? 'border-indigo-500 bg-indigo-50'
-                                : 'border-gray-300 hover:border-indigo-500'
+                            ? 'border-indigo-500 bg-indigo-50'
+                            : 'border-gray-300 hover:border-indigo-500'
                             }`}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
@@ -136,69 +136,67 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
                             </div>
                         )}
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">Sin archivos seleccionados</p>
+                    {!fileName && <p className="text-xs text-gray-500 mt-1">Sin archivos seleccionados</p>}
                 </div>
-                <p className="text-xs text-gray-500 mt-1">Sin archivos seleccionados</p>
-        </div>
 
-                {/* Centro Médico */ }
-    <div>
-        <label htmlFor="centerName" className="block text-sm font-medium text-gray-700 mb-2">
-            CENTRO MÉDICO <span className="text-red-500">*</span>
-        </label>
-        <input
-            type="text"
-            id="centerName"
-            name="centerName"
-            placeholder="Ej: Clínica..."
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-    </div>
+                {/* Centro Médico */}
+                <div>
+                    <label htmlFor="centerName" className="block text-sm font-medium text-gray-700 mb-2">
+                        CENTRO MÉDICO <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="centerName"
+                        name="centerName"
+                        placeholder="Ej: Clínica..."
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                </div>
 
-    {/* Médico */ }
-    <div>
-        <label htmlFor="doctorName" className="block text-sm font-medium text-gray-700 mb-2">
-            MÉDICO <span className="text-red-500">*</span>
-        </label>
-        <input
-            type="text"
-            id="doctorName"
-            name="doctorName"
-            placeholder="Ej: Dr. Pérez"
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-    </div>
+                {/* Médico */}
+                <div>
+                    <label htmlFor="doctorName" className="block text-sm font-medium text-gray-700 mb-2">
+                        MÉDICO <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="text"
+                        id="doctorName"
+                        name="doctorName"
+                        placeholder="Ej: Dr. Pérez"
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                </div>
 
-    {/* Fecha */ }
-    <div>
-        <label htmlFor="examDate" className="block text-sm font-medium text-gray-700 mb-2">
-            FECHA <span className="text-red-500">*</span>
-        </label>
-        <input
-            type="date"
-            id="examDate"
-            name="examDate"
-            required
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-        />
-    </div>
+                {/* Fecha */}
+                <div>
+                    <label htmlFor="examDate" className="block text-sm font-medium text-gray-700 mb-2">
+                        FECHA <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="date"
+                        id="examDate"
+                        name="examDate"
+                        required
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                </div>
 
-    {/* Messages */ }
-    {
-        state.message && (
-            <div className={`p-4 rounded-lg ${state.success
-                ? 'bg-green-50 border border-green-200 text-green-800'
-                : 'bg-red-50 border border-red-200 text-red-800'
-                }`}>
-                {state.message}
-            </div>
-        )
-    }
+                {/* Messages */}
+                {
+                    state.message && (
+                        <div className={`p-4 rounded-lg ${state.success
+                            ? 'bg-green-50 border border-green-200 text-green-800'
+                            : 'bg-red-50 border border-red-200 text-red-800'
+                            }`}>
+                            {state.message}
+                        </div>
+                    )
+                }
 
-    {/* Submit Button */ }
-    <SubmitButton />
+                {/* Submit Button */}
+                <SubmitButton />
             </form >
         </div >
     )
