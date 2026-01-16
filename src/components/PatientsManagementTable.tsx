@@ -164,7 +164,7 @@ export default function PatientsManagementTable() {
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">RUT</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Comuna</th>
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Dirección</th>
-                                <th className="px-6 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Exámenes</th>
+
                                 <th className="px-6 py-3 text-left text-xs font-semibold text-zinc-500 uppercase">Estado</th>
                                 <th className="px-6 py-3 text-right text-xs font-semibold text-zinc-500 uppercase">Acciones</th>
                             </tr>
@@ -184,18 +184,7 @@ export default function PatientsManagementTable() {
                                     <td className="px-6 py-4 text-sm text-zinc-600 max-w-xs truncate">
                                         {patient.address}
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        {patient.examCount && patient.examCount > 0 ? (
-                                            <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-700">
-                                                <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                                                    <path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" />
-                                                </svg>
-                                                {patient.examCount}
-                                            </span>
-                                        ) : (
-                                            <span className="text-xs text-zinc-400">-</span>
-                                        )}
-                                    </td>
+
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${patient.active
                                             ? 'bg-green-100 text-green-700'
@@ -212,13 +201,7 @@ export default function PatientsManagementTable() {
                                             <Edit2 className="w-4 h-4" />
                                             Editar
                                         </button>
-                                        <a
-                                            href={`/patients/${patient.id}/history`}
-                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors ml-2"
-                                        >
-                                            <Eye className="w-4 h-4" />
-                                            Historial
-                                        </a>
+
                                     </td>
                                 </tr>
                             ))}
