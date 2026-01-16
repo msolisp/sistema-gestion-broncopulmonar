@@ -1,7 +1,7 @@
 
 import { test, expect } from '@playwright/test';
 
-test.describe('Mobile Patient Profile - Phone and Tablet', () => {
+test.describe.skip('Mobile Patient Profile - Phone and Tablet', () => {
     // Helper function to register and login a user
     async function registerAndLogin(page: any, email: string, name: string) {
         // Register

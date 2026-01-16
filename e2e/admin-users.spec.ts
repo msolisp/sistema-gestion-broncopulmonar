@@ -33,6 +33,7 @@ test.describe('Admin User Management', () => {
 
         await page.fill('input[id="userName"]', 'Test Kine');
         await page.fill('input[id="userEmail"]', uniqueEmail);
+        await page.fill('input[id="userPassword"]', 'TestKine123!');
         await page.selectOption('select[id="userRole"]', 'KINESIOLOGIST');
 
         await page.click('button:has-text("Guardar Cambios")');

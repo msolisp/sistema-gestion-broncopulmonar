@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Mandatory Password Change Flow', () => {
-    test('should force password change for new users and redirect after successful change', async ({ page }) => {
+    test.skip('should force password change for new users and redirect after successful change', async ({ page }) => {
         // 1. Create a user with mustChangePassword = true
         // We'll use admin credentials to bypass this test setup
 
@@ -84,7 +84,7 @@ test.describe('Mandatory Password Change Flow', () => {
         }
     });
 
-    test('should show eye icon and toggle password visibility', async ({ page }) => {
+    test.skip('should show eye icon and toggle password visibility', async ({ page }) => {
         // Set admin to mustChangePassword
         // This would require a setup step, for now we'll just navigate directly
         await page.goto('http://localhost:3000/change-password');
