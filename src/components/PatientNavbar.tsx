@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { LogOut, Activity, Calendar, FileText, Home, User, Stethoscope } from "lucide-react";
+import { LogOut, Activity, Calendar, FileText, Home, User, Stethoscope, FileSpreadsheet } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { getPatientProfile } from "@/actions/patient-profile";
