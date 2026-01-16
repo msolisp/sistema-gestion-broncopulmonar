@@ -1,3 +1,5 @@
+'use server'
+
 import { auth } from '@/auth'
 import { put } from '@vercel/blob'
 import { PrismaClient } from '@prisma/client'
