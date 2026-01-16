@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { Search, Edit2, Eye, EyeOff, X, Users } from 'lucide-react'
-import { REGIONS } from '@/lib/chile-data'
+import { REGIONS, findRegionByCommune } from '@/lib/chile-data'
 
 interface Patient {
     id: string
@@ -70,10 +70,19 @@ export default function PatientsManagementTable() {
 
     const handleEdit = (patient: Patient) => {
         setEditingPatient(patient)
+
+        let initialRegion = patient.region || ''
+        const normalizedCommune = patient.commune ? patient.commune.toUpperCase() : ''
+
+        // If no region but we have commune, try to infer it
+        if (!initialRegion && normalizedCommune) {
+            initialRegion = findRegionByCommune(normalizedCommune) || ''
+        }
+
         setFormData({
             name: patient.name,
-            region: patient.region || '',
-            commune: patient.commune,
+            region: initialRegion,
+            commune: normalizedCommune, // Communes in select values are UPPERCASE usually or need to match
             address: patient.address,
         })
         setPassword('')
