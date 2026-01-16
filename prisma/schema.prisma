@@ -49,6 +49,7 @@ model Patient {
   appointments  Appointment[]
   exams         MedicalExam[]
   pulmonaryTests PulmonaryFunctionTest[]
+  notifications Notification[]
 }
 
 model Appointment {
@@ -75,6 +76,20 @@ model MedicalExam {
   fileName          String? 
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
+}
+
+model Notification {
+  id          String   @id @default(cuid())
+  type        String   // 'EXAM_UPLOADED'
+  title       String
+  message     String
+  patientId   String
+  patient     Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  examId      String?
+  read        Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  
+  @@index([read, createdAt])
 }
 
 model PulmonaryFunctionTest {

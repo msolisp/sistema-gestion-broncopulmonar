@@ -72,6 +72,13 @@ export default function InternalSidebar({ user }: InternalSidebarProps) {
                         <p className="text-xs text-zinc-500">{userRole}</p>
                     </div>
                 </div>
+
+                {/* Notification Bell */}
+                <div className="px-4 py-2">
+                    <NotificationBell />
+                </div>
+
+                {/* Logout */}
                 <button
                     onClick={() => signOut({ callbackUrl: '/intranet/login' })}
                     className="flex w-full items-center px-4 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50"

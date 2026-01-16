@@ -72,8 +72,8 @@ export async function uploadPatientExam(
         // Parse exam date
         const examDate = new Date(examDateStr)
 
-        // Create exam record in database
-        await prisma.medicalExam.create({
+        // Save to database
+        const exam = await prisma.medicalExam.create({
             data: {
                 patientId: patient.id,
                 source: 'portal pacientes',
@@ -83,6 +83,18 @@ export async function uploadPatientExam(
                 examDate: examDate,
                 fileUrl: blob.url,
                 fileName: file.name,
+            },
+        })
+
+        // Create notification for internal portal
+        await prisma.notification.create({
+            data: {
+                type: 'EXAM_UPLOADED',
+                title: 'Nuevo examen subido',
+                message: `${patient.name} subió un examen médico de ${centerName.trim()}`,
+                patientId: patient.id,
+                examId: exam.id,
+                read: false,
             },
         })
 
