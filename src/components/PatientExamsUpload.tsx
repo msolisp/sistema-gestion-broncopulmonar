@@ -5,7 +5,12 @@ import { useFormState, useFormStatus } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { uploadPatientExam } from '@/lib/patient-actions'
 
-const initialState = {
+interface State {
+    message: string
+    success?: boolean
+}
+
+const initialState: State = {
     message: '',
 }
 
@@ -24,9 +29,21 @@ function SubmitButton() {
 }
 
 export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => void }) {
+    const router = useRouter()
     const [state, formAction] = useFormState(uploadPatientExam, initialState)
     const [fileName, setFileName] = useState<string>('')
     const [isDragging, setIsDragging] = useState(false)
+
+    // Monitor state changes to handle success
+    useEffect(() => {
+        if (state.success) {
+            setFileName('')
+            const form = document.getElementById('exam-upload-form') as HTMLFormElement
+            form?.reset()
+            onSuccess?.()
+            router.refresh()
+        }
+    }, [state.success, onSuccess, router])
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0]
@@ -43,9 +60,6 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
         setFileName(file.name)
 
         // Update the file input manually if needed (browsers make this hard for security)
-        // Instead, we can use a DataTransfer object to set the input's files property if we were using a ref
-        // But since we're using form action, we need to ensure the file input has the file
-        // A common workaround is to use the DataTransfer API to set the input files
         const dataTransfer = new DataTransfer()
         dataTransfer.items.add(file)
         const fileInput = document.getElementById('file-upload') as HTMLInputElement
@@ -74,21 +88,6 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
         }
     }
 
-    // Monitor state changes to handle success
-    useEffect(() => {
-        if (state.success) {
-            setFileName('')
-            const form = document.getElementById('exam-upload-form') as HTMLFormElement
-            form?.reset()
-            onSuccess?.()
-            router.refresh()
-        }
-    }, [state.success, onSuccess, router])
-
-    const handleSubmit = async (formData: FormData) => {
-        await formAction(formData)
-    }
-
     return (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <div className="flex items-center gap-2 mb-6">
@@ -98,7 +97,7 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
                 <h2 className="text-2xl font-bold text-gray-900">Subir Examen Médico</h2>
             </div>
 
-            <form id="exam-upload-form" action={handleSubmit} className="space-y-4">
+            <form id="exam-upload-form" action={formAction} className="space-y-4">
                 {/* File Upload */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
