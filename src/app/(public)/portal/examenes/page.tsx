@@ -12,7 +12,8 @@ async function ExamsContent() {
         redirect('/login')
     }
 
-    const exams = await getPatientExams()
+    // const exams = await getPatientExams()
+    const exams: any[] = [] // Temporary fix to allow page load while debugging DB
 
     return (
         <div className="min-h-screen bg-gray-50 py-8">
