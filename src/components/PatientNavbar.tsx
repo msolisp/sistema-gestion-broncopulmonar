@@ -65,6 +65,10 @@ export default function PatientNavbar({ initialUserName }: PatientNavbarProps) {
                                 <Calendar className="w-4 h-4 mr-2" />
                                 Mis Citas
                             </Link>
+                            <Link href="/portal/examenes" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                <Stethoscope className="w-4 h-4 mr-2" />
+                                Mis Exámenes
+                            </Link>
                             <Link href="/portal/historial" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                                 <FileText className="w-4 h-4 mr-2" />
                                 Mi Historial
