@@ -107,9 +107,9 @@ export async function uploadPatientExam(
             message: 'Examen médico subido exitosamente.',
             success: true
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('Error uploading patient exam:', error)
-        return { message: 'Error al subir el examen. Intente nuevamente.' }
+        return { message: `Error: ${error.message || 'Error desconocido'}` }
     }
 }
 
