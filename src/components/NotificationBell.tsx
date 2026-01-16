@@ -118,9 +118,9 @@ export default function NotificationBell() {
                     />
 
                     {/* Dropdown Panel */}
-                    <div className="absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-2xl border border-zinc-200 z-[100] max-h-[500px] overflow-auto flex flex-col">
+                    <div className="absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-2xl border border-zinc-200 z-[100] max-h-[60vh] overflow-hidden flex flex-col">
                         {/* Header */}
-                        <div className="px-4 py-3 border-b border-zinc-200 flex items-center justify-between bg-zinc-50">
+                        <div className="px-4 py-3 border-b border-zinc-200 flex items-center justify-between bg-zinc-50 shrink-0">
                             <h3 className="text-sm font-semibold text-zinc-900">
                                 Notificaciones {unreadCount > 0 && `(${unreadCount})`}
                             </h3>
