@@ -769,16 +769,18 @@ describe('System User Actions', () => {
             expect(result.message).toContain('El email ya está en uso')
         })
 
-        it('allows editing admin with restrictions on role and active', async () => {
+        it('allows editing admin with restrictions on role and active (self-edit only)', async () => {
             const { auth } = require('@/auth')
-            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN', id: 'admin1' } })
+            const adminEmail = 'admin@test.com'
+            auth.mockResolvedValue({ user: { email: adminEmail, role: 'ADMIN', id: 'admin1' } })
                 ; (prisma.user.findFirst as jest.Mock).mockResolvedValue(null)
-                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', role: 'ADMIN' })
+                // Mock the admin user with the SAME email as the logged-in user
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', role: 'ADMIN', email: adminEmail })
                 ; (prisma.user.update as jest.Mock).mockResolvedValue({})
 
             const result = await adminUpdateSystemUser(null, updateData)
 
-            // Should succeed
+            // Should succeed because admin is editing themselves
             expect(result.message).toBe('Success')
 
             // Verify role and active were forced to stay ADMIN and true

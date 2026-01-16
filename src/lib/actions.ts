@@ -509,6 +509,11 @@ export async function adminCreateSystemUser(prevState: any, formData: FormData) 
 
     const { name, email, password, role, active } = validation.data;
 
+    // Prevent creation of new ADMIN users
+    if (role === 'ADMIN') {
+        return { message: 'No se puede crear otro administrador. Solo puede existir un administrador en el sistema.' };
+    }
+
     const existingUser = await prisma.user.findUnique({ where: { email } });
     if (existingUser) return { message: 'El email ya existe' };
 
