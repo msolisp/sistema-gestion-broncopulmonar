@@ -66,17 +66,17 @@ export const REGIONS = [
     }
 ];
 
+const normalizeText = (text: string) => {
+    return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+};
+
 export function findRegionByCommune(communeName: string): string | undefined {
     if (!communeName) return undefined;
 
-    // Normalize input to handle casing (though explicit match is preferred)
-    const target = communeName.toUpperCase();
+    const target = normalizeText(communeName);
 
     for (const region of REGIONS) {
-        // We compare upper case to upper case
-        // Also normalize accents just in case? Usually toUpperCase handles typical accents, but normalize helps.
-        // Actually, simple upper validation matches the behavior of how we store it ("PUENTE ALTO").
-        if (region.communes.some(c => c.toUpperCase() === target)) {
+        if (region.communes.some(c => normalizeText(c) === target)) {
             return region.name;
         }
     }

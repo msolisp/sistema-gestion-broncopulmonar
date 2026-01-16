@@ -74,15 +74,39 @@ export default function PatientsManagementTable() {
         let initialRegion = patient.region || ''
         const normalizedCommune = patient.commune ? patient.commune.toUpperCase() : ''
 
-        // If no region but we have commune, try to infer it
-        if (!initialRegion && normalizedCommune) {
-            initialRegion = findRegionByCommune(normalizedCommune) || ''
+        // Verify if the stored region matches our valid regions list
+        const isValidRegion = REGIONS.some(r => r.name === initialRegion)
+
+        // If no region OR invalid region, try to infer it from the commune
+        if ((!initialRegion || !isValidRegion) && normalizedCommune) {
+            const inferred = findRegionByCommune(patient.commune || '')
+            if (inferred) {
+                initialRegion = inferred
+            }
+        }
+
+        // Find the canonical commune name (to handle accents mismatch)
+        // normalizedCommune is just Uppercase, but we need strict match for Select value if options are Uppercased
+        // BUT options are value={c.toUpperCase()}. So "CONCHALI" vs "CONCHALÍ".
+        // Use normalization to find the matching entry in the region's list.
+        let finalCommune = normalizedCommune;
+        if (initialRegion) {
+            const regionData = REGIONS.find(r => r.name === initialRegion);
+            if (regionData) {
+                const canonical = regionData.communes.find(c =>
+                    c.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() ===
+                    (patient.commune || '').normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase()
+                );
+                if (canonical) {
+                    finalCommune = canonical.toUpperCase();
+                }
+            }
         }
 
         setFormData({
             name: patient.name,
             region: initialRegion,
-            commune: normalizedCommune, // Communes in select values are UPPERCASE usually or need to match
+            commune: finalCommune,
             address: patient.address,
         })
         setPassword('')
