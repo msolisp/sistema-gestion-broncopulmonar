@@ -1,7 +1,7 @@
 'use client';
 
 import Link from "next/link";
-import { LogOut, Activity, Calendar, FileText, Home, User } from "lucide-react";
+import { LogOut, Activity, Calendar, FileText, Home, User, Stethoscope } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { getPatientProfile } from "@/actions/patient-profile";
@@ -66,7 +66,7 @@ export default function PatientNavbar({ initialUserName }: PatientNavbarProps) {
                                 Mis Citas
                             </Link>
                             <Link href="/portal/examenes" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                <Stethoscope className="w-4 h-4 mr-2" />
+                                <FileSpreadsheet className="w-4 h-4 mr-2" />
                                 Mis Exámenes
                             </Link>
                             <Link href="/portal/historial" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
