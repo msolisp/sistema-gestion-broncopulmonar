@@ -109,9 +109,9 @@ test.describe('Patient Exam Upload', () => {
         const hasExams = await page.locator('table tbody tr').count() > 0
 
         if (hasExams) {
-            // Click "Ver" button
-            const downloadPromise = page.waitForEvent('download')
-            await page.click('a:has-text("Ver")').first()
+            // Click "Ver" button - first() is a locator method, not a Promise method
+            const firstViewLink = page.locator('a:has-text("Ver")').first()
+            await firstViewLink.click()
 
             // Verify download started (or new tab opened)
             // PDF will open in new tab, so we just verify the link works
