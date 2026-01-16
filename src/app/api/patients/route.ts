@@ -27,16 +27,28 @@ export async function GET() {
                 commune: true,
                 address: true,
                 active: true,
-                region: true
+                region: true,
+                _count: {
+                    select: {
+                        exams: true
+                    }
+                }
             },
             orderBy: {
                 name: 'asc'
             }
         })
 
-        return NextResponse.json(patients)
+        // Transform to include examCount
+        const patientsWithExamCount = patients.map(p => ({
+            ...p,
+            examCount: p._count.exams,
+            _count: undefined
+        }))
+
+        return NextResponse.json(patientsWithExamCount)
     } catch (error) {
         console.error('Error fetching patients:', error)
-        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+        return NextResponse.json({ error: 'Failed to fetch patients' }, { status: 500 })
     }
 }
