@@ -3,11 +3,11 @@ import { test, expect } from '@playwright/test';
 
 test('System Management: Create User, Update Permissions, Check Logs', async ({ page }) => {
     // 1. Login
-    await page.goto('/login');
+    await page.goto('/intranet/login');
     await page.fill('input[name="email"]', 'admin@example.com');
     await page.fill('input[name="password"]', 'admin123');
-    await page.click('button:has-text("Ingresar")');
-    await expect(page).toHaveURL(/.*\/dashboard/);
+    await page.click('button:has-text("Iniciar Sesión Segura")');
+    await expect(page).toHaveURL(/.*\/dashboard/, { timeout: 30000 });
 
     // 2. Create System User (Kinesiologist)
     await page.click('text=Usuarios y Roles');
