@@ -21,7 +21,7 @@ test.describe('Internal Portal - User Creation with Password Validation', () => 
         await page.click('text=Nuevo Usuario');
 
         // Verify modal opened
-        await expect(page.locator('text=Nuevo Usuario')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Nuevo Usuario' })).toBeVisible();
 
         // Verify password field exists
         const passwordLabel = page.locator('label:has-text("Contraseña")');
@@ -81,7 +81,7 @@ test.describe('Internal Portal - User Creation with Password Validation', () => 
         await expect(page.locator('text=La contraseña debe tener al menos 8 caracteres')).toBeVisible();
 
         // Modal should still be open
-        await expect(page.locator('text=Nuevo Usuario')).toBeVisible();
+        await expect(page.getByRole('heading', { name: 'Nuevo Usuario' })).toBeVisible();
     });
 
     test('should prevent submission without uppercase letter', async ({ page }) => {
@@ -149,7 +149,7 @@ test.describe('Internal Portal - User Creation with Password Validation', () => 
         await page.click('text=Guardar Cambios');
 
         // Modal should close
-        await expect(page.locator('text=Nuevo Usuario')).not.toBeVisible({ timeout: 3000 });
+        await expect(page.getByRole('heading', { name: 'Nuevo Usuario' })).not.toBeVisible({ timeout: 3000 });
 
         // New user should appear in table
         await expect(page.locator(`text=${uniqueEmail}`)).toBeVisible();
