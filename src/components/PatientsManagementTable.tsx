@@ -198,8 +198,8 @@ export default function PatientsManagementTable() {
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
                                         <span className={`px-2 py-1 text-xs font-medium rounded-full ${patient.active
-                                                ? 'bg-green-100 text-green-700'
-                                                : 'bg-red-100 text-red-700'
+                                            ? 'bg-green-100 text-green-700'
+                                            : 'bg-red-100 text-red-700'
                                             }`}>
                                             {patient.active ? 'Activo' : 'Inactivo'}
                                         </span>
@@ -212,6 +212,13 @@ export default function PatientsManagementTable() {
                                             <Edit2 className="w-4 h-4" />
                                             Editar
                                         </button>
+                                        <a
+                                            href={`/patients/${patient.id}/history`}
+                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors ml-2"
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                            Historial
+                                        </a>
                                     </td>
                                 </tr>
                             ))}
