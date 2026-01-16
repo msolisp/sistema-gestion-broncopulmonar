@@ -86,17 +86,22 @@ export async function uploadPatientExam(
             },
         })
 
-        // Create notification for internal portal
-        await prisma.notification.create({
-            data: {
-                type: 'EXAM_UPLOADED',
-                title: 'Nuevo examen subido',
-                message: `${patient.name} subió un examen médico de ${centerName.trim()}`,
-                patientId: patient.id,
-                examId: exam.id,
-                read: false,
-            },
-        })
+        // Create notification for internal portal (non-blocking)
+        try {
+            await prisma.notification.create({
+                data: {
+                    type: 'EXAM_UPLOADED',
+                    title: 'Nuevo examen subido',
+                    message: `${patient.name} subió un examen médico de ${centerName.trim()}`,
+                    patientId: patient.id,
+                    examId: exam.id,
+                    read: false,
+                },
+            })
+        } catch (notifError) {
+            console.error('Failed to create notification:', notifError)
+            // Continue execution - do not fail the upload just because notification failed
+        }
 
         return {
             message: 'Examen médico subido exitosamente.',
@@ -193,5 +198,82 @@ export async function deletePatientExam(examId: string): Promise<{ message: stri
     } catch (error) {
         console.error('Error deleting patient exam:', error)
         return { message: 'Error al eliminar el examen. Intente nuevamente.' }
+    }
+}
+
+/**
+ * Update a patient's exam metadata
+ */
+export async function updatePatientExam(
+    examId: string,
+    formData: FormData
+): Promise<{ message: string; success?: boolean }> {
+    try {
+        const session = await auth()
+
+        if (!session?.user?.email) {
+            return { message: 'No autorizado. Debe iniciar sesión.' }
+        }
+
+        const patient = await prisma.patient.findUnique({
+            where: { email: session.user.email },
+        })
+
+        if (!patient) {
+            return { message: 'Paciente no encontrado.' }
+        }
+
+        // Extract form data
+        const centerName = formData.get('centerName') as string
+        const doctorName = formData.get('doctorName') as string
+        const examDateStr = formData.get('examDate') as string
+
+        if (!centerName || centerName.trim().length === 0) {
+            return { message: 'El centro médico es requerido.' }
+        }
+
+        if (!doctorName || doctorName.trim().length === 0) {
+            return { message: 'El nombre del médico es requerido.' }
+        }
+
+        if (!examDateStr) {
+            return { message: 'La fecha del examen es requerida.' }
+        }
+
+        // Find the exam
+        const exam = await prisma.medicalExam.findUnique({
+            where: { id: examId },
+        })
+
+        if (!exam) {
+            return { message: 'Examen no encontrado.' }
+        }
+
+        // Verify ownership
+        if (exam.patientId !== patient.id) {
+            return { message: 'No tiene permiso para editar este examen.' }
+        }
+
+        if (exam.source !== 'portal pacientes' || exam.uploadedByUserId !== patient.id) {
+            return { message: 'Solo puede editar exámenes que usted haya subido.' }
+        }
+
+        // Update exam
+        await prisma.medicalExam.update({
+            where: { id: examId },
+            data: {
+                centerName: centerName.trim(),
+                doctorName: doctorName.trim(),
+                examDate: new Date(examDateStr),
+            },
+        })
+
+        return {
+            message: 'Examen actualizado exitosamente.',
+            success: true
+        }
+    } catch (error) {
+        console.error('Error updating patient exam:', error)
+        return { message: 'Error al actualizar el examen.' }
     }
 }
