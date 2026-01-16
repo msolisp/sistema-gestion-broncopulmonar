@@ -167,7 +167,7 @@ export default async function PatientHistoryPage({ params }: PageProps) {
                                                     </td>
                                                     <td className="px-4 py-3 whitespace-nowrap text-sm">
                                                         <span className={`px-2 py-1 text-xs rounded-full border ${exam.source === 'portal pacientes' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}`}>
-                                                            {exam.source === 'portal pacientes' ? 'Paciente' : 'Clínico'}
+                                                            {exam.source === 'portal pacientes' ? 'Portal de Pacientes' : 'Portal Interno'}
                                                         </span>
                                                     </td>
                                                     <td className="px-4 py-3 whitespace-nowrap text-sm">

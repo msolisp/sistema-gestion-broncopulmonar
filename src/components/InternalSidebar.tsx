@@ -62,10 +62,8 @@ export default function InternalSidebar({ user }: InternalSidebarProps) {
                     Estándar HL7
                 </Link>
 
-                <div className="pt-2">
-                    <div className="px-4">
-                        <NotificationBell />
-                    </div>
+                <div className="pt-1">
+                    <NotificationBell />
                 </div>
             </nav>
 

@@ -33,9 +33,31 @@ export default async function DashboardPage() {
         orderBy: { createdAt: 'desc' },
         take: 50
     });
-    const logs = logsRaw.map(log => ({
+    const logs = logsRaw.map((log: any) => ({
         ...log,
         createdAt: log.createdAt.toISOString()
+    }));
+
+    // Fetch Pending Exams (Uploaded by Patient & Not Reviewed)
+    const pendingExamsRaw = await prisma.medicalExam.findMany({
+        where: {
+            source: 'portal pacientes',
+            reviewed: false
+        },
+        include: {
+            patient: {
+                select: { id: true, name: true, rut: true }
+            }
+        },
+        orderBy: { examDate: 'asc' }
+    });
+
+    const pendingExams = pendingExamsRaw.map((exam: any) => ({
+        id: exam.id,
+        fileName: exam.fileName,
+        fileUrl: exam.fileUrl,
+        examDate: exam.examDate.toISOString(),
+        patient: exam.patient
     }));
 
     const permissions = await prisma.rolePermission.findMany();
@@ -49,7 +71,7 @@ export default async function DashboardPage() {
         orderBy: { date: 'desc' },
         take: 100 // Limit for performance
     });
-    const appointments = appointmentsRaw.map(apt => ({
+    const appointments = appointmentsRaw.map((apt: any) => ({
         id: apt.id,
         date: apt.date.toISOString(),
         status: apt.status,
@@ -75,6 +97,7 @@ export default async function DashboardPage() {
         logs={logs}
         initialPermissions={permissionMatrix}
         appointments={appointments}
+        pendingExams={pendingExams}
     />;
 
 }

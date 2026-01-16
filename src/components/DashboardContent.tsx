@@ -7,6 +7,7 @@ import { adminCreateSystemUser, adminUpdateSystemUser, toggleRolePermission, see
 import { useRouter, useSearchParams } from "next/navigation";
 import PatientsManagementTable from './PatientsManagementTable'
 import AppointmentCalendar from './AppointmentCalendar'
+import PendingExamsWidget from './PendingExamsWidget'
 
 interface DashboardContentProps {
 
@@ -39,6 +40,17 @@ interface DashboardContentProps {
             name: string | null;
             email: string;
             rut: string | null;
+        }
+    }>;
+    pendingExams: Array<{
+        id: string;
+        fileName: string | null;
+        fileUrl: string;
+        examDate: string;
+        patient: {
+            id: string;
+            name: string
+            rut: string
         }
     }>;
 }
@@ -111,7 +123,7 @@ function PermissionMatrix({ initialData }: { initialData: any[] }) {
     )
 }
 
-export default function DashboardContent({ initialUsers, logs, initialPermissions, appointments = [] }: DashboardContentProps) {
+export default function DashboardContent({ initialUsers, logs, initialPermissions, appointments = [], pendingExams = [] }: DashboardContentProps) {
     const router = useRouter();
     const searchParams = useSearchParams()
     const tabFromUrl = searchParams.get('tab')
@@ -436,7 +448,14 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
             <div className="animate-in fade-in duration-300">
 
                 {activeTab === 'Agendamiento' && (
-                    <AppointmentCalendar appointments={appointments} />
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div className="lg:col-span-2">
+                            <AppointmentCalendar appointments={appointments} />
+                        </div>
+                        <div>
+                            <PendingExamsWidget exams={pendingExams} />
+                        </div>
+                    </div>
                 )}
 
                 {activeTab === 'Gestión de Pacientes' && (

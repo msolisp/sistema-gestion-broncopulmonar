@@ -91,16 +91,18 @@ export default function NotificationBell() {
     const unreadCount = notifications.length
 
     return (
-        <div className="relative">
+        <div className="relative w-full">
             {/* Bell Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative p-2 text-zinc-600 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                className={`relative flex items-center w-full px-4 py-2.5 text-zinc-600 hover:text-indigo-600 hover:bg-zinc-50 rounded-lg transition-colors group text-sm font-medium`}
                 aria-label="Notificaciones"
             >
-                <Bell className="w-5 h-5" />
+                <Bell className="w-5 h-5 mr-3 text-zinc-400 group-hover:text-indigo-600" />
+                <span>Exámenes cargados</span>
+
                 {unreadCount > 0 && (
-                    <span className="absolute top-0 right-0 flex items-center justify-center w-5 h-5 text-xs font-bold text-white bg-red-500 rounded-full">
+                    <span className="ml-auto flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold text-white bg-red-500 rounded-full">
                         {unreadCount > 9 ? '9+' : unreadCount}
                     </span>
                 )}
