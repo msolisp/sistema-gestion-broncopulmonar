@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { LogOut, Activity, Users, FileText, Settings, Sparkles, Calendar } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
+import NotificationBell from "./NotificationBell";
 
 interface InternalSidebarProps {
     user?: {
