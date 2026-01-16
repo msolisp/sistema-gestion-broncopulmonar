@@ -74,16 +74,19 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
         }
     }
 
-    const handleSubmit = async (formData: FormData) => {
-        await formAction(formData)
-
-        // If successful, reset form and call onSuccess
+    // Monitor state changes to handle success
+    useEffect(() => {
         if (state.success) {
             setFileName('')
             const form = document.getElementById('exam-upload-form') as HTMLFormElement
             form?.reset()
             onSuccess?.()
+            router.refresh()
         }
+    }, [state.success, onSuccess, router])
+
+    const handleSubmit = async (formData: FormData) => {
+        await formAction(formData)
     }
 
     return (
