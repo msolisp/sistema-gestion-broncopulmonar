@@ -771,3 +771,26 @@ export async function adminDeleteSystemUser(id: string) {
         return { message: 'Error al eliminar usuario' };
     }
 }
+
+export async function reviewMedicalExam(examId: string) {
+    const { auth } = await import('@/auth');
+    const session = await auth();
+    if (!session?.user?.email) return { message: 'Unauthorized' };
+
+    const userRole = (session.user as any).role;
+    if (userRole !== 'ADMIN' && userRole !== 'KINESIOLOGIST') {
+        return { message: 'Unauthorized' };
+    }
+
+    try {
+        await prisma.medicalExam.update({
+            where: { id: examId },
+            data: { reviewed: true }
+        });
+        revalidatePath('/dashboard');
+        return { message: 'Success' };
+    } catch (e) {
+        console.error(e);
+        return { message: 'Error marking exam as reviewed' };
+    }
+}
