@@ -90,7 +90,7 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
                 <svg className="w-6 h-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                 </svg>
-                <h2 className="text-2xl font-bold text-gray-900">Subir Nuevo Examen</h2>
+                <h2 className="text-2xl font-bold text-gray-900">Subir Examen Médico</h2>
             </div>
 
             <form id="exam-upload-form" action={handleSubmit} className="space-y-4">
