@@ -41,7 +41,7 @@ export default async function PatientHistoryPage({ params }: PageProps) {
                 {/* Header */}
                 <div className="mb-6">
                     <Link
-                        href="/admin/dashboard"
+                        href="/dashboard"
                         className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-4"
                     >
                         <ArrowLeft className="w-4 h-4" />
