@@ -134,11 +134,14 @@ model PasswordResetToken {
 }
 
 model MedicalKnowledge {
-  id        String   @id @default(cuid())
-  content   String
-  imageUrl  String?
-  source    String   // Image filename
-  page      Int?
-  embedding Unsupported("vector(1536)")?
-  createdAt DateTime @default(now())
+  id          String   @id @default(cuid())
+  title       String
+  content     String
+  category    String?
+  imageUrl    String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // Vector embedding for semantic search - REQUIRES pgvector extension
+  // Only enabled in production (Neon DB has pgvector)
+  // embedding Unsupported("vector(1536)")?
 }
