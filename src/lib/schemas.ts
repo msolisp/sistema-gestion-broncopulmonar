@@ -8,7 +8,12 @@ export const LoginSchema = z.object({
 export const RegisterPatientSchema = z.object({
     name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
     email: z.string().email({ message: 'Email inválido' }),
-    password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres' }),
+    password: z.string()
+        .min(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
+        .regex(/[A-Z]/, { message: 'Debe contener al menos una mayúscula' })
+        .regex(/[a-z]/, { message: 'Debe contener al menos una minúscula' })
+        //.regex(/[0-9]/, { message: 'Debe contener al menos un número' })
+        .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, { message: 'Debe contener al menos un carácter especial' }),
     rut: z.string().min(8, { message: 'RUT inválido' }), // Basic length check, ideally regex
     commune: z.string().min(1, { message: 'Comuna requerida' }),
 });
@@ -74,7 +79,11 @@ export const DeletePatientSchema = z.object({
 export const AdminCreateSystemUserSchema = z.object({
     name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
     email: z.string().email({ message: 'Email inválido' }),
-    password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres' }),
+    password: z.string()
+        .min(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
+        .regex(/[A-Z]/, { message: 'Debe contener al menos una mayúscula' })
+        .regex(/[a-z]/, { message: 'Debe contener al menos una minúscula' })
+        .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, { message: 'Debe contener al menos un carácter especial' }),
     role: z.enum(['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST']),
     active: z.boolean().optional(),
 });
