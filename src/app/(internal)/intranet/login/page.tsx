@@ -1,9 +1,10 @@
 'use client'
 
-import { Suspense, useEffect, useState, useActionState } from 'react'
+import { Suspense, useState, useActionState, useEffect } from 'react'
 import { useFormStatus } from 'react-dom'
 import { authenticate } from '@/lib/actions'
 import { Monitor } from 'lucide-react'
+import TurnstileCaptcha from '@/components/TurnstileCaptcha'
 import { useSearchParams } from 'next/navigation'
 
 // This component will contain the logic that uses useSearchParams
@@ -11,6 +12,7 @@ function LoginContent() {
     const [errorMessage, dispatch] = useActionState(authenticate, undefined)
     const searchParams = useSearchParams()
     const [successMessage, setSuccessMessage] = useState('')
+    const [captchaToken, setCaptchaToken] = useState<string>('')
 
     useEffect(() => {
         if (searchParams.get('passwordChanged') === 'true') {
@@ -32,6 +34,7 @@ function LoginContent() {
                 <div className="p-8">
                     <form action={dispatch} className="space-y-4">
                         <input type="hidden" name="portal_type" value="internal" />
+                        <input type="hidden" name="cf-turnstile-response" value={captchaToken} />
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1" htmlFor="email">
                                 Credencial (Email)
@@ -57,6 +60,9 @@ function LoginContent() {
                                 required
                             />
                         </div>
+
+                        <TurnstileCaptcha onVerify={(token) => setCaptchaToken(token)} />
+
                         {successMessage && (
                             <div className="flex items-center space-x-2 text-sm text-green-600 bg-green-50 p-3 rounded border border-green-100">
                                 <p>{successMessage}</p>
@@ -67,7 +73,7 @@ function LoginContent() {
                                 <p>{errorMessage}</p>
                             </div>
                         )}
-                        <LoginButton />
+                        <LoginButton disabled={!captchaToken && process.env.NODE_ENV === 'production'} />
                     </form>
 
                     <div className="mt-8 text-center border-t border-slate-100 pt-4">
@@ -89,14 +95,16 @@ export default function InternalLoginPage() {
     )
 }
 
-function LoginButton() {
+function LoginButton({ disabled }: { disabled?: boolean }) {
     const { pending } = useFormStatus()
+    const isDisabled = pending || disabled
 
     return (
         <button
             type="submit"
-            className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 uppercase tracking-wide shadow-lg shadow-blue-500/30"
-            aria-disabled={pending}
+            className="w-full rounded-lg bg-blue-600 px-4 py-3 text-sm font-bold text-white transition-all hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wide shadow-lg shadow-blue-500/30"
+            aria-disabled={isDisabled}
+            disabled={isDisabled}
         >
             {pending ? 'Verificando...' : 'Iniciar Sesión Segura'}
         </button>
