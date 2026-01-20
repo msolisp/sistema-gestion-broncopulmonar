@@ -289,31 +289,46 @@ export default function PatientProfileForm({ user }: { user: any }) {
                             </div>
                         </div>
                     </div>
-
-                    {/* Cota Field - Full width */}
-                    <div className="space-y-2">
-                        <Label htmlFor="cota">Cota</Label>
-                        <div className="relative">
-                            <Heart className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
-                            <Input
-                                id="cota"
-                                name="cota"
-                                type="number"
-                                step="0.1"
-                                min="0"
-                                max="999.9"
-                                defaultValue={patient.cota || ''}
-                                className="pl-9 bg-white border-zinc-200 text-zinc-900 focus:ring-indigo-500 focus:border-indigo-500 transition-all hover:border-zinc-300"
-                                placeholder="0.0"
-                                onInput={(e) => {
-                                    const input = e.currentTarget;
-                                    const value = parseFloat(input.value);
-                                    if (!isNaN(value)) {
-                                        // Round to 1 decimal place
-                                        input.value = value.toFixed(1);
-                                    }
-                                }}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+                                Email
+                            </label>
+                            <input
+                                type="email"
+                                name="email"
+                                id="email"
+                                defaultValue={patient.email}
+                                className="w-full rounded-lg border-gray-300 bg-gray-100 text-gray-500 cursor-not-allowed shadow-sm"
+                                disabled
                             />
+                        </div>
+
+                        {/* Cota Field */}
+                        <div className="space-y-2">
+                            <Label htmlFor="cota">Cota</Label>
+                            <div className="relative">
+                                <Heart className="absolute left-3 top-3 h-4 w-4 text-zinc-400" />
+                                <Input
+                                    id="cota"
+                                    name="cota"
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    max="999.9"
+                                    defaultValue={patient.cota || ''}
+                                    className="pl-9 bg-white border-zinc-200 text-zinc-900 focus:ring-indigo-500 focus:border-indigo-500 transition-all hover:border-zinc-300"
+                                    placeholder="0.0"
+                                    onInput={(e) => {
+                                        const input = e.currentTarget;
+                                        const value = parseFloat(input.value);
+                                        if (!isNaN(value)) {
+                                            // Round to 1 decimal place
+                                            input.value = value.toFixed(1);
+                                        }
+                                    }}
+                                />
+                            </div>
                         </div>
                     </div>
 

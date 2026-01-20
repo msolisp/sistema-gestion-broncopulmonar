@@ -5,6 +5,10 @@ export const authConfig = {
     pages: {
         signIn: '/login',
     },
+    session: {
+        maxAge: 5 * 60, // 5 minutes (Strict security)
+        updateAge: 2 * 60, // Update session every 2 minutes if active
+    },
     callbacks: {
         authorized({ auth, request: { nextUrl } }) {
             const isLoggedIn = !!auth?.user;

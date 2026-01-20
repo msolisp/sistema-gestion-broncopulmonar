@@ -1,6 +1,7 @@
 import InternalSidebar from "@/components/InternalSidebar";
 import { auth } from "@/auth";
 import prisma from "@/lib/prisma";
+import SessionTimeout from "@/components/SessionTimeout";
 
 export const dynamic = 'force-dynamic';
 
@@ -25,7 +26,7 @@ export default async function InternalLayout({
 
     return (
         <div className="flex h-screen bg-zinc-50">
-            {/* <SessionTimeout /> */}
+            <SessionTimeout />
             <InternalSidebar user={session?.user} permissions={permissions} />
 
             {/* Main Content */}

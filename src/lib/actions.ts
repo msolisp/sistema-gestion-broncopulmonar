@@ -41,6 +41,42 @@ export async function authenticate(
     try {
         console.log('Attempting login for:', email);
 
+        // Turnstile Captcha Verification (Production Only or if Token Present)
+        const captchaToken = formData.get('cf-turnstile-response');
+        if (process.env.NODE_ENV === 'production' || captchaToken) {
+            if (!captchaToken) {
+                return 'Captcha inválido. Por favor intenta de nuevo.';
+            }
+
+            const secretKey = process.env.TURNSTILE_SECRET_KEY;
+            if (!secretKey) {
+                console.error('TURNSTILE_SECRET_KEY missing in server env');
+                // Fail open or closed depending on security policy. Start with warning but allow if missing config to prevent lockout during setup.
+                // But user requested Strict security.
+                if (process.env.NODE_ENV === 'production') return 'Error interno de configuración de seguridad.';
+            } else {
+                const ip = (await (await import('next/headers')).headers()).get("x-forwarded-for") || "127.0.0.1";
+                const verifyUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
+
+                const formData = new URLSearchParams();
+                formData.append('secret', secretKey);
+                formData.append('response', captchaToken as string);
+                formData.append('remoteip', ip);
+
+                const result = await fetch(verifyUrl, {
+                    body: formData,
+                    method: 'POST',
+                });
+                const outcome = await result.json();
+                if (!outcome.success) {
+                    console.warn(`Turnstile validation failed for ${email}:`, outcome);
+                    return 'Verificación de seguridad fallida.';
+                }
+            }
+        }
+
+        // Rate Limiting
+
         // Rate Limiting
         // Rate Limiting
         if (process.env.E2E_TESTING !== 'true') {
@@ -332,7 +368,14 @@ export async function adminCreatePatient(prevState: any, formData: FormData) {
                 active: true,
             }
         });
-        revalidatePath('/dashboard');
+
+        // Add Audit Log
+        const { headers } = await import('next/headers');
+        const headersList = await headers();
+        const ip = headersList.get("x-forwarded-for") || "Unknown IP";
+        await logAction('CREATE_PATIENT', `Patient created: ${email}`, (session.user as any).id, session.user.email, ip);
+
+        // revalidatePath('/dashboard');
         return { message: 'Success' };
     } catch (e) {
         console.error(e);

@@ -27,6 +27,10 @@ test.describe('Patient Portal Authentication', () => {
         await page.fill('input[type="email"]', uniqueEmail);
         await page.fill('input[type="password"]', 'Password123!');
 
+        // Note: In E2E (Headless), Cloudflare Turnstile might not render or solve.
+        // Since we are in 'development' env during E2E, the backend skips strict token verification
+        // (See src/lib/actions.ts). We skip waiting for the token to avoid timeouts.
+
         // Submit
         await page.click('button[type="submit"]');
 

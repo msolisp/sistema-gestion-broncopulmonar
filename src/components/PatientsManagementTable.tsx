@@ -1,8 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Edit2, Eye, EyeOff, X, Users, FileText } from 'lucide-react'
-import Link from 'next/link'
+import { Search, Edit2, Eye, EyeOff, X, Users } from 'lucide-react'
 import { REGIONS, findRegionByCommune } from '@/lib/chile-data'
 
 interface Patient {
@@ -247,16 +246,6 @@ export default function PatientsManagementTable({ currentUserRole, permissions }
                                         </span>
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right flex items-center justify-end gap-2">
-                                        {can('Ver Pacientes') && (
-                                            <Link
-                                                href={`/patients/${patient.id}/history`}
-                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                                                title="Historial Médico"
-                                            >
-                                                <FileText className="w-4 h-4" />
-                                                Historial
-                                            </Link>
-                                        )}
                                         {can('Editar Pacientes') && (
                                             <button
                                                 onClick={() => handleEdit(patient)}

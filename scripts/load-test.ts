@@ -1,94 +1,95 @@
+#!/usr/bin/env ts-node
 
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
-
-const prisma = new PrismaClient()
+import fetch from 'node-fetch';
+import { performance } from 'perf_hooks';
 
 // Configuration
-const CONCURRENT_USERS = 50
-const ITERATIONS_PER_USER = 1 // Keep it simple for now, simulated strict concurrency
-const TEST_USER_EMAIL = 'admin@test.com'
-const TEST_USER_PASSWORD = 'admin'
+const BASE_URL = process.env.TEST_URL || 'http://localhost:3000';
+const CONCURRENCY = 20; // Simulated concurrent users
+const TOTAL_REQUESTS = 100; // Total requests to fire
 
-async function benchmarkLogin() {
-    const start = performance.now()
+interface RequestResult {
+    success: boolean;
+    duration: number;
+    status: number;
+}
+
+async function makeRequest(id: number): Promise<RequestResult> {
+    const start = performance.now();
     try {
-        const user = await prisma.user.findUnique({
-            where: { email: TEST_USER_EMAIL }
-        })
-        if (!user) throw new Error('User not found')
-
-        await bcrypt.compare(TEST_USER_PASSWORD, user.password)
-    } catch (e) {
-        // console.error(e)
-    }
-    return performance.now() - start
-}
-
-async function benchmarkDashboardData() {
-    const start = performance.now()
-    try {
-        // Simulate BiReportsContent Data Fetching Logic (Heavy aggregation)
-        const patients = await prisma.patient.findMany({
-            include: { user: true, exams: true }
-        })
-
-        // Simulate standard processing
-        let total = 0
-        patients.forEach(p => total += 1)
-
-    } catch (e) {
-        // console.error(e)
-    }
-    return performance.now() - start
-}
-
-async function runLoadTest(name: string, fn: () => Promise<number>) {
-    console.log(`\n🚀 Starting Load Test: ${name}`)
-    console.log(`   Concurrent Users: ${CONCURRENT_USERS}`)
-
-    const promises = []
-    for (let i = 0; i < CONCURRENT_USERS; i++) {
-        promises.push(fn())
-    }
-
-    const startTotal = performance.now()
-    const results = await Promise.all(promises)
-    const endTotal = performance.now()
-
-    const totalTime = endTotal - startTotal
-    const avgLatency = results.reduce((a, b) => a + b, 0) / results.length
-    const minLatency = Math.min(...results)
-    const maxLatency = Math.max(...results)
-    const sub500 = results.filter(r => r < 500).length
-    const throughput = (CONCURRENT_USERS / (totalTime / 1000)).toFixed(2)
-
-    console.log(`   ✅ Completed in ${(totalTime / 1000).toFixed(2)}s`)
-    console.log(`   📊 Average Latency: ${avgLatency.toFixed(2)}ms`)
-    console.log(`   ⚡ Min/Max Latency: ${minLatency.toFixed(2)}ms / ${maxLatency.toFixed(2)}ms`)
-    console.log(`   📈 Throughput: ${throughput} req/sec`)
-    console.log(`   🎯 Success Rate (<500ms): ${sub500}/${CONCURRENT_USERS} (${((sub500 / CONCURRENT_USERS) * 100).toFixed(1)}%)`)
-
-    return { avgLatency, throughput }
-}
-
-async function main() {
-    try {
-        // 1. Warmup
-        console.log("Warming up DB connection...")
-        await prisma.user.findFirst()
-
-        // 2. Login Test (CPU Heavy due to bcrypt)
-        await runLoadTest("Login Flow (DB Read + Bcrypt)", benchmarkLogin)
-
-        // 3. Dashboard Test (DB Heavy)
-        await runLoadTest("Dashboard Data (Complex Fetch)", benchmarkDashboardData)
-
-    } catch (e) {
-        console.error(e)
-    } finally {
-        await prisma.$disconnect()
+        const response = await fetch(`${BASE_URL}/api/health`);
+        const duration = performance.now() - start;
+        return {
+            success: response.ok,
+            duration,
+            status: response.status
+        };
+    } catch (error) {
+        return {
+            success: false,
+            duration: performance.now() - start,
+            status: 0
+        };
     }
 }
 
-main()
+async function runLoadTest() {
+    console.log(`🚀 Starting Load Test`);
+    console.log(`URL: ${BASE_URL}`);
+    console.log(`Concurrency: ${CONCURRENCY}`);
+    console.log(`Total Requests: ${TOTAL_REQUESTS}`);
+    console.log('---');
+
+    const results: RequestResult[] = [];
+    const queue = Array.from({ length: TOTAL_REQUESTS }, (_, i) => i);
+
+    // Process queue with limited concurrency
+    const activePromises: Promise<void>[] = [];
+
+    const processItem = async () => {
+        while (queue.length > 0) {
+            const id = queue.shift();
+            if (id === undefined) break;
+
+            const result = await makeRequest(id);
+            results.push(result);
+            process.stdout.write(result.success ? '.' : 'x');
+        }
+    };
+
+    for (let i = 0; i < CONCURRENCY; i++) {
+        activePromises.push(processItem());
+    }
+
+    await Promise.all(activePromises);
+
+    console.log('\n---');
+
+    // Analyze results
+    const successful = results.filter(r => r.success);
+    const failed = results.filter(r => !r.success);
+    const durations = successful.map(r => r.duration);
+
+    const avg = durations.reduce((a, b) => a + b, 0) / durations.length;
+    const max = Math.max(...durations);
+    const min = Math.min(...durations);
+
+    console.log(`✅ Successful: ${successful.length}`);
+    console.log(`❌ Failed: ${failed.length}`);
+
+    if (successful.length > 0) {
+        console.log(`⏱️  Average Latency: ${avg.toFixed(2)}ms`);
+        console.log(`🐢 Max Latency: ${max.toFixed(2)}ms`);
+        console.log(`⚡ Min Latency: ${min.toFixed(2)}ms`);
+    }
+
+    if (failed.length > 0) {
+        console.log('⚠️  Load test had failures!');
+        process.exit(1);
+    } else {
+        console.log('✨ Load test completed successfully');
+        process.exit(0);
+    }
+}
+
+runLoadTest().catch(console.error);

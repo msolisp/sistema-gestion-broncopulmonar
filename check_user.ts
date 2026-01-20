@@ -4,13 +4,11 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function main() {
-    const email = 'paciente@test.com'
-    const user = await prisma.user.findUnique({
-        where: { email },
-        include: { patientProfile: true }
+    const email = 'paciente1@test.com'
+    const patient = await prisma.patient.findUnique({
+        where: { email }
     })
-
-    console.log('User check:', JSON.stringify(user, null, 2))
+    console.log('Patient check:', patient ? 'Found' : 'Not Found', patient)
 }
 
 main()

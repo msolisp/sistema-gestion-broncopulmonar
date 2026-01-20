@@ -14,6 +14,7 @@ jest.mock('@/lib/actions', () => ({
 describe('PatientProfileForm Component', () => {
     const mockUser = {
         name: 'Test Patient',
+        email: 'test@example.com',
         patientProfile: {
             id: '123',
             phone: '12345678',
@@ -162,6 +163,26 @@ describe('PatientProfileForm Component', () => {
             const dvContainer = rutDvInput.parentElement;
 
             expect(dvContainer?.className).toContain('w-20');
+        });
+    });
+
+    describe('Email Field', () => {
+        it('should render email field as disabled', () => {
+            render(<PatientProfileForm user={mockUser} />);
+
+            const emailInput = screen.getByLabelText('Email') as HTMLInputElement;
+
+            expect(emailInput).toBeInTheDocument();
+            expect(emailInput).toBeDisabled();
+            expect(emailInput.value).toBe('test@example.com');
+        });
+
+        it('should display email from user data', () => {
+            const customUser = { ...mockUser, email: 'custom@test.com' };
+            render(<PatientProfileForm user={customUser} />);
+
+            const emailInput = screen.getByLabelText('Email') as HTMLInputElement;
+            expect(emailInput.value).toBe('custom@test.com');
         });
     });
 });

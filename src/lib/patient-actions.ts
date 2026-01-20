@@ -65,11 +65,37 @@ export async function uploadPatientExam(
             return { message: 'El archivo no debe superar los 10MB.' }
         }
 
-        // Upload to Vercel Blob
-        const blob = await put(file.name, file, {
-            access: 'public',
-            addRandomSuffix: true,
-        })
+        // 2. Check Magic Bytes (Secure check)
+        const arrayBuffer = await file.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const { fileTypeFromBuffer } = await import('file-type');
+        const type = await fileTypeFromBuffer(buffer);
+
+        if (!type || type.mime !== 'application/pdf') {
+            return { message: 'El archivo no es un PDF válido (Firma digital incorrecta).' }
+        }
+
+        if (!type || type.mime !== 'application/pdf') {
+            return { message: 'El archivo no es un PDF válido (Firma digital incorrecta).' }
+        }
+
+        let fileUrl = '';
+        const timestamp = Date.now();
+        const safeName = file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
+        const fileName = `${timestamp}-${safeName}`;
+
+        // Bypass Vercel Blob in Development/Test if no token
+        if ((process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') && !process.env.BLOB_READ_WRITE_TOKEN) {
+            console.warn('Using Mock Upload (No BLOB_READ_WRITE_TOKEN provided)');
+            fileUrl = `http://localhost:3000/api/mock-storage/${fileName}`;
+        } else {
+            // Upload to Vercel Blob
+            const blob = await put(file.name, file, {
+                access: 'public',
+                addRandomSuffix: true,
+            });
+            fileUrl = blob.url;
+        }
 
         // Parse exam date
         const examDate = new Date(examDateStr)
@@ -83,7 +109,7 @@ export async function uploadPatientExam(
                 centerName: centerName.trim(),
                 doctorName: doctorName.trim(),
                 examDate: examDate,
-                fileUrl: blob.url,
+                fileUrl: fileUrl,
                 fileName: file.name,
             },
         })

@@ -34,6 +34,34 @@ jest.mock('next/headers', () => ({
 describe('authenticate action', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        global.fetch = jest.fn();
+    });
+
+    it('should validate Turnstile token if present', async () => {
+        const formData = new FormData();
+        formData.append('email', 'test@example.com');
+        formData.append('password', 'password123');
+        formData.append('cf-turnstile-response', 'valid-token');
+
+        process.env.TURNSTILE_SECRET_KEY = 'secret';
+
+        // Mock Fetch Success
+        (global.fetch as jest.Mock).mockResolvedValue({
+            json: jest.fn().mockResolvedValue({ success: true })
+        });
+
+        // Mock patient find
+        (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
+            active: true,
+            email: 'test@example.com'
+        });
+
+        await authenticate(undefined, formData);
+
+        expect(global.fetch).toHaveBeenCalledWith(
+            expect.stringContaining('siteverify'),
+            expect.objectContaining({ method: 'POST' })
+        );
     });
 
     it('should return error if validation fails', async () => {

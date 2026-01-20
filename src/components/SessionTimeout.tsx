@@ -5,7 +5,7 @@ import { signOut } from 'next-auth/react';
 import { Clock, AlertTriangle } from 'lucide-react';
 
 // Configuration
-const TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+const TIMEOUT_MS = 5 * 60 * 1000; // 5 minutes
 const WARNING_MS = 60 * 1000; // 1 minute warning
 const IDLE_TIMEOUT_MS = TIMEOUT_MS - WARNING_MS;
 

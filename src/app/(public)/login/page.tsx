@@ -1,12 +1,14 @@
 
 'use client'
 
-import { useActionState } from 'react'
+import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { authenticate } from '@/lib/actions'
+import TurnstileCaptcha from '@/components/TurnstileCaptcha'
 
 export default function LoginPage() {
     const [errorMessage, dispatch] = useActionState(authenticate, undefined)
+    const [captchaToken, setCaptchaToken] = useState<string>('')
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
@@ -15,6 +17,8 @@ export default function LoginPage() {
                     <h1 className="text-3xl font-bold text-zinc-900 mb-2">Bienvenido</h1>
                     <p className="text-zinc-500 mb-8">Ingresa a tu cuenta para continuar</p>
                     <form action={dispatch} className="space-y-4">
+                        <input type="hidden" name="cf-turnstile-response" value={captchaToken} />
+
                         <div>
                             <label className="block text-sm font-medium text-zinc-700 mb-2" htmlFor="email">
                                 Email
@@ -42,12 +46,15 @@ export default function LoginPage() {
                                 required
                             />
                         </div>
+
+                        <TurnstileCaptcha onVerify={(token) => setCaptchaToken(token)} />
+
                         {errorMessage && (
                             <div className="flex items-center space-x-2 text-sm text-red-500">
                                 <p>{errorMessage}</p>
                             </div>
                         )}
-                        <LoginButton />
+                        <LoginButton disabled={!captchaToken && process.env.NODE_ENV === 'production'} />
                     </form>
 
                     <div className="mt-6 text-center text-sm text-zinc-500">
@@ -62,15 +69,16 @@ export default function LoginPage() {
     )
 }
 
-function LoginButton() {
+function LoginButton({ disabled }: { disabled?: boolean }) {
     const { pending } = useFormStatus()
+    const isDisabled = pending || disabled
 
     return (
         <button
             type="submit"
             className="w-full rounded-lg bg-indigo-600 px-4 py-3 text-base font-semibold text-white transition-colors hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-            aria-disabled={pending}
-            disabled={pending}
+            aria-disabled={isDisabled}
+            disabled={isDisabled}
         >
             {pending ? 'Ingresando...' : 'Ingresar'}
         </button>
