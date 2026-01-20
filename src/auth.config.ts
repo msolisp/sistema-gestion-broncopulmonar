@@ -6,8 +6,8 @@ export const authConfig = {
         signIn: '/login',
     },
     session: {
-        maxAge: 5 * 60, // 5 minutes (Strict security)
-        updateAge: 2 * 60, // Update session every 2 minutes if active
+        maxAge: 8 * 60 * 60, // 8 hours (more reasonable for production)
+        updateAge: 15 * 60, // Update session every 15 minutes if active
     },
     callbacks: {
         authorized({ auth, request: { nextUrl } }) {
