@@ -1,7 +1,8 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import { Search, Edit2, Eye, EyeOff, X, Users } from 'lucide-react'
+import { Search, Edit2, Eye, EyeOff, X, Users, FileText } from 'lucide-react'
+import Link from 'next/link'
 import { REGIONS, findRegionByCommune } from '@/lib/chile-data'
 
 interface Patient {
@@ -16,7 +17,12 @@ interface Patient {
     examCount?: number
 }
 
-export default function PatientsManagementTable() {
+interface PatientsManagementTableProps {
+    currentUserRole?: string;
+    permissions?: Array<{ action: string, kine: boolean, recep: boolean }>;
+}
+
+export default function PatientsManagementTable({ currentUserRole, permissions }: PatientsManagementTableProps) {
     const [patients, setPatients] = useState<Patient[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
@@ -28,6 +34,20 @@ export default function PatientsManagementTable() {
     const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null)
 
     const itemsPerPage = 15
+
+    const can = (action: string) => {
+        if (!currentUserRole || !permissions) return true; // Default allow if no props passed (dev safety) or maybe restrictive? Let's default allow to strict check below.
+        if (currentUserRole === 'ADMIN') return true;
+        if (currentUserRole === 'PATIENT') return false;
+
+        const perm = permissions.find(p => p.action === action);
+        if (!perm) return false;
+
+        if (currentUserRole === 'KINESIOLOGIST') return perm.kine;
+        if (currentUserRole === 'RECEPTIONIST') return perm.recep;
+
+        return false;
+    };
 
     useEffect(() => {
         loadPatients()
@@ -226,15 +246,26 @@ export default function PatientsManagementTable() {
                                             {patient.active ? 'Activo' : 'Inactivo'}
                                         </span>
                                     </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                                        <button
-                                            onClick={() => handleEdit(patient)}
-                                            className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
-                                        >
-                                            <Edit2 className="w-4 h-4" />
-                                            Editar
-                                        </button>
-
+                                    <td className="px-6 py-4 whitespace-nowrap text-right flex items-center justify-end gap-2">
+                                        {can('Ver Pacientes') && (
+                                            <Link
+                                                href={`/patients/${patient.id}/history`}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                                                title="Historial Médico"
+                                            >
+                                                <FileText className="w-4 h-4" />
+                                                Historial
+                                            </Link>
+                                        )}
+                                        {can('Editar Pacientes') && (
+                                            <button
+                                                onClick={() => handleEdit(patient)}
+                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-indigo-600 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition-colors"
+                                            >
+                                                <Edit2 className="w-4 h-4" />
+                                                Editar
+                                            </button>
+                                        )}
                                     </td>
                                 </tr>
                             ))}

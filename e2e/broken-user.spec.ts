@@ -28,7 +28,7 @@ test.describe('Patient Portal - Auto Recovery', () => {
 
         await page.goto('/login');
         await page.fill('input[name="email"]', 'paciente1@test.com');
-        await page.fill('input[name="password"]', 'Paciente');
+        await page.fill('input[name="password"]', 'Password123!');
         await page.click('button[type="submit"]');
 
         // Should redirect to portal

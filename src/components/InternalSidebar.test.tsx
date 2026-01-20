@@ -48,7 +48,7 @@ describe('InternalSidebar', () => {
 
     it('shows Administration link for ADMIN (via props)', () => {
         render(<InternalSidebar user={mockUser} />);
-        expect(screen.getByText('Administración')).toBeInTheDocument();
+        expect(screen.getByText('Configuración')).toBeInTheDocument();
     });
 
     it('shows Administration link for ADMIN (via session)', () => {
@@ -57,13 +57,13 @@ describe('InternalSidebar', () => {
             status: 'authenticated'
         });
         render(<InternalSidebar />);
-        expect(screen.getByText('Administración')).toBeInTheDocument();
+        expect(screen.getByText('Configuración')).toBeInTheDocument();
     });
 
     it('hides Administration link for non-ADMIN', () => {
         render(<InternalSidebar user={mockKine} />);
 
-        expect(screen.queryByText('Administración')).not.toBeInTheDocument();
+        expect(screen.queryByText('Configuración')).not.toBeInTheDocument();
     });
 
     it('calls signOut when logout button is clicked', () => {

@@ -4,7 +4,13 @@ import { useSession } from 'next-auth/react';
 import { getPatientProfile } from '@/actions/patient-profile';
 
 // Mock dependencies
-jest.mock('next-auth/react');
+const mockUseSession = jest.fn();
+
+// Mock dependencies
+jest.mock('next-auth/react', () => ({
+    useSession: () => mockUseSession(),
+    signOut: jest.fn(),
+}));
 jest.mock('@/actions/patient-profile', () => ({
     getPatientProfile: jest.fn()
 }));
@@ -20,15 +26,18 @@ jest.mock('lucide-react', () => ({
     FileText: () => <span data-testid="file-icon" />,
     Home: () => <span data-testid="home-icon" />,
     User: () => <span data-testid="user-icon" />,
+    FileSpreadsheet: () => <span data-testid="spreadsheet-icon" />,
+    Stethoscope: () => <span data-testid="stethoscope-icon" />,
 }));
 
 describe('PatientNavbar', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockUseSession.mockReturnValue({ data: null, status: 'loading' });
     });
 
     it('displays nothing when session is loading', () => {
-        (useSession as jest.Mock).mockReturnValue({
+        mockUseSession.mockReturnValue({
             data: null,
             status: 'loading'
         });
@@ -39,7 +48,7 @@ describe('PatientNavbar', () => {
     });
 
     it('updates name from session if available', async () => {
-        (useSession as jest.Mock).mockReturnValue({
+        mockUseSession.mockReturnValue({
             data: {
                 user: {
                     name: 'Pedro Araya',
@@ -58,7 +67,7 @@ describe('PatientNavbar', () => {
     });
 
     it('fetches profile if session name is generic "Paciente"', async () => {
-        (useSession as jest.Mock).mockReturnValue({
+        mockUseSession.mockReturnValue({
             data: {
                 user: {
                     name: 'Paciente',
@@ -80,7 +89,7 @@ describe('PatientNavbar', () => {
     });
 
     it('falls back to "Paciente" if unauthenticated or no email', async () => {
-        (useSession as jest.Mock).mockReturnValue({
+        mockUseSession.mockReturnValue({
             data: null,
             status: 'unauthenticated'
         });

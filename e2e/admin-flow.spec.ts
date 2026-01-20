@@ -8,7 +8,7 @@ test('Admin Flow: Login and Access Dashboard', async ({ page }) => {
     // 2. Login as Admin (using seeded credentials)
     // 2. Login as Admin (using seeded credentials)
     await page.fill('input[name="email"]', 'admin@example.com');
-    await page.fill('input[name="password"]', 'admin123'); // Updated password
+    await page.fill('input[name="password"]', 'Admin123!'); // Updated password
     await page.click('button:has-text("Iniciar Sesión Segura")');
 
     // Expect redirect to dashboard (Admin logic)
@@ -26,7 +26,7 @@ test('Admin Flow: Create Patient and Upload Exam', async ({ page }) => {
     // 1. Login
     await page.goto('/intranet/login');
     await page.fill('input[name="email"]', 'admin@example.com');
-    await page.fill('input[name="password"]', 'admin123');
+    await page.fill('input[name="password"]', 'Admin123!');
     await page.click('button:has-text("Iniciar Sesión Segura")');
     await expect(page).toHaveURL(/.*\/dashboard/);
 
@@ -36,8 +36,10 @@ test('Admin Flow: Create Patient and Upload Exam', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Gestión de Pacientes' })).toBeVisible();
 
     // 3. Create New Patient
+    console.log('Clicking New Patient...');
     await page.click('button:has-text("Nuevo Paciente")');
-    const uniqueRutNum = `${Math.floor(Math.random() * 10000000) + 10000000}`; // 8 digits
+    console.log('Clicked.');
+    const uniqueRutNum = `${Math.floor(Math.random() * 10000000) + 20000000}`; // 20M+ range to avoid seed collision
     const uniqueRutDv = `${Math.floor(Math.random() * 9)}`;
     const uniqueRut = `${uniqueRutNum}-${uniqueRutDv}`;
     const uniqueEmail = `new_patient_${Date.now()}@test.com`;
@@ -92,7 +94,7 @@ test('Admin Flow: Create Patient and Upload Exam', async ({ page }) => {
     await historyLink.first().click();
 
     // 6. Upload Exam
-    await expect(page.getByRole('heading', { name: 'Historial Médico' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Historial de/ })).toBeVisible();
     await expect(page.getByText('Subir Nuevo Examen')).toBeVisible();
 
     // Fill Upload Form

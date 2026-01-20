@@ -109,9 +109,9 @@ describe('LoginPage Component', () => {
             render(<LoginPage />);
 
             const passwordInput = screen.getByLabelText(/contraseña/i) as HTMLInputElement;
-            fireEvent.change(passwordInput, { target: { value: 'password123' } });
+            fireEvent.change(passwordInput, { target: { value: 'Password123!' } });
 
-            expect(passwordInput.value).toBe('password123');
+            expect(passwordInput.value).toBe('Password123!');
         });
 
         it('should display error message when authentication fails', async () => {

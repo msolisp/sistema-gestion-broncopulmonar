@@ -30,6 +30,8 @@ describe('DashboardContent - Permission Initialization', () => {
             { action: 'Editar Pacientes', kine: true, recep: true },
         ],
         appointments: [],
+        currentUserRole: 'ADMIN',
+        pendingExams: [],
     };
 
     beforeEach(() => {

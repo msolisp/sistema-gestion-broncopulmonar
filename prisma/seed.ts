@@ -12,8 +12,8 @@ const Role = {
 const prisma = new PrismaClient()
 
 async function main() {
-    const password = await bcrypt.hash('Paciente', 10)
-    const adminPassword = await bcrypt.hash('admin123', 10)
+    const password = await bcrypt.hash('Password123!', 10)
+    const adminPassword = await bcrypt.hash('Admin123!', 10)
 
     // 1. Create Admin
     const adminEmail = 'admin@example.com'

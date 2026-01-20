@@ -100,7 +100,7 @@ describe('Server Actions', () => {
         it('calls signIn with correct credentials', async () => {
             const formData = new FormData()
             formData.append('email', 'test@test.com')
-            formData.append('password', 'password123')
+            formData.append('password', 'Password123!')
                 // Default to patient portal logic
                 ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ active: true, email: 'test@test.com' })
 
@@ -108,7 +108,7 @@ describe('Server Actions', () => {
 
             expect(signIn).toHaveBeenCalledWith('credentials', {
                 email: 'test@test.com',
-                password: 'password123',
+                password: 'Password123!',
                 redirectTo: '/portal',
             })
         })
@@ -130,7 +130,7 @@ describe('Server Actions', () => {
 
             const formData = new FormData()
             formData.append('email', 'test@test.com')
-            formData.append('password', 'password123')
+            formData.append('password', 'Password123!')
 
             const result = await authenticate(undefined, formData)
 
@@ -146,7 +146,7 @@ describe('Server Actions', () => {
 
             const formData = new FormData()
             formData.append('email', 'test@test.com')
-            formData.append('password', 'password123')
+            formData.append('password', 'Password123!')
 
             const result = await authenticate(undefined, formData)
 
@@ -161,7 +161,7 @@ describe('Server Actions', () => {
 
             const formData = new FormData()
             formData.append('email', 'test@test.com')
-            formData.append('password', 'password123')
+            formData.append('password', 'Password123!')
 
             await expect(authenticate(undefined, formData)).rejects.toThrow('Random error')
         })
@@ -169,7 +169,7 @@ describe('Server Actions', () => {
         it('redirects to dashboard for ADMIN', async () => {
             const formData = new FormData()
             formData.append('email', 'admin@test.com')
-            formData.append('password', 'password123')
+            formData.append('password', 'Password123!')
             formData.append('portal_type', 'internal')
 
                 ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ role: 'ADMIN', active: true, email: 'admin@test.com' })
@@ -184,7 +184,7 @@ describe('Server Actions', () => {
         it('redirects to dashboard for KINESIOLOGIST', async () => {
             const formData = new FormData()
             formData.append('email', 'kine@test.com')
-            formData.append('password', 'password123')
+            formData.append('password', 'Password123!')
             formData.append('portal_type', 'internal')
 
                 ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ role: 'KINESIOLOGIST', active: true, email: 'kine@test.com' })
@@ -199,7 +199,7 @@ describe('Server Actions', () => {
         it('redirects to portal for others', async () => {
             const formData = new FormData()
             formData.append('email', 'patient@test.com')
-            formData.append('password', 'password123')
+            formData.append('password', 'Password123!')
                 // No portal_type -> Patient logic
                 ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ active: true, email: 'patient@test.com' })
 
@@ -218,7 +218,7 @@ describe('Server Actions', () => {
 
             const formData = new FormData()
             formData.append('email', 'test@test.com')
-            formData.append('password', 'password123')
+            formData.append('password', 'Password123!')
 
             await expect(authenticate(undefined, formData)).rejects.toThrow('NEXT_REDIRECT')
         })
@@ -237,7 +237,7 @@ describe('logout', () => {
 describe('registerPatient', () => {
     const formData = new FormData()
     formData.append('email', 'new@test.com')
-    formData.append('password', 'password123')
+    formData.append('password', 'Password123!')
     formData.append('name', 'New User')
     formData.append('rut', '12345678-9')
     formData.append('commune', 'SANTIAGO')
@@ -407,7 +407,7 @@ describe('Admin Actions', () => {
     formData.append('healthSystem', 'FONASA')
     formData.append('birthDate', '1990-01-01')
     formData.append('region', 'RM')
-    formData.append('password', 'password123')
+    formData.append('password', 'Password123!')
 
     it('adminCreatePatient checks admin role', async () => {
         const { auth } = require('@/auth')
@@ -693,7 +693,7 @@ describe('System User Actions', () => {
     const formData = new FormData()
     formData.append('name', 'Kine User')
     formData.append('email', 'kine@test.com')
-    formData.append('password', 'password123')
+    formData.append('password', 'Password123!')
     formData.append('role', 'KINESIOLOGIST')
     formData.append('active', 'on')
 

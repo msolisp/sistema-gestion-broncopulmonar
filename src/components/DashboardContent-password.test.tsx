@@ -31,6 +31,8 @@ describe('DashboardContent - Password Validation', () => {
         logs: [],
         initialPermissions: [],
         appointments: [],
+        currentUserRole: 'ADMIN', // Ensure Admin access
+        pendingExams: [],
     };
 
     beforeEach(() => {

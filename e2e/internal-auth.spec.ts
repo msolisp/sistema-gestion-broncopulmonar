@@ -8,7 +8,7 @@ test.describe('Internal Portal Login Security', () => {
 
         // 2. Try to login as patient (using seeded patient)
         await page.fill('input[name="email"]', 'paciente1@test.com');
-        await page.fill('input[name="password"]', 'Paciente');
+        await page.fill('input[name="password"]', 'Password123!');
         await page.click('button:has-text("Iniciar Sesión Segura")');
 
         // 3. Expect error message
@@ -27,7 +27,7 @@ test.describe('Internal Portal Login Security', () => {
     test('should allow admin login to internal portal', async ({ page }) => {
         await page.goto('/intranet/login');
         await page.fill('input[name="email"]', 'admin@example.com');
-        await page.fill('input[name="password"]', 'admin123');
+        await page.fill('input[name="password"]', 'Admin123!');
         await page.click('button[type="submit"]');
 
         // Should redirect to dashboard

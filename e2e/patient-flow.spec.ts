@@ -7,7 +7,6 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     await expect(page.getByRole('heading', { name: /Gestión Integral/i })).toBeVisible();
 
     // 2. Register
-    // 2. Register
     await page.click('text=Registrarse');
 
     const uniqueRut = `${Math.floor(Math.random() * 90000000) + 10000000}-${Math.floor(Math.random() * 9)}`;
@@ -17,7 +16,7 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     const [rutBody, rutDv] = uniqueRut.split('-');
     await page.fill('input[name="rutBody"]', rutBody);
     await page.fill('input[name="rutDv"]', rutDv);
-    await page.selectOption('select[id="region"]', { label: 'Metropolitana de Santiago' });
+
     // Select Region first to populate Commune options
     const regionSelect = page.locator('select#region');
     await regionSelect.selectOption({ label: 'Metropolitana de Santiago' });
@@ -34,7 +33,7 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     const communeSelect = page.locator('select[name="commune"]');
     await communeSelect.selectOption({ value: 'SANTIAGO' });
     await page.fill('input[name="email"]', uniqueEmail);
-    await page.fill('input[name="password"]', 'password123');
+    await page.fill('input[name="password"]', 'Password123!');
 
     await page.click('button:has-text("Registrarse")');
 
@@ -45,7 +44,7 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     // 3. Login
     await page.click('text=Inicia Sesión');
     await page.fill('input[name="email"]', uniqueEmail);
-    await page.fill('input[name="password"]', 'password123');
+    await page.fill('input[name="password"]', 'Password123!');
     await page.click('button:has-text("Ingresar")');
 
     // 4. Verification: Redirect to Portal
@@ -62,20 +61,17 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     await expect(page.getByRole('heading', { name: 'Agendar Hora' })).toBeVisible();
 
     // Select Next Month to avoid "past time" issues
-    // Find the right chevron button (assuming it's the second one locally within the calendar header)
-    // Or simpler: just click the 15th of current month? No, might be past.
-    // Let's simple click a future logical date.
-    // The UI has ChevronRight for next month.
-    // We can rely on aria-labels if they existed, but here we can select by icon or order.
-    // Let's assume there are two chevron buttons, left and right.
     const nextMonthBtn = page.locator('button:has(.lucide-chevron-right)');
     await nextMonthBtn.click();
 
-    // Select the 15th
-    await page.click('button:text-is("15")');
+    // Select the first available day in the grid
+    // Days are buttons inside a grid div
+    const firstDayBtn = page.locator('.grid button:not([disabled])').first();
+    await firstDayBtn.click();
 
-    // Select a time slot (e.g. 09:00, which should be free in the future)
-    await page.click('button:has-text("09:00")');
+    // Select a time slot (09:00 is usually available, 10:00 is mocked as occupied)
+    const timeSlotBtn = page.locator('button:has-text("09:00")');
+    await timeSlotBtn.click();
 
     // Confirm
     await page.click('button:has-text("Confirmar Reserva")');

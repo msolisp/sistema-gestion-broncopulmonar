@@ -5,7 +5,7 @@ test('System Management: Create User, Update Permissions, Check Logs', async ({ 
     // 1. Login
     await page.goto('/intranet/login');
     await page.fill('input[name="email"]', 'admin@example.com');
-    await page.fill('input[name="password"]', 'admin123');
+    await page.fill('input[name="password"]', 'Admin123!');
     await page.click('button:has-text("Iniciar Sesión Segura")');
     await expect(page).toHaveURL(/.*\/dashboard/, { timeout: 30000 });
 

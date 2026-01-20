@@ -47,6 +47,8 @@ describe('DashboardContent - Admin User Editing', () => {
         logs: [],
         initialPermissions: [],
         appointments: [],
+        currentUserRole: 'ADMIN',
+        pendingExams: [],
     };
 
     beforeEach(() => {

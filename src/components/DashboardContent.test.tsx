@@ -51,14 +51,14 @@ const mockProps = {
             status: 'PENDING',
             notes: 'Test appointment',
             patient: {
-                user: {
-                    name: 'Patient One',
-                    email: 'p1@test.com',
-                    rut: '1-9'
-                }
+                name: 'Patient One',
+                email: 'p1@test.com',
+                rut: '1-9'
             }
         }
-    ]
+    ],
+    pendingExams: [],
+    currentUserRole: 'ADMIN'
 }
 
 // Mock Server Actions

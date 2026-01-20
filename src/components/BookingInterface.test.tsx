@@ -6,6 +6,13 @@ describe('BookingInterface Component', () => {
 
     beforeEach(() => {
         jest.clearAllMocks()
+        jest.useFakeTimers()
+        // Set date to Jan 1, 2025 09:00:00 to ensure consistent calendar and slots
+        jest.setSystemTime(new Date(2025, 0, 1, 9, 0, 0))
+    })
+
+    afterEach(() => {
+        jest.useRealTimers()
     })
 
     it('renders calendar and time slots', () => {
@@ -37,12 +44,7 @@ describe('BookingInterface Component', () => {
     })
 
     it('handles today logic correctly', () => {
-        // Mock date to be today
-        jest.useFakeTimers()
-        const today = new Date()
-        today.setHours(9, 0, 0, 0)
-        jest.setSystemTime(today)
-
+        // Already set to Jan 1 2025 in beforeEach
         render(<BookingInterface onConfirm={mockOnConfirm} isPending={false} />)
         expect(screen.getByText('Hoy')).toBeInTheDocument()
 
@@ -50,9 +52,6 @@ describe('BookingInterface Component', () => {
         const slot10 = screen.getByText('10:00').closest('button')
         expect(slot10).toBeDisabled()
         expect(screen.getAllByText('(Ocupado)')[0]).toBeInTheDocument()
-
-        // Restore
-        jest.useRealTimers()
     })
 
     it('prevents selecting date without time', () => {
@@ -77,21 +76,7 @@ describe('BookingInterface Component', () => {
     it('selects a different date from calendar', () => {
         render(<BookingInterface onConfirm={mockOnConfirm} isPending={false} />)
 
-        // Find a day button that is NOT currently selected (today)
-        // Today has class 'bg-indigo-600'
-        // We look for a button that has the day number but not that class.
-        // Let's just click the '28'th of the month (likely valid and possibly not today unless it IS 28th)
-        // Safer: click next month button, then click '15'.
-
-        const nextMonthBtn = screen.getAllByRole('button')[1] // The second button in header (Left, Title, Right?)
-        // Header: Left btn, Title, Right btn.
-        // Actually logical order in DOM: Button (Left), H2, Button (Right).
-
-        // Let's use labels if they had them, but they don't.
-        // Using indices or class logic.
-
-        // Let's assume there are day buttons.
-        // We can find a button with text '15'.
+        // Find '15' (Jan 15 2025 is future of Jan 1 2025)
         const dayBtn = screen.getAllByText('15').find(el => el.tagName === 'BUTTON')
         if (dayBtn) {
             fireEvent.click(dayBtn)

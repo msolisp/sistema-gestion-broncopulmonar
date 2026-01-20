@@ -4,7 +4,7 @@ test.describe('Admin User Management', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/intranet/login');
         await page.fill('input[name="email"]', 'admin@example.com');
-        await page.fill('input[name="password"]', 'admin123');
+        await page.fill('input[name="password"]', 'Admin123!');
         await page.click('button:has-text("Iniciar Sesión Segura")');
 
         // Handle potential mandatory password change redirect
@@ -27,7 +27,10 @@ test.describe('Admin User Management', () => {
         await page.click('button:has-text("Usuarios y Roles")');
 
         // Create User
+        // Create User
+        console.log('Clicking Nuevo Usuario...');
         await page.click('button:has-text("Nuevo Usuario")');
+        console.log('Clicked.');
 
         const uniqueEmail = `kine_${Date.now()}@test.com`;
 
@@ -59,6 +62,6 @@ test.describe('Admin User Management', () => {
 
     test('should verify sidebar admin link is present', async ({ page }) => {
         // Since we are admin
-        await expect(page.locator('aside').getByText('Administración')).toBeVisible();
+        await expect(page.locator('aside').getByText('Configuración')).toBeVisible();
     });
 });

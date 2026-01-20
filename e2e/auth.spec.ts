@@ -27,7 +27,7 @@ test.describe('Authentication & Inactivity', () => {
         await communeSelect.selectOption({ label: 'Santiago' });
 
         await page.fill('input[name="email"]', uniqueEmail);
-        await page.fill('input[name="password"]', 'password123');
+        await page.fill('input[name="password"]', 'Password123!');
         await page.click('button:has-text("Registrarse")');
 
         // Should redirect to login or show success message
@@ -37,7 +37,7 @@ test.describe('Authentication & Inactivity', () => {
         // Login
         await page.goto('/login');
         await page.fill('input[name="email"]', uniqueEmail);
-        await page.fill('input[name="password"]', 'password123');
+        await page.fill('input[name="password"]', 'Password123!');
         await page.click('button:has-text("Ingresar")');
 
         // Verify redirection to portal (patient)

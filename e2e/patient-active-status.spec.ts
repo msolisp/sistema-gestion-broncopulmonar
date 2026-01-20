@@ -7,7 +7,7 @@ test.describe.skip('Patient Management Workflow', () => {
         // 1. Login as Admin
         await page.goto('/login');
         await page.fill('input[name="email"]', 'admin@example.com');
-        await page.fill('input[name="password"]', 'admin123'); // Assuming these creds or similar
+        await page.fill('input[name="password"]', 'Admin123!'); // Assuming these creds or similar
         await page.click('button:has-text("Ingresar")');
 
         // Wait for redirect

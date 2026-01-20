@@ -5,7 +5,7 @@ test.describe('Patient Exam Upload', () => {
         // Login as patient
         await page.goto('/login')
         await page.fill('input[name="email"]', 'paciente1@test.com')
-        await page.fill('input[name="password"]', 'Paciente')
+        await page.fill('input[name="password"]', 'Password123!')
         await page.click('button:has-text("Ingresar")')
 
         // Wait for redirect to portal
@@ -18,7 +18,7 @@ test.describe('Patient Exam Upload', () => {
         await expect(page.locator('h1')).toContainText('Mis Exámenes Médicos')
 
         // Fill form
-        const testPdfPath = 'test-fixtures/test-exam.pdf'
+        const testPdfPath = 'e2e/dummy.pdf'
         await page.setInputFiles('input[type="file"]', testPdfPath)
         await page.fill('input#centerName', 'Clínica Las Condes')
         await page.fill('input#doctorName', 'Dr. Juan Pérez')
@@ -38,7 +38,7 @@ test.describe('Patient Exam Upload', () => {
     test('should validate PDF file is required', async ({ page }) => {
         await page.goto('/login')
         await page.fill('input[name="email"]', 'paciente1@test.com')
-        await page.fill('input[name="password"]', 'Paciente')
+        await page.fill('input[name="password"]', 'Password123!')
         await page.click('button:has-text("Ingresar")')
 
         await page.goto('/portal/examenes')
@@ -57,12 +57,12 @@ test.describe('Patient Exam Upload', () => {
     test('should validate all text fields are required', async ({ page }) => {
         await page.goto('/login')
         await page.fill('input[name="email"]', 'paciente1@test.com')
-        await page.fill('input[name="password"]', 'Paciente')
+        await page.fill('input[name="password"]', 'Password123!')
         await page.click('button:has-text("Ingresar")')
 
         await page.goto('/portal/examenes')
 
-        const testPdfPath = 'test-fixtures/test-exam.pdf'
+        const testPdfPath = 'e2e/dummy.pdf'
         await page.setInputFiles('input[type="file"]', testPdfPath)
 
         // Try submit without other fields
@@ -77,7 +77,7 @@ test.describe('Patient Exam Upload', () => {
     test('should show list of uploaded exams', async ({ page }) => {
         await page.goto('/login')
         await page.fill('input[name="email"]', 'paciente1@test.com')
-        await page.fill('input[name="password"]', 'Paciente')
+        await page.fill('input[name="password"]', 'Password123!')
         await page.click('button:has-text("Ingresar")')
 
         await page.goto('/portal/examenes')
@@ -100,7 +100,7 @@ test.describe('Patient Exam Upload', () => {
     test('should allow patient to download exam', async ({ page }) => {
         await page.goto('/login')
         await page.fill('input[name="email"]', 'paciente1@test.com')
-        await page.fill('input[name="password"]', 'Paciente')
+        await page.fill('input[name="password"]', 'Password123!')
         await page.click('button:has-text("Ingresar")')
 
         await page.goto('/portal/examenes')
@@ -121,7 +121,7 @@ test.describe('Patient Exam Upload', () => {
     test('should allow patient to delete own exam with confirmation', async ({ page }) => {
         await page.goto('/login')
         await page.fill('input[name="email"]', 'paciente1@test.com')
-        await page.fill('input[name="password"]', 'Paciente')
+        await page.fill('input[name="password"]', 'Password123!')
         await page.click('button:has-text("Ingresar")')
 
         await page.goto('/portal/examenes')
@@ -155,7 +155,7 @@ test.describe('Admin View Patient Exams', () => {
         // Login as admin
         await page.goto('/intranet/login')
         await page.fill('input[name="email"]', 'admin@example.com')
-        await page.fill('input[name="password"]', 'admin123')
+        await page.fill('input[name="password"]', 'Admin123!')
         await page.click('button:has-text("Iniciar Sesión Segura")')
 
         await expect(page).toHaveURL(/.*\/dashboard/, { timeout: 30000 })
@@ -173,7 +173,7 @@ test.describe('Admin View Patient Exams', () => {
         // Login as admin  
         await page.goto('/intranet/login')
         await page.fill('input[name="email"]', 'admin@example.com')
-        await page.fill('input[name="password"]', 'admin123')
+        await page.fill('input[name="password"]', 'Admin123!')
         await page.click('button:has-text("Iniciar Sesión Segura")')
 
         await page.click('button:has-text("Gestión de Pacientes")')

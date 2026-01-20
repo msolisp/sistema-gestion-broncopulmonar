@@ -9,10 +9,11 @@ interface InternalSidebarProps {
     user?: {
         name?: string | null;
         role?: string | null;
-    }
+    },
+    permissions?: string[]
 }
 
-export default function InternalSidebar({ user }: InternalSidebarProps) {
+export default function InternalSidebar({ user, permissions = [] }: InternalSidebarProps) {
     const { data: session } = useSession();
 
     // Hybrid check: Use prop if available (Server Component), fallback to Client Session
@@ -20,6 +21,13 @@ export default function InternalSidebar({ user }: InternalSidebarProps) {
 
     const userName = effectiveUser?.name || 'Usuario';
     const userRole = effectiveUser?.role || 'Role';
+
+    // Helper to check permission
+    // If role is ADMIN, always return true
+    const can = (action: string) => {
+        if (userRole === 'ADMIN') return true;
+        return permissions.includes(action);
+    };
 
     return (
         <aside className="w-64 bg-white border-r border-zinc-200 hidden md:flex flex-col shadow-sm z-10">
@@ -33,30 +41,30 @@ export default function InternalSidebar({ user }: InternalSidebarProps) {
                 </h1>
             </div>
 
-            <nav className="flex-1 px-4 space-y-1">
+            <nav className="flex-1 px-4 space-y-1 flex flex-col">
                 <Link href="/dashboard?tab=Agendamiento" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
                     <Calendar className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
                     Agendamiento
                 </Link>
-                <Link href="/patients" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
-                    <Users className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
-                    Pacientes
-                </Link>
-                <Link href="/reports" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
-                    <FileText className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
-                    Reportes BI
-                </Link>
+
+                {can('Ver Pacientes') && (
+                    <Link href="/patients" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
+                        <Users className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
+                        Pacientes
+                    </Link>
+                )}
+
+                {can('Ver Reportes BI') && (
+                    <Link href="/reports" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
+                        <FileText className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
+                        Reportes BI
+                    </Link>
+                )}
                 <Link href="/asistente" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
                     <Sparkles className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
                     Asistente Clínico
                 </Link>
-                {/* Admin Only Link */}
-                {userRole === 'ADMIN' && (
-                    <Link href="/dashboard?tab=Agendamiento" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
-                        <Settings className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
-                        Administración
-                    </Link>
-                )}
+
                 <Link href="/hl7" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
                     <Activity className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
                     Estándar HL7
@@ -65,6 +73,15 @@ export default function InternalSidebar({ user }: InternalSidebarProps) {
                 <div className="pt-1">
                     <NotificationBell />
                 </div>
+
+                {userRole === 'ADMIN' && (
+                    <div className="mt-auto pt-4">
+                        <Link href="/dashboard?tab=Usuarios%20y%20Roles" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
+                            <Settings className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />
+                            Configuración
+                        </Link>
+                    </div>
+                )}
             </nav>
 
             <div className="p-4 border-t border-zinc-200">

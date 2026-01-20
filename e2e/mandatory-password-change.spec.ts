@@ -10,7 +10,7 @@ test.describe('Mandatory Password Change Flow', () => {
 
         // 3. Login with admin credentials (we'll set admin to mustChangePassword first)
         await page.fill('input[name="email"]', 'admin@example.com');
-        await page.fill('input[name="password"]', 'admin123');
+        await page.fill('input[name="password"]', 'Admin123!');
         await page.click('button[type="submit"]');
 
         // 4. Check if we're redirected (either to dashboard or change-password)
@@ -62,7 +62,7 @@ test.describe('Mandatory Password Change Flow', () => {
             console.log('✓ Successfully redirected to dashboard');
 
             // 12. Verify we're on dashboard
-            await expect(page.locator('h1')).toContainText('Administración Central');
+            await expect(page.locator('h1')).toContainText('Configuración Central');
 
             // 13. Logout
             await page.click('button:has-text("Cerrar Sesión")');
@@ -75,12 +75,12 @@ test.describe('Mandatory Password Change Flow', () => {
 
             // 15. Should go directly to dashboard (no password change required)
             await page.waitForURL(/dashboard/, { timeout: 5000 });
-            await expect(page.locator('h1')).toContainText('Administración Central');
+            await expect(page.locator('h1')).toContainText('Configuración Central');
 
             console.log('✓ Password change flow completed successfully!');
         } else {
             console.log('ℹ User does not have mustChangePassword set, going to dashboard directly');
-            await expect(page.locator('h1')).toContainText('Administración Central');
+            await expect(page.locator('h1')).toContainText('Configuración Central');
         }
     });
 

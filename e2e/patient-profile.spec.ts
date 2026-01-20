@@ -22,13 +22,13 @@ test.describe('Patient Portal Features', () => {
         await page.selectOption('select[name="commune"]', { label: 'Santiago' });
 
         await page.fill('input[name="email"]', uniqueEmail);
-        await page.fill('input[name="password"]', 'password123');
+        await page.fill('input[name="password"]', 'Password123!');
         await page.click('button:has-text("Registrarse")');
 
         // 2. Login
         await page.goto('/login');
         await page.fill('input[name="email"]', uniqueEmail);
-        await page.fill('input[name="password"]', 'password123');
+        await page.fill('input[name="password"]', 'Password123!');
         await page.click('button:has-text("Ingresar")');
 
         await expect(page).toHaveURL(/.*\/portal/);

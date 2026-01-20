@@ -98,6 +98,7 @@ export default async function DashboardPage() {
         initialPermissions={permissionMatrix}
         appointments={appointments}
         pendingExams={pendingExams}
+        currentUserRole={session?.user?.role || 'KINESIOLOGIST'}
     />;
 
 }

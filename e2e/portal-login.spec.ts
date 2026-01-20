@@ -17,7 +17,7 @@ test.describe('Patient Portal Authentication', () => {
         await page.selectOption('select[id="region"]', { label: 'Metropolitana de Santiago' });
         await page.locator('select[name="commune"]').selectOption({ value: 'SANTIAGO' });
         await page.fill('input[name="email"]', uniqueEmail);
-        await page.fill('input[name="password"]', 'password123');
+        await page.fill('input[name="password"]', 'Password123!');
         await page.click('button:has-text("Registrarse")');
         await expect(page.getByText(/Cuenta creada exitosamente/)).toBeVisible();
 
@@ -25,7 +25,7 @@ test.describe('Patient Portal Authentication', () => {
 
         // Fill login form
         await page.fill('input[type="email"]', uniqueEmail);
-        await page.fill('input[type="password"]', 'password123');
+        await page.fill('input[type="password"]', 'Password123!');
 
         // Submit
         await page.click('button[type="submit"]');
@@ -63,13 +63,13 @@ test.describe('Patient Portal Authentication', () => {
         await page.selectOption('select[id="region"]', { label: 'Metropolitana de Santiago' });
         await page.locator('select[name="commune"]').selectOption({ value: 'SANTIAGO' });
         await page.fill('input[name="email"]', uniqueEmail);
-        await page.fill('input[name="password"]', 'password123');
+        await page.fill('input[name="password"]', 'Password123!');
         await page.click('button:has-text("Registrarse")');
         await expect(page.getByText(/Cuenta creada exitosamente/)).toBeVisible();
 
         await page.goto('/login');
         await page.fill('input[type="email"]', uniqueEmail);
-        await page.fill('input[type="password"]', 'password123');
+        await page.fill('input[type="password"]', 'Password123!');
         await page.click('button[type="submit"]');
         await expect(page).toHaveURL(/\/portal/);
 

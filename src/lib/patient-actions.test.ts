@@ -1,4 +1,3 @@
-import { uploadPatientExam, getPatientExams, deletePatientExam } from './patient-actions'
 import { put } from '@vercel/blob'
 
 // Create mock instance
@@ -10,7 +9,11 @@ const mockPrismaClient = {
         create: jest.fn(),
         findUnique: jest.fn(),
         delete: jest.fn(),
+        update: jest.fn(),
     },
+    notification: {
+        create: jest.fn(),
+    }
 }
 
 // Mock Prisma Client
@@ -29,6 +32,18 @@ jest.mock('@/auth', () => ({
 }))
 
 describe('patient-actions', () => {
+    let uploadPatientExam: any
+    let deletePatientExam: any
+    let updatePatientExam: any
+
+    beforeAll(() => {
+        // Dynamic import to ensure mock is ready before SUT instantiation
+        const actions = require('./patient-actions')
+        uploadPatientExam = actions.uploadPatientExam
+        deletePatientExam = actions.deletePatientExam
+        updatePatientExam = actions.updatePatientExam
+    })
+
     beforeEach(() => {
         jest.clearAllMocks()
     })
@@ -161,7 +176,8 @@ describe('patient-actions', () => {
             auth.mockResolvedValue({ user: { email: 'patient@test.com' } })
             mockPrismaClient.patient.findUnique.mockResolvedValue({
                 id: 'p1',
-                email: 'patient@test.com'
+                email: 'patient@test.com',
+                name: 'Patient Name'
             })
                 ; (put as jest.Mock).mockResolvedValue({
                     url: 'https://blob.storage/exam.pdf'
@@ -170,6 +186,7 @@ describe('patient-actions', () => {
                 id: 'exam1',
                 patientId: 'p1',
             })
+            mockPrismaClient.notification.create.mockResolvedValue({})
 
             const file = new File(['test content'], 'exam.pdf', { type: 'application/pdf' })
             const formData = new FormData()
