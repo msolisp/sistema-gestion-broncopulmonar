@@ -5,6 +5,7 @@ import { useFormStatus } from 'react-dom'
 import { authenticate } from '@/lib/actions'
 import { Monitor } from 'lucide-react'
 import TurnstileCaptcha from '@/components/TurnstileCaptcha'
+import VisualCaptcha from '@/components/VisualCaptcha'
 import { useSearchParams } from 'next/navigation'
 
 // This component will contain the logic that uses useSearchParams
@@ -13,12 +14,19 @@ function LoginContent() {
     const searchParams = useSearchParams()
     const [successMessage, setSuccessMessage] = useState('')
     const [captchaToken, setCaptchaToken] = useState<string>('')
+    const [visualCaptchaValue, setVisualCaptchaValue] = useState<string>('')
+    const [visualCaptchaToken, setVisualCaptchaToken] = useState<string>('')
 
     useEffect(() => {
         if (searchParams.get('passwordChanged') === 'true') {
             setSuccessMessage('Contraseña cambiada exitosamente. Por favor, inicia sesión nuevamente.')
         }
     }, [searchParams])
+
+    const handleVisualCaptchaChange = (value: string, token: string) => {
+        setVisualCaptchaValue(value);
+        setVisualCaptchaToken(token);
+    };
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
@@ -35,6 +43,8 @@ function LoginContent() {
                     <form action={dispatch} className="space-y-4">
                         <input type="hidden" name="portal_type" value="internal" />
                         <input type="hidden" name="cf-turnstile-response" value={captchaToken} />
+                        <input type="hidden" name="visual-captcha-value" value={visualCaptchaValue} />
+                        <input type="hidden" name="visual-captcha-token" value={visualCaptchaToken} />
                         <div>
                             <label className="block text-xs font-bold text-slate-500 uppercase mb-1" htmlFor="email">
                                 Credencial (Email)
@@ -44,7 +54,7 @@ function LoginContent() {
                                 id="email"
                                 type="email"
                                 name="email"
-                                placeholder="usuario@hospital.cl"
+                                placeholder="funcionario@broncopulmonar.cl"
                                 required
                             />
                         </div>
@@ -60,6 +70,8 @@ function LoginContent() {
                                 required
                             />
                         </div>
+
+                        <VisualCaptcha onCaptchaChange={handleVisualCaptchaChange} />
 
                         <TurnstileCaptcha onVerify={(token) => setCaptchaToken(token)} />
 

@@ -5,10 +5,18 @@ import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
 import { authenticate } from '@/lib/actions'
 import TurnstileCaptcha from '@/components/TurnstileCaptcha'
+import VisualCaptcha from '@/components/VisualCaptcha'
 
 export default function LoginPage() {
     const [errorMessage, dispatch] = useActionState(authenticate, undefined)
     const [captchaToken, setCaptchaToken] = useState<string>('')
+    const [visualCaptchaValue, setVisualCaptchaValue] = useState<string>('')
+    const [visualCaptchaToken, setVisualCaptchaToken] = useState<string>('')
+
+    const handleVisualCaptchaChange = (value: string, token: string) => {
+        setVisualCaptchaValue(value);
+        setVisualCaptchaToken(token);
+    };
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-zinc-50 p-4">
@@ -18,6 +26,8 @@ export default function LoginPage() {
                     <p className="text-zinc-500 mb-8">Ingresa a tu cuenta para continuar</p>
                     <form action={dispatch} className="space-y-4">
                         <input type="hidden" name="cf-turnstile-response" value={captchaToken} />
+                        <input type="hidden" name="visual-captcha-value" value={visualCaptchaValue} />
+                        <input type="hidden" name="visual-captcha-token" value={visualCaptchaToken} />
 
                         <div>
                             <label className="block text-sm font-medium text-zinc-700 mb-2" htmlFor="email">
@@ -47,6 +57,8 @@ export default function LoginPage() {
                             />
                         </div>
 
+                        <VisualCaptcha onCaptchaChange={handleVisualCaptchaChange} />
+
                         <TurnstileCaptcha onVerify={(token) => setCaptchaToken(token)} />
 
                         {errorMessage && (
@@ -54,7 +66,7 @@ export default function LoginPage() {
                                 <p>{errorMessage}</p>
                             </div>
                         )}
-                        <LoginButton disabled={!captchaToken && process.env.NODE_ENV === 'production'} />
+                        <LoginButton disabled={(!captchaToken || !visualCaptchaValue) && process.env.NODE_ENV === 'production'} />
                     </form>
 
                     <div className="mt-6 text-center text-sm text-zinc-500">

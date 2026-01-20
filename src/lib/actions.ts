@@ -41,7 +41,31 @@ export async function authenticate(
     try {
         console.log('Attempting login for:', email);
 
-        // Turnstile Captcha Verification (Production Only or if Token Present)
+        // 1. VISUAL CAPTCHA VALIDATION (First layer)
+        const visualCaptchaValue = formData.get('visual-captcha-value') as string;
+        const visualCaptchaToken = formData.get('visual-captcha-token') as string;
+
+        if (visualCaptchaValue && visualCaptchaToken) {
+            try {
+                const { jwtVerify } = await import('jose');
+                const secret = new TextEncoder().encode(
+                    process.env.AUTH_SECRET || 'fallback-secret-key'
+                );
+
+                const { payload } = await jwtVerify(visualCaptchaToken, secret);
+                const expectedText = (payload.text as string).toLowerCase();
+                const userText = visualCaptchaValue.toLowerCase().trim();
+
+                if (expectedText !== userText) {
+                    return 'Código de seguridad incorrecto.';
+                }
+            } catch (error) {
+                console.error('Visual CAPTCHA validation error:', error);
+                return 'Código de seguridad expirado o inválido.';
+            }
+        }
+
+        // 2. Turnstile Captcha Verification (Second layer)
         const captchaToken = formData.get('cf-turnstile-response');
         if (process.env.NODE_ENV === 'production' || captchaToken) {
             if (!captchaToken) {
