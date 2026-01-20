@@ -25,12 +25,13 @@ function generateCaptchaSVG(text: string): string {
         noiseLine += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="hsl(${hue}, 50%, 70%)" stroke-width="1" />`;
     }
 
-    // Text elements
+    // Text elements with better spacing
     let textElements = '';
     const charWidth = width / text.length;
     for (let i = 0; i < text.length; i++) {
         const char = text[i];
-        const x = charWidth * i + 20;
+        // Adjust starting position to prevent clipping - start at 10 instead of 20
+        const x = charWidth * i + 10;
         const y = 50;
         const rotation = (Math.random() - 0.5) * 20; // Rotation in degrees
         const hue = Math.random() * 360;

@@ -82,7 +82,7 @@ export default function VisualCaptcha({ onCaptchaChange, onError }: VisualCaptch
                 value={userInput}
                 onChange={handleInputChange}
                 placeholder="Ingresa el código"
-                className="w-full rounded-lg border border-slate-200 px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all uppercase"
+                className="w-full rounded-lg border border-slate-200 px-4 py-3 text-base text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
                 maxLength={6}
                 autoComplete="off"
                 required
