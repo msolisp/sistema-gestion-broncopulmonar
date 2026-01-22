@@ -281,10 +281,6 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                     <input name="name" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" autoComplete="off" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
-                                        <input name="email" type="email" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" autoComplete="new-password" />
-                                    </div>
                                     <div className="flex gap-2">
                                         <div className="flex-1">
                                             <label className="block text-sm font-medium text-zinc-700 mb-1">RUT</label>
@@ -319,6 +315,10 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                             />
                                         </div>
                                         <input type="hidden" name="rut" id="rut_hidden" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
+                                        <input name="email" type="email" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" autoComplete="new-password" />
                                     </div>
                                 </div>
                                 <div>
