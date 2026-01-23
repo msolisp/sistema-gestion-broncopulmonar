@@ -795,7 +795,8 @@ export async function adminCreateSystemUser(prevState: any, formData: FormData) 
 
     const { name, email, role, active } = validation.data;
     const password = validation.data.password || '';
-    rut = validation.data.rut; // Use validated/transformed RUT
+    const rutValidated = validation.data.rut || '';
+    rut = rutValidated;
 
     // Prevent creation of new ADMIN users
     if (role === 'ADMIN') {
