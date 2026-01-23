@@ -1,6 +1,12 @@
 import { Activity } from 'lucide-react';
+import { protectRoute } from '@/lib/route-protection';
 
-export default function HL7Page() {
+export default async function HL7Page() {
+    await protectRoute({
+        requiredPermission: 'Ver HL7',
+        redirectTo: '/dashboard'
+    });
+
     return (
         <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white py-12 px-4 sm:px-6 lg:px-8">
             <div className="max-w-5xl mx-auto">

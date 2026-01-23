@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { PrismaClient } from '@prisma/client'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
+import { protectRoute } from '@/lib/route-protection'
 
 const prisma = new PrismaClient()
 
@@ -15,6 +16,12 @@ import { PulmonaryHistory } from '@/components/PulmonaryHistory'
 // ... imports remain the same
 
 export default async function PatientHistoryPage({ params }: PageProps) {
+    // Protect route - only users with "Ver Pacientes" permission
+    await protectRoute({
+        requiredPermission: 'Ver Pacientes',
+        redirectTo: '/portal'
+    });
+
     const { id } = await params
 
     // Fetch patient data with exams

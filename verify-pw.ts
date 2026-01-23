@@ -1,0 +1,1 @@
+import bcrypt from 'bcryptjs'; async function main() { const pw = 'Algo2026.#'; const hash = '$2b$10$1uevxbkuyP/KBrETGc/s8uVrsoFiWtwnuhbJgnqoI8eg1Gu2ZehSe'; const match = await bcrypt.compare(pw, hash); console.log('Match:', match); } main();

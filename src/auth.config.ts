@@ -41,7 +41,12 @@ export const authConfig = {
             const isOnPortal = nextUrl.pathname.startsWith('/portal');
             if (isOnPortal) {
                 if (isLoggedIn) {
-                    if (auth.user.role !== 'PATIENT') return Response.redirect(new URL('/dashboard', nextUrl));
+                    // Non-patients go to /patients (not /dashboard)
+                    if (auth.user.role !== 'PATIENT') {
+                        // Admin goes to dashboard, others to patients
+                        const defaultRoute = auth.user.role === 'ADMIN' ? '/dashboard' : '/patients';
+                        return Response.redirect(new URL(defaultRoute, nextUrl));
+                    }
                     return true;
                 }
                 return Response.redirect(new URL('/login', nextUrl)); // Redirect to public login

@@ -1,0 +1,1 @@
+import prisma from './src/lib/prisma'; async function main() { const patient = await prisma.patient.findUnique({ where: { email: 'algo912@test.com' } }); console.log(JSON.stringify(patient, null, 2)); } main();

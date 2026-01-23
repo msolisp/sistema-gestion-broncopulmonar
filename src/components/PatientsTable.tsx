@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react'
 import { useActionState } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import * as XLSX from 'xlsx'
-import { Search, Download, FileSpreadsheet, Plus, Edit, Trash2, X, UserCheck, History, ChevronLeft, ChevronRight } from 'lucide-react'
-import { adminCreatePatient, adminUpdatePatient, deletePatient } from "@/lib/actions" // Add actions
+import { Search, Download, FileSpreadsheet, Plus, Edit, Trash2, X, UserCheck, History, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react'
+import { adminCreatePatient, adminUpdatePatient, deletePatient } from "@/lib/actions"
 
 interface Patient {
     id: string
@@ -23,32 +24,21 @@ interface Patient {
     appointments: any[]
 }
 
-const CHILE_REGIONS = [
-    "Arica y Parinacota",
-    "Tarapacá",
-    "Antofagasta",
-    "Atacama",
-    "Coquimbo",
-    "Valparaíso",
-    "Metropolitana",
-    "O'Higgins",
-    "Maule",
-    "Ñuble",
-    "Biobío",
-    "Araucanía",
-    "Los Ríos",
-    "Los Lagos",
-    "Aysén",
-    "Magallanes"
-];
+interface Region {
+    name: string
+    communes: string[]
+}
 
 interface PatientsTableProps {
     patients: Patient[]
 }
 
 export default function PatientsTable({ patients }: PatientsTableProps) {
+    const router = useRouter()
     const [searchTerm, setSearchTerm] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
+    const [regions, setRegions] = useState<Region[]>([])
+    const [loadingRegions, setLoadingRegions] = useState(true)
     const itemsPerPage = 10
 
     // CRUD States
@@ -57,17 +47,57 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
     const [isDeleteOpen, setIsDeleteOpen] = useState(false)
     const [selectedPatient, setSelectedPatient] = useState<any>(null)
 
+    // Form States
+    const [createRegion, setCreateRegion] = useState('')
+    const [editRegion, setEditRegion] = useState('')
+    const [showPassword, setShowPassword] = useState(false)
+
     // Action States
     const [createState, createAction] = useActionState(adminCreatePatient, { message: '' })
     const [updateState, updateAction] = useActionState(adminUpdatePatient, { message: '' })
     const [deleteState, deleteAction] = useActionState(deletePatient, { message: '' })
 
+    // Load regions from API
+    useEffect(() => {
+        const loadRegions = async () => {
+            try {
+                const res = await fetch('/api/master-tables/regions')
+                if (res.ok) {
+                    const data = await res.json()
+                    setRegions(data)
+                }
+            } catch (error) {
+                console.error('Error loading regions:', error)
+            } finally {
+                setLoadingRegions(false)
+            }
+        }
+        loadRegions()
+    }, [])
+
+    // Initialize Edit Region when opening modal
+    useEffect(() => {
+        if (isEditOpen && selectedPatient) {
+            setEditRegion(selectedPatient.region || '')
+            setShowPassword(false) // Reset password visibility
+        }
+    }, [isEditOpen, selectedPatient])
+
     // Close modals on success
     useEffect(() => {
-        if (createState.message === 'Success') setIsCreateOpen(false)
-        if (updateState.message === 'Success') setIsEditOpen(false)
-        if (deleteState.message === 'Success') setIsDeleteOpen(false)
-    }, [createState, updateState, deleteState])
+        if (createState.message === 'Success') {
+            setIsCreateOpen(false)
+            router.refresh()
+        }
+        if (updateState.message === 'Success') {
+            setIsEditOpen(false)
+            router.refresh()
+        }
+        if (deleteState.message === 'Success') {
+            setIsDeleteOpen(false)
+            router.refresh()
+        }
+    }, [createState, updateState, deleteState, router])
 
     // Reset pagination when search changes
     useEffect(() => {
@@ -88,11 +118,13 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
     }
 
     const filteredPatients = patients.filter(patient => {
-        const term = searchTerm.toLowerCase()
-        const name = patient.name?.toLowerCase() || ''
-        const email = patient.email.toLowerCase()
-        const rut = patient.rut?.toLowerCase() || ''
-        const commune = patient.commune.toLowerCase()
+        const normalize = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+
+        const term = normalize(searchTerm)
+        const name = normalize(patient.name || '')
+        const email = normalize(patient.email)
+        const rut = normalize(patient.rut || '')
+        const commune = normalize(patient.commune)
 
         return name.includes(term) || email.includes(term) || rut.includes(term) || commune.includes(term)
     })
@@ -196,12 +228,12 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500">
                                     {patient.appointments.length}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <div className="flex items-center justify-end gap-2">
+                                <td className="text-center py-3">
+                                    <div className="flex justify-center gap-2">
                                         <Link
                                             href={`/patients/${patient.id}/history`}
-                                            className="p-1 text-zinc-600 hover:text-indigo-600 hover:bg-zinc-50 rounded bg-white border border-transparent hover:border-zinc-200"
-                                            title="Historial Médico"
+                                            className="p-1 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded bg-white border border-transparent hover:border-zinc-200"
+                                            title="Ver Historial"
                                         >
                                             <History size={16} />
                                         </Link>
@@ -210,7 +242,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                                 setSelectedPatient(patient)
                                                 setIsEditOpen(true)
                                             }}
-                                            className="p-1 text-indigo-600 hover:text-indigo-900 hover:bg-indigo-50 rounded bg-white border border-transparent hover:border-zinc-200"
+                                            className="p-1 text-blue-600 hover:text-blue-900 hover:bg-blue-50 rounded bg-white border border-transparent hover:border-zinc-200"
                                             title="Editar"
                                         >
                                             <Edit size={16} />
@@ -323,25 +355,53 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium text-zinc-700 mb-1">Contraseña</label>
-                                    <input name="password" type="password" required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" placeholder="********" autoComplete="new-password" />
+                                    <div className="relative">
+                                        <input
+                                            name="password"
+                                            type={showPassword ? "text" : "password"}
+                                            required
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 pr-10"
+                                            placeholder="********"
+                                            autoComplete="new-password"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowPassword(!showPassword)}
+                                            className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600"
+                                        >
+                                            {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                        </button>
+                                    </div>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="col-span-1">
-                                        <label className="block text-sm font-medium text-zinc-700 mb-1">Región</label>
-                                        <select name="region" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 bg-white">
-                                            <option value="">Seleccionar</option>
-                                            {CHILE_REGIONS.map(r => (
-                                                <option key={r} value={r}>{r}</option>
+                                        <label htmlFor="create_region" className="block text-sm font-medium text-zinc-700 mb-1">Región</label>
+                                        <select
+                                            id="create_region"
+                                            name="region"
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 bg-white"
+                                            onChange={(e) => setCreateRegion(e.target.value)}
+                                            defaultValue=""
+                                            disabled={loadingRegions}
+                                        >
+                                            <option value="">{loadingRegions ? 'Cargando...' : 'Seleccionar'}</option>
+                                            {regions.map(r => (
+                                                <option key={r.name} value={r.name}>{r.name}</option>
                                             ))}
                                         </select>
                                     </div>
                                     <div className="col-span-1">
-                                        <label className="block text-sm font-medium text-zinc-700 mb-1">Comuna</label>
-                                        <select name="commune" className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none  text-zinc-900 bg-white">
-                                            <option value="SANTIAGO">Santiago</option>
-                                            <option value="MAIPU">Maipú</option>
-                                            <option value="PROVIDENCIA">Providencia</option>
-                                            <option value="LAS CONDES">Las Condes</option>
+                                        <label htmlFor="create_commune" className="block text-sm font-medium text-zinc-700 mb-1">Comuna</label>
+                                        <select
+                                            id="create_commune"
+                                            name="commune"
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none  text-zinc-900 bg-white"
+                                            disabled={!createRegion || loadingRegions}
+                                        >
+                                            <option value="">Seleccionar</option>
+                                            {createRegion && regions.find(r => r.name === createRegion)?.communes.map(c => (
+                                                <option key={c} value={c.toUpperCase()}>{c}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -356,6 +416,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                             <option value="">Seleccionar</option>
                                             <option value="Masculino">Masculino</option>
                                             <option value="Femenino">Femenino</option>
+                                            <option value="Otro">Otro</option>
                                         </select>
                                     </div>
                                     <div>
@@ -392,30 +453,107 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                     <input name="name" defaultValue={selectedPatient.name} required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
+                                    <div className="flex gap-2">
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium text-zinc-700 mb-1">RUT</label>
+                                            <input
+                                                id="edit_rut_num"
+                                                type="text"
+                                                maxLength={8}
+                                                defaultValue={selectedPatient.rut?.split('-')[0] || ''}
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900"
+                                                placeholder="11111111"
+                                                autoComplete="off"
+                                                onChange={(e) => {
+                                                    const num = e.target.value.replace(/[^0-9]/g, '');
+                                                    const dv = (document.getElementById('edit_rut_dv') as HTMLInputElement).value;
+                                                    const rutInput = document.querySelector('input[name="rut"]') as HTMLInputElement;
+                                                    if (rutInput) {
+                                                        rutInput.value = num && dv ? `${num}-${dv}` : '';
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        <div className="w-20">
+                                            <label className="block text-sm font-medium text-zinc-700 mb-1">DV</label>
+                                            <input
+                                                id="edit_rut_dv"
+                                                type="text"
+                                                maxLength={1}
+                                                defaultValue={selectedPatient.rut?.split('-')[1] || ''}
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 text-center uppercase"
+                                                placeholder="K"
+                                                autoComplete="off"
+                                                onChange={(e) => {
+                                                    const dv = e.target.value.toUpperCase().replace(/[^0-9K]/g, '');
+                                                    const num = (document.getElementById('edit_rut_num') as HTMLInputElement).value;
+                                                    const rutInput = document.querySelector('input[name="rut"]') as HTMLInputElement;
+                                                    if (rutInput) {
+                                                        rutInput.value = num && dv ? `${num}-${dv}` : '';
+                                                    }
+                                                }}
+                                            />
+                                        </div>
+                                        <input type="hidden" name="rut" defaultValue={selectedPatient.rut || ''} />
+                                    </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-700 mb-1">RUT</label>
-                                        <input name="rut" defaultValue={selectedPatient.rut} required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
+                                        <label className="block text-sm font-medium text-zinc-700 mb-1">Email</label>
+                                        <input name="email" type="email" defaultValue={selectedPatient.email} required className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" autoComplete="new-password" />
+                                    </div>
+                                    <div className="col-span-2">
+                                        <label htmlFor="edit_password" className="block text-sm font-medium text-zinc-700 mb-1">Nueva Contraseña (opcional)</label>
+                                        <div className="relative">
+                                            <input
+                                                id="edit_password"
+                                                name="password"
+                                                type={showPassword ? "text" : "password"}
+                                                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 pr-10"
+                                                placeholder="Dejar vacio para no cambiar"
+                                                autoComplete="new-password"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowPassword(!showPassword)}
+                                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-zinc-400 hover:text-zinc-600"
+                                            >
+                                                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                            </button>
+                                        </div>
                                     </div>
                                     <div className="col-span-2">
                                         <label className="block text-sm font-medium text-zinc-700 mb-1">Dirección</label>
                                         <input name="address" defaultValue={selectedPatient.address || ''} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900" />
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-700 mb-1">Región</label>
-                                        <select name="region" defaultValue={selectedPatient.region} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 bg-white">
-                                            <option value="">Seleccionar</option>
-                                            {CHILE_REGIONS.map(r => (
-                                                <option key={r} value={r}>{r}</option>
+                                        <label htmlFor="edit_region" className="block text-sm font-medium text-zinc-700 mb-1">Región</label>
+                                        <select
+                                            id="edit_region"
+                                            name="region"
+                                            defaultValue={selectedPatient.region}
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 bg-white"
+                                            onChange={(e) => setEditRegion(e.target.value)}
+                                            disabled={loadingRegions}
+                                        >
+                                            <option value="">{loadingRegions ? 'Cargando...' : 'Seleccionar'}</option>
+                                            {regions.map(r => (
+                                                <option key={r.name} value={r.name}>{r.name}</option>
                                             ))}
                                         </select>
                                     </div>
                                     <div>
-                                        <label className="block text-sm font-medium text-zinc-700 mb-1">Comuna</label>
-                                        <select name="commune" defaultValue={selectedPatient.commune} className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 bg-white">
-                                            <option value="SANTIAGO">Santiago</option>
-                                            <option value="MAIPU">Maipú</option>
-                                            <option value="PROVIDENCIA">Providencia</option>
-                                            <option value="LAS CONDES">Las Condes</option>
+                                        <label htmlFor="edit_commune" className="block text-sm font-medium text-zinc-700 mb-1">Comuna</label>
+                                        <select
+                                            id="edit_commune"
+                                            name="commune"
+                                            defaultValue={selectedPatient.commune?.toUpperCase()}
+                                            key={`${selectedPatient.id}-${editRegion}`}
+                                            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none text-zinc-900 bg-white"
+                                            disabled={!editRegion || loadingRegions}
+                                        >
+                                            <option value="">Seleccionar</option>
+                                            {editRegion && regions.find(r => r.name === editRegion)?.communes.map(c => (
+                                                <option key={c} value={c.toUpperCase()}>{c}</option>
+                                            ))}
                                         </select>
                                     </div>
                                 </div>
@@ -426,6 +564,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                                             <option value="">Seleccionar</option>
                                             <option value="Masculino">Masculino</option>
                                             <option value="Femenino">Femenino</option>
+                                            <option value="Otro">Otro</option>
                                         </select>
                                     </div>
                                     <div>

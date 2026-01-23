@@ -57,6 +57,11 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
             alert('Solo se permiten archivos PDF')
             return
         }
+        const maxSize = 5 * 1024 * 1024 // 5MB
+        if (file.size > maxSize) {
+            alert('El archivo no debe superar los 5MB')
+            return
+        }
         setFileName(file.name)
 
         // Update the file input manually if needed (browsers make this hard for security)
@@ -131,7 +136,7 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
                                 </svg>
                                 <span className="text-indigo-600 font-medium">Seleccionar archivo</span>
                                 <span className="text-sm text-gray-500 mt-1">o arrastra y suelta</span>
-                                <span className="text-xs text-gray-400 mt-2">PDF (máx. 10MB)</span>
+                                <span className="text-xs text-gray-400 mt-2">PDF (máx. 5MB)</span>
                             </div>
                         </label>
                         {fileName && (

@@ -189,6 +189,9 @@ describe('patient-actions', () => {
             mockPrismaClient.notification.create.mockResolvedValue({})
 
             const file = new File(['test content'], 'exam.pdf', { type: 'application/pdf' })
+            Object.defineProperty(file, 'arrayBuffer', {
+                value: jest.fn().mockResolvedValue(new ArrayBuffer(12))
+            })
             const formData = new FormData()
             formData.append('file', file)
             formData.append('centerName', 'Clínica Test')

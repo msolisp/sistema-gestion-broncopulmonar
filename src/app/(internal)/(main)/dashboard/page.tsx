@@ -1,15 +1,19 @@
-
 import prisma from "@/lib/prisma";
 import DashboardContent from "@/components/DashboardContent";
 
 import { auth } from "@/auth";
 import { redirect } from "next/navigation";
+import { protectRoute } from "@/lib/route-protection";
 
 export default async function DashboardPage() {
+    // Protect route - only internal staff allowed
+    await protectRoute({
+        allowedRoles: ['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST'],
+        redirectTo: '/portal'
+    });
+
+    // protectRoute already validated session
     const session = await auth();
-    if (!session?.user || session.user.role === 'PATIENT') {
-        redirect("/intranet/login");
-    }
 
     const patients = await prisma.patient.findMany({
     });
@@ -98,7 +102,7 @@ export default async function DashboardPage() {
         initialPermissions={permissionMatrix}
         appointments={appointments}
         pendingExams={pendingExams}
-        currentUserRole={session?.user?.role || 'KINESIOLOGIST'}
+        currentUserRole={(session?.user?.role as string) || 'KINESIOLOGIST'}
     />;
 
 }

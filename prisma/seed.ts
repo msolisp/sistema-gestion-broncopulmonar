@@ -91,7 +91,10 @@ async function main() {
         'Eliminar Pacientes',
         'Ver Reportes BI',
         'Gestionar Usuarios',
-        'Configuración Global'
+        'Configuración Global',
+        'Ver Agendamiento', // Prototype - Admin only
+        'Ver Asistente',    // Admin + Kine
+        'Ver HL7'           // Admin + Kine
     ];
 
     const defaultPermissions = [
@@ -100,9 +103,12 @@ async function main() {
         { role: Role.KINESIOLOGIST, action: 'Editar Pacientes', enabled: true },
         { role: Role.KINESIOLOGIST, action: 'Eliminar Pacientes', enabled: true },
         { role: Role.KINESIOLOGIST, action: 'Ver Reportes BI', enabled: true },
+        { role: Role.KINESIOLOGIST, action: 'Ver Asistente', enabled: true },
+        { role: Role.KINESIOLOGIST, action: 'Ver HL7', enabled: true },
         // RECEP
         { role: Role.RECEPTIONIST, action: 'Ver Pacientes', enabled: true },
         { role: Role.RECEPTIONIST, action: 'Editar Pacientes', enabled: true },
+        // AGENDAMIENTO IS NOT ASSIGNED TO KINE OR RECEP BY DEFAULT (Admin sees all)
     ];
 
     for (const p of defaultPermissions) {

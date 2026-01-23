@@ -10,6 +10,14 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
     const router = useRouter();
 
     async function handleSubmit(formData: FormData) {
+        const file = formData.get('file') as File;
+        const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+
+        if (file && file.size > MAX_SIZE) {
+            alert('El archivo excede el límite de 5MB');
+            return;
+        }
+
         setIsUploading(true);
         formData.append('patientId', patientId);
 
@@ -47,7 +55,7 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
                         {/* File Input - Takes up 40% */}
                         <div className="w-full md:w-5/12">
                             <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
-                                Archivo PDF
+                                Archivo PDF <span className="text-zinc-400 lowercase font-normal">(Máximo 5MB)</span>
                                 <input
                                     type="file"
                                     name="file"

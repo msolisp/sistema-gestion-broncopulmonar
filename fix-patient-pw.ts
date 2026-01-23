@@ -1,0 +1,1 @@
+import bcrypt from 'bcryptjs'; import prisma from './src/lib/prisma'; async function main() { const hashedPassword = await bcrypt.hash('Algo2026.#', 10); await prisma.patient.update({ where: { email: 'algo912@test.com' }, data: { password: hashedPassword } }); console.log('Password updated and hashed for algo912@test.com'); } main();

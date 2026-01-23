@@ -88,10 +88,10 @@ describe('DashboardContent Component', () => {
         expect(screen.getByText('Administración Central')).toBeInTheDocument()
     })
 
-    it('displays Patients Management tab by default', async () => {
+    it('displays Usuarios y Roles tab by default', async () => {
         render(<DashboardContent {...mockProps} />)
         await waitFor(() => {
-            expect(screen.getByText('Gestion de Pacientes', { selector: 'h2' })).toBeInTheDocument()
+            expect(screen.getByText('Gestión de Usuarios')).toBeInTheDocument()
         })
     })
 

@@ -2,8 +2,15 @@
 import { Activity, BarChart3, PieChart } from "lucide-react"
 import prisma from "@/lib/prisma";
 import BiReportsContent from "@/components/BiReportsContent";
+import { protectRoute } from "@/lib/route-protection";
 
 export default async function ReportsPage() {
+    // Protect route - only users with "Ver Reportes BI" permission
+    await protectRoute({
+        requiredPermission: 'Ver Reportes BI',
+        redirectTo: '/dashboard'
+    });
+
     const patients = await prisma.patient.findMany({
         include: {
             exams: {

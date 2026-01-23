@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Search, Edit2, Eye, EyeOff, X, Users } from 'lucide-react'
-import { REGIONS, findRegionByCommune } from '@/lib/chile-data'
 
 interface Patient {
     id: string
@@ -16,6 +15,11 @@ interface Patient {
     examCount?: number
 }
 
+interface Region {
+    name: string
+    communes: string[]
+}
+
 interface PatientsManagementTableProps {
     currentUserRole?: string;
     permissions?: Array<{ action: string, kine: boolean, recep: boolean }>;
@@ -23,6 +27,7 @@ interface PatientsManagementTableProps {
 
 export default function PatientsManagementTable({ currentUserRole, permissions }: PatientsManagementTableProps) {
     const [patients, setPatients] = useState<Patient[]>([])
+    const [regions, setRegions] = useState<Region[]>([])
     const [loading, setLoading] = useState(true)
     const [searchTerm, setSearchTerm] = useState('')
     const [currentPage, setCurrentPage] = useState(1)
@@ -50,7 +55,20 @@ export default function PatientsManagementTable({ currentUserRole, permissions }
 
     useEffect(() => {
         loadPatients()
+        loadRegions()
     }, [])
+
+    const loadRegions = async () => {
+        try {
+            const res = await fetch('/api/master-tables/regions')
+            if (res.ok) {
+                const data = await res.json()
+                setRegions(data)
+            }
+        } catch (error) {
+            console.error('Error loading regions:', error)
+        }
+    }
 
     const loadPatients = async () => {
         try {
@@ -87,6 +105,23 @@ export default function PatientsManagementTable({ currentUserRole, permissions }
     const startIndex = (currentPage - 1) * itemsPerPage
     const currentPatients = filteredPatients.slice(startIndex, startIndex + itemsPerPage)
 
+    const findRegionByCommune = (communeName: string): string | undefined => {
+        if (!communeName) return undefined;
+
+        const normalizeText = (text: string) => {
+            return text.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase();
+        };
+
+        const target = normalizeText(communeName);
+
+        for (const region of regions) {
+            if (region.communes.some(c => normalizeText(c) === target)) {
+                return region.name;
+            }
+        }
+        return undefined;
+    }
+
     const handleEdit = (patient: Patient) => {
         setEditingPatient(patient)
 
@@ -94,7 +129,7 @@ export default function PatientsManagementTable({ currentUserRole, permissions }
         const normalizedCommune = patient.commune ? patient.commune.toUpperCase() : ''
 
         // Verify if the stored region matches our valid regions list
-        const isValidRegion = REGIONS.some(r => r.name === initialRegion)
+        const isValidRegion = regions.some(r => r.name === initialRegion)
 
         // If no region OR invalid region, try to infer it from the commune
         if ((!initialRegion || !isValidRegion) && normalizedCommune) {
@@ -110,7 +145,7 @@ export default function PatientsManagementTable({ currentUserRole, permissions }
         // Use normalization to find the matching entry in the region's list.
         let finalCommune = normalizedCommune;
         if (initialRegion) {
-            const regionData = REGIONS.find(r => r.name === initialRegion);
+            const regionData = regions.find(r => r.name === initialRegion);
             if (regionData) {
                 const canonical = regionData.communes.find(c =>
                     c.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase() ===
@@ -169,7 +204,7 @@ export default function PatientsManagementTable({ currentUserRole, permissions }
         }
     }
 
-    const selectedRegion = REGIONS.find(r => r.name === formData.region)
+    const selectedRegion = regions.find(r => r.name === formData.region)
 
     if (loading) {
         return (
@@ -320,7 +355,7 @@ export default function PatientsManagementTable({ currentUserRole, permissions }
                                     <label className="block text-sm font-medium text-zinc-700 mb-1">Region</label>
                                     <select value={formData.region || ''} onChange={(e) => setFormData({ ...formData, region: e.target.value, commune: '' })} className="w-full px-3 py-2 border border-zinc-300 rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none">
                                         <option value="">Seleccionar</option>
-                                        {REGIONS.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
+                                        {regions.map((r) => <option key={r.name} value={r.name}>{r.name}</option>)}
                                     </select>
                                 </div>
                                 <div>

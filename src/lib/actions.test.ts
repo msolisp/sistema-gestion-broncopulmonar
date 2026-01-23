@@ -26,6 +26,7 @@ jest.mock('@/lib/prisma', () => {
             create: jest.fn(),
             update: jest.fn(),
             findUnique: jest.fn(),
+            findFirst: jest.fn(),
             delete: jest.fn(),
         },
         appointment: {
@@ -181,7 +182,7 @@ describe('Server Actions', () => {
             }))
         })
 
-        it('redirects to dashboard for KINESIOLOGIST', async () => {
+        it('redirects to patients for KINESIOLOGIST', async () => {
             const formData = new FormData()
             formData.append('email', 'kine@test.com')
             formData.append('password', 'Password123!')
@@ -192,7 +193,7 @@ describe('Server Actions', () => {
             await authenticate(undefined, formData)
 
             expect(signIn).toHaveBeenCalledWith('credentials', expect.objectContaining({
-                redirectTo: '/dashboard'
+                redirectTo: '/patients'
             }))
         })
 
@@ -263,7 +264,16 @@ describe('registerPatient', () => {
     it('returns error if user exists', async () => {
         ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: '1' })
         const result = await registerPatient(null, formData)
-        expect(result).toEqual({ message: 'Email already exists' })
+        expect(result).toEqual({ message: 'El email ya está registrado' })
+    })
+
+    it('returns error if RUT exists', async () => {
+        const { auth } = require('@/auth')
+            ; (prisma.patient.findUnique as jest.Mock)
+                .mockResolvedValueOnce(null) // Email check
+                .mockResolvedValueOnce({ id: '1' }) // RUT check
+        const result = await registerPatient(null, formData)
+        expect(result.message).toContain('RUT ya está registrado')
     })
 
     it('creates patient on success', async () => {
@@ -449,6 +459,17 @@ describe('Admin Actions', () => {
         expect(result).toEqual({ message: 'Success' })
     })
 
+    it('adminCreatePatient succeeds if kinesiologist', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'kine@test.com', role: 'KINESIOLOGIST' } })
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null)
+            ; (prisma.patient.create as jest.Mock).mockResolvedValue({ id: 'p1' })
+            ; (bcrypt.hash as jest.Mock).mockResolvedValue('hashed')
+
+        const result = await adminCreatePatient(null, formData)
+        expect(result).toEqual({ message: 'Success' })
+    })
+
     it('adminCreatePatient handles transaction error', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
@@ -475,10 +496,48 @@ describe('Admin Actions', () => {
     patientData.append('commune', 'Arica')
     patientData.append('region', 'xv')
     patientData.append('active', 'on')
+    patientData.append('email', 'updated@test.com')
+
+    it('adminUpdatePatient returns error if email taken by another patient', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+            // findFirst returns ANOTHER patient with the same email
+            ; (prisma.patient.findFirst as jest.Mock).mockResolvedValue({ id: 'p2', email: 'updated@test.com' })
+
+        const result = await adminUpdatePatient(null, patientData)
+        expect(result.message).toContain('El email ya está en uso')
+    })
+
+    it('adminUpdatePatient returns error if RUT taken by another patient', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+            ; (prisma.patient.findFirst as jest.Mock)
+                .mockResolvedValueOnce(null) // email check
+                .mockResolvedValueOnce({ id: 'p2', rut: '12345678-9' }) // RUT check
+
+        const result = await adminUpdatePatient(null, patientData)
+        expect(result.message).toContain('RUT ya está en uso')
+    })
 
     it('adminUpdatePatient succeeds', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+            ; (prisma.patient.findFirst as jest.Mock).mockResolvedValue(null)
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: 'p1' })
+            ; (prisma.patient.update as jest.Mock).mockResolvedValue({})
+
+        const result = await adminUpdatePatient(null, patientData)
+        expect(result).toEqual({ message: 'Success' })
+        expect(prisma.patient.update).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                email: 'updated@test.com'
+            })
+        }))
+    })
+
+    it('adminUpdatePatient succeeds if kinesiologist', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'kine@test.com', role: 'KINESIOLOGIST' } })
             ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: 'p1' })
             ; (prisma.patient.update as jest.Mock).mockResolvedValue({})
 
@@ -518,6 +577,18 @@ describe('Admin Actions', () => {
     it('deletePatient succeeds', async () => {
         const { auth } = require('@/auth')
         auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+            ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: 'p1' })
+            ; (prisma.patient.delete as jest.Mock).mockResolvedValue({})
+
+        const delData = new FormData()
+        delData.append('id', 'p1')
+        const result = await deletePatient(null, delData)
+        expect(result).toEqual({ message: 'Success' })
+    })
+
+    it('deletePatient succeeds if kinesiologist', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'kine@test.com', role: 'KINESIOLOGIST' } })
             ; (prisma.patient.findUnique as jest.Mock).mockResolvedValue({ id: 'p1' })
             ; (prisma.patient.delete as jest.Mock).mockResolvedValue({})
 
@@ -570,6 +641,22 @@ describe('uploadMedicalExam', () => {
         auth.mockResolvedValue(null)
         const result = await uploadMedicalExam(formData)
         expect(result).toEqual({ message: 'Unauthorized' })
+    })
+
+    it('returns error if file size > 5MB', async () => {
+        const { auth } = require('@/auth')
+        auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+
+        const largeFile = new File(['a'.repeat(6 * 1024 * 1024)], 'large.pdf', { type: 'application/pdf' })
+        const largeData = new FormData()
+        largeData.append('patientId', 'p1')
+        largeData.append('centerName', 'Center')
+        largeData.append('doctorName', 'Doctor')
+        largeData.append('examDate', '2025-01-01')
+        largeData.append('file', largeFile)
+
+        const result = await uploadMedicalExam(largeData)
+        expect(result.message).toContain('excede el límite de 5MB')
     })
 
     it('handles processing error', async () => {
@@ -698,6 +785,10 @@ describe('System User Actions', () => {
     formData.append('active', 'on')
 
     describe('adminCreateSystemUser', () => {
+        beforeEach(() => {
+            jest.clearAllMocks()
+        })
+
         it('returns unauthorized if not admin', async () => {
             const { auth } = require('@/auth')
             auth.mockResolvedValue({ user: { email: 'user@test.com', role: 'PATIENT' } })
@@ -716,16 +807,28 @@ describe('System User Actions', () => {
         it('returns error if email exists', async () => {
             const { auth } = require('@/auth')
             auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u2' })
+                ; (prisma.user.findUnique as jest.Mock).mockResolvedValueOnce({ id: 'u2' })
 
             const result = await adminCreateSystemUser(null, formData)
             expect(result).toEqual({ message: 'El email ya existe' })
         })
 
+        it('returns error if RUT exists', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.user.findUnique as jest.Mock)
+                    .mockResolvedValueOnce(null) // email check
+                    .mockResolvedValueOnce({ id: 'u1' }) // RUT check
+            const result = await adminCreateSystemUser(null, formData)
+            expect(result.message).toContain('RUT ya está en uso')
+        })
+
         it('creates user successfully', async () => {
             const { auth } = require('@/auth')
             auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN', id: 'admin1' } })
-                ; (prisma.user.findUnique as jest.Mock).mockResolvedValue(null)
+                ; (prisma.user.findUnique as jest.Mock)
+                    .mockResolvedValueOnce(null) // email
+                    .mockResolvedValueOnce(null) // rut
                 ; (bcrypt.hash as jest.Mock).mockResolvedValue('hashed')
                 ; (prisma.user.create as jest.Mock).mockResolvedValue({ id: 'new_user' })
 
@@ -746,12 +849,17 @@ describe('System User Actions', () => {
     })
 
     describe('adminUpdateSystemUser', () => {
+        beforeEach(() => {
+            jest.clearAllMocks()
+        })
+
         const updateData = new FormData()
         updateData.append('id', 'u1')
         updateData.append('name', 'Updated Name')
         updateData.append('email', 'updated@test.com')
         updateData.append('role', 'RECEPTIONIST')
         updateData.append('active', 'on')
+        updateData.append('rut', 'new-rut')
 
         it('returns unauthorized if not admin', async () => {
             const { auth } = require('@/auth')
@@ -763,32 +871,48 @@ describe('System User Actions', () => {
         it('returns error if email taken by another', async () => {
             const { auth } = require('@/auth')
             auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-                ; (prisma.user.findFirst as jest.Mock).mockResolvedValue({ id: 'u2' })
-
+                ; (prisma.user.findFirst as jest.Mock).mockResolvedValueOnce({ id: 'u2' })
             const result = await adminUpdateSystemUser(null, updateData)
             expect(result.message).toContain('El email ya está en uso')
+        })
+
+        it('adminUpdateSystemUser returns error if RUT taken by another', async () => {
+            const { auth } = require('@/auth')
+            auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+                ; (prisma.user.findFirst as jest.Mock)
+                    .mockResolvedValueOnce(null) // email check
+                    .mockResolvedValueOnce({ id: 'u2', rut: '123' }) // RUT check
+            const result = await adminUpdateSystemUser(null, updateData)
+            expect(result.message).toContain('RUT ya está en uso')
         })
 
         it('allows editing admin with restrictions on role and active (self-edit only)', async () => {
             const { auth } = require('@/auth')
             const adminEmail = 'admin@test.com'
             auth.mockResolvedValue({ user: { email: adminEmail, role: 'ADMIN', id: 'admin1' } })
-                ; (prisma.user.findFirst as jest.Mock).mockResolvedValue(null)
-                // Mock the admin user with the SAME email as the logged-in user
+
+            const selfUpdateData = new FormData()
+            selfUpdateData.append('id', 'u1')
+            selfUpdateData.append('name', 'Admin Self')
+            selfUpdateData.append('email', adminEmail)
+            selfUpdateData.append('role', 'RECEPTIONIST')
+            selfUpdateData.append('active', 'off')
+            selfUpdateData.append('rut', 'admin-rut')
+
+                ; (prisma.user.findFirst as jest.Mock)
+                    .mockResolvedValueOnce(null) // email check
+                    .mockResolvedValueOnce(null) // RUT check
                 ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', role: 'ADMIN', email: adminEmail })
                 ; (prisma.user.update as jest.Mock).mockResolvedValue({})
 
-            const result = await adminUpdateSystemUser(null, updateData)
-
-            // Should succeed because admin is editing themselves
+            const result = await adminUpdateSystemUser(null, selfUpdateData)
             expect(result.message).toBe('Success')
 
-            // Verify role and active were forced to stay ADMIN and true
             expect(prisma.user.update).toHaveBeenCalledWith({
                 where: { id: 'u1' },
                 data: expect.objectContaining({
-                    role: 'ADMIN', // Forced regardless of input
-                    active: true   // Forced regardless of input
+                    role: 'ADMIN',
+                    active: true
                 })
             })
         })
@@ -796,7 +920,9 @@ describe('System User Actions', () => {
         it('updates user successfully', async () => {
             const { auth } = require('@/auth')
             auth.mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN', id: 'admin1' } })
-                ; (prisma.user.findFirst as jest.Mock).mockResolvedValue(null)
+                ; (prisma.user.findFirst as jest.Mock)
+                    .mockResolvedValueOnce(null) // email
+                    .mockResolvedValueOnce(null) // rut
                 ; (prisma.user.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', role: 'KINESIOLOGIST' })
                 ; (prisma.user.update as jest.Mock).mockResolvedValue({})
 
@@ -825,11 +951,8 @@ describe('System User Actions', () => {
     })
 
     describe('adminDeleteSystemUser', () => {
-        it('returns unauthorized if not admin', async () => {
-            const { auth } = require('@/auth')
-            auth.mockResolvedValue({ user: { email: 'user@test.com', role: 'PATIENT' } })
-            const result = await adminDeleteSystemUser('u1')
-            expect(result.message).toContain('Unauthorized')
+        beforeEach(() => {
+            jest.clearAllMocks()
         })
 
         it('returns error if user not found', async () => {

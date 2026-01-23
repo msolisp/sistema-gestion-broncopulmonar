@@ -3,6 +3,12 @@ import PatientsTable from './PatientsTable'
 import '@testing-library/jest-dom'
 import * as XLSX from 'xlsx'
 
+jest.mock('next/navigation', () => ({
+    useRouter: () => ({
+        refresh: jest.fn()
+    })
+}))
+
 jest.mock('xlsx', () => ({
     utils: {
         json_to_sheet: jest.fn(),
@@ -22,6 +28,7 @@ const mockPatients = [
     {
         id: '1',
         commune: 'Santiago',
+        region: 'Metropolitana',
         address: 'Av. Test 123',
         phone: '123456789',
         diagnosisDate: new Date('2024-01-01'),
@@ -36,6 +43,7 @@ const mockPatients = [
     {
         id: '2',
         commune: 'Providencia',
+        region: 'Metropolitana',
         address: 'Calle Falsa 123',
         phone: '987654321',
         diagnosisDate: new Date('2024-02-01'),
@@ -76,6 +84,29 @@ describe('PatientsTable Component', () => {
         expect(screen.queryByText('Maria Gonzalez')).not.toBeInTheDocument()
     })
 
+    it('filters patients by name (accent insensitive)', () => {
+        render(<PatientsTable patients={mockPatients} />)
+        const searchInput = screen.getByPlaceholderText('Buscar por nombre, RUT, email...')
+
+        // Search "Pérez" should find "Perez" (if normalized) or vice versa.
+        // Mock data has "Juan Perez" (no accent).
+        // Searching "Pérez" should find it if normalization works.
+        fireEvent.change(searchInput, { target: { value: 'Pérez' } })
+
+        expect(screen.getByText('Juan Perez')).toBeInTheDocument()
+        expect(screen.queryByText('Maria Gonzalez')).not.toBeInTheDocument()
+    })
+
+    it('filters patients by RUT', () => {
+        render(<PatientsTable patients={mockPatients} />)
+        const searchInput = screen.getByPlaceholderText('Buscar por nombre, RUT, email...')
+
+        fireEvent.change(searchInput, { target: { value: '11.111' } })
+
+        expect(screen.getByText('Juan Perez')).toBeInTheDocument()
+        expect(screen.queryByText('Maria Gonzalez')).not.toBeInTheDocument()
+    })
+
     it('handles export to excel', () => {
         render(<PatientsTable patients={mockPatients} />)
         const exportBtn = screen.getByText('Exportar a Excel')
@@ -94,12 +125,48 @@ describe('PatientsTable Component', () => {
         expect(screen.getByText('Nuevo Paciente', { selector: 'h3' })).toBeInTheDocument()
     })
 
-    it('opens edit modal', () => {
+    it('opens edit modal and pre-fills fields', () => {
         render(<PatientsTable patients={mockPatients} />)
         const editBtns = screen.getAllByTitle('Editar')
         fireEvent.click(editBtns[0])
         expect(screen.getByText('Editar Paciente')).toBeInTheDocument()
         expect(screen.getByDisplayValue('Juan Perez')).toBeInTheDocument()
+        expect(screen.getByDisplayValue('juan@test.com')).toBeInTheDocument()
+        // Check that email input name attribute is correct for form submission
+        const emailInput = screen.getByDisplayValue('juan@test.com')
+        expect(emailInput).toHaveAttribute('name', 'email')
+    })
+
+    it('separates rut and dv in edit modal', () => {
+        render(<PatientsTable patients={mockPatients} />)
+        const editBtns = screen.getAllByTitle('Editar')
+        fireEvent.click(editBtns[0])
+
+        // Juan Perez rut: 11.111.111-1
+        // Expected separation: 11.111.111 and 1
+        // Note: The mock data has '.' in RUT, but the input might expect just numbers if the logic stripes them?
+        // Let's check the component logic. defaultValue={selectedPatient.rut?.split('-')[0] || ''}
+        // If the data comes with dots, it will display dots.
+
+        // Wait, the input logic stripes non-numbers on CHANGE, but regular defaultValue will be displayed as is.
+        // Let's assume the mock data matches what the component expects or displays.
+        // The split uses '-'.
+        // '11.111.111-1'.split('-') -> ['11.111.111', '1']
+
+        const rutNum = document.getElementById('edit_rut_num') as HTMLInputElement
+        const rutDv = document.getElementById('edit_rut_dv') as HTMLInputElement
+
+        expect(rutNum.value).toBe('11.111.111')
+        expect(rutDv.value).toBe('1')
+
+        // Test update
+        fireEvent.change(rutNum, { target: { value: '22222222' } })
+        expect(rutNum.value).toBe('22222222') // non-numbers stripped by onChange
+
+        // Check hidden input
+        const hiddenRut = document.querySelector('input[name="rut"]') as HTMLInputElement
+        // 22222222-1
+        expect(hiddenRut.value).toBe('22222222-1')
     })
 
     it('opens delete modal', () => {
@@ -224,6 +291,52 @@ describe('PatientsTable Component', () => {
         fireEvent.click(screen.getByText('Cancelar'))
         expect(screen.queryByText('Nuevo Paciente', { selector: 'h3' })).not.toBeInTheDocument()
     })
+    it('updates commune options when region changes', () => {
+        render(<PatientsTable patients={mockPatients} />)
+
+        fireEvent.click(screen.getByText('Nuevo Paciente'))
+
+        const regionSelect = screen.getByLabelText('Región')
+        const communeSelect = screen.getByLabelText('Comuna')
+
+        // Initially empty or disabled if no region selected (depending on implementation)
+        // Implementation: disabled={!createRegion}
+        expect(communeSelect).toBeDisabled()
+
+        // Select Region
+        fireEvent.change(regionSelect, { target: { value: 'Metropolitana' } })
+        expect(communeSelect).not.toBeDisabled()
+        // Check for Santiago and Maipu (contained in CHILE_COMMUNES['Metropolitana'])
+        // 'Santiago' appears in the table (mock patient) and the dropdown.
+        expect(screen.getAllByText('Santiago').length).toBeGreaterThanOrEqual(1)
+        expect(screen.getByText('Maipú')).toBeInTheDocument()
+
+        // Change Region
+        fireEvent.change(regionSelect, { target: { value: 'Valparaíso' } })
+        expect(screen.getByText('Viña del Mar')).toBeInTheDocument()
+    })
+
+    it('toggles password visibility', () => {
+        render(<PatientsTable patients={mockPatients} />)
+
+        fireEvent.click(screen.getByText('Nuevo Paciente'))
+
+        const passwordInput = screen.getByPlaceholderText('********')
+        expect(passwordInput).toHaveAttribute('type', 'password')
+
+        // Click toggle button
+        const toggleButton = passwordInput.parentElement?.querySelector('button')
+        if (toggleButton) {
+            fireEvent.click(toggleButton)
+            expect(passwordInput).toHaveAttribute('type', 'text')
+
+            fireEvent.click(toggleButton)
+            expect(passwordInput).toHaveAttribute('type', 'password')
+        } else {
+            throw new Error('Toggle button not found')
+        }
+    })
+
     it('renders patient with missing optional fields', () => {
         const minimalPatient = [{
             ...mockPatients[0],
@@ -232,7 +345,8 @@ describe('PatientsTable Component', () => {
             rut: null,
             email: 'minimal@test.com',
             birthDate: null,
-            commune: 'Santiago'
+            commune: 'Santiago',
+            region: 'Metropolitana'
         } as any] // Force type casting for testing fallback logic
 
         render(<PatientsTable patients={minimalPatient} />)
@@ -240,5 +354,33 @@ describe('PatientsTable Component', () => {
         expect(screen.getByText('minimal@test.com')).toBeInTheDocument()
         // Should show hyphen for age
         expect(screen.getAllByText('-').length).toBeGreaterThan(0)
+    })
+
+    // Tests for permission-independent button visibility (RBAC at module level only)
+    it('always shows create button regardless of permissions', () => {
+        render(<PatientsTable patients={mockPatients} />)
+        const createButton = screen.getByText('Nuevo Paciente')
+        expect(createButton).toBeVisible()
+        expect(createButton).toBeEnabled()
+    })
+
+    it('always shows edit buttons for all patients', () => {
+        render(<PatientsTable patients={mockPatients} />)
+        const editButtons = screen.getAllByTitle('Editar')
+        expect(editButtons).toHaveLength(mockPatients.length)
+        editButtons.forEach(btn => {
+            expect(btn).toBeVisible()
+            expect(btn).toBeEnabled()
+        })
+    })
+
+    it('always shows delete buttons for all patients', () => {
+        render(<PatientsTable patients={mockPatients} />)
+        const deleteButtons = screen.getAllByTitle('Eliminar')
+        expect(deleteButtons).toHaveLength(mockPatients.length)
+        deleteButtons.forEach(btn => {
+            expect(btn).toBeVisible()
+            expect(btn).toBeEnabled()
+        })
     })
 })

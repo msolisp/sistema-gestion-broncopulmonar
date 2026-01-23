@@ -99,3 +99,101 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     await page.click('button:has-text("Guardar Cambios")');
     await expect(page.getByText('Perfil actualizado correctamente')).toBeVisible();
 });
+
+test('Patient Administration: Edit Patient', async ({ page }) => {
+    // Note: Requires admin login. Assuming we have seeded an admin or can use the one from previous test if session persists?
+    // Start fresh with admin login for stability
+    await page.goto('/login');
+    // await page.click('text=Inicia Sesión'); // Removed to avoid potential timeouts
+    await page.fill('input[name="email"]', 'admin@example.com'); // Assuming seeded admin
+    await page.fill('input[name="password"]', 'admin123'); // Assuming seeded admin password
+    await page.click('button:has-text("Ingresar")');
+
+    // Wait for login to complete (redirect to dashboard/portal)
+    // Assuming admin dashboard is at /admin or /summary or just checking for absence of login form
+    await expect(page.locator('input[name="password"]')).not.toBeVisible({ timeout: 10000 });
+
+    // Go to patients management
+    await page.goto('/patients');
+
+    // Create a patient first to ensure we have one to edit
+    // Use a unique name to avoid conflicts
+    const uniqueId = Date.now();
+    const name = `Edit Candidate ${uniqueId}`;
+    const email = `edit_${uniqueId}@test.com`;
+    const rutNum = Math.floor(Math.random() * 90000000) + 10000000;
+
+    // Calculate valid DV
+    let T = rutNum;
+    let M = 0;
+    let S = 1;
+    for (; T; T = Math.floor(T / 10))
+        S = (S + T % 10 * (9 - M++ % 6)) % 11;
+    const rutDv = S ? (S - 1).toString() : 'K';
+
+    await page.click('text=Nuevo Paciente');
+    await page.fill('input[name="name"]', name);
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[id="rut_num"]', rutNum.toString());
+    await page.fill('input[id="rut_dv"]', rutDv);
+    await page.fill('input[name="password"]', 'Password123!');
+
+    // Select Region first
+    await page.selectOption('select[name="region"]', { label: 'Metropolitana' });
+
+    // Wait for commune population
+    await page.waitForTimeout(1000);
+
+    await page.selectOption('select[name="commune"]', 'SANTIAGO');
+
+    // Fill other fields to satisfy schema
+    await page.selectOption('select[name="gender"]', 'Masculino');
+    await page.fill('input[name="birthDate"]', '1990-01-01');
+    await page.fill('input[name="address"]', 'Calle Falsa 123');
+
+    await page.click('button:has-text("Crear Paciente")');
+
+    // Verify modal closes (implies success)
+    if (await page.getByRole('heading', { name: 'Nuevo Paciente' }).isVisible()) {
+        const error = await page.locator('.text-red-500').textContent();
+        throw new Error(`Patient creation failed with error: ${error}`);
+    }
+    await expect(page.getByRole('heading', { name: 'Nuevo Paciente' })).not.toBeVisible();
+
+    // Wait for the patient to appear in the table
+    // Use search to find the patient in case of pagination
+    await page.fill('input[placeholder="Buscar por nombre, RUT, email..."]', name);
+    await expect(page.getByText(name)).toBeVisible();
+
+    // Click Edit button for this patient
+    // We need to find the row with 'Edit Candidate' and click the edit button in it.
+    const row = page.getByRole('row', { name: name });
+    await row.getByTitle('Editar').click();
+
+    await expect(page.getByText('Editar Paciente')).toBeVisible();
+
+    // Verify fields are pre-filled correctly
+    await expect(page.locator('input[name="name"]')).toHaveValue(name);
+    await expect(page.locator('input[id="edit_rut_num"]')).toHaveValue(rutNum.toString());
+    await expect(page.locator('input[id="edit_rut_dv"]')).toHaveValue('K');
+    await expect(page.locator('input[name="email"]')).toHaveValue(email);
+
+    // Edit fields
+    const newName = `Edited Name ${uniqueId}`;
+    await page.fill('input[name="name"]', newName);
+
+    const newEmail = `edited_${uniqueId}@test.com`;
+    await page.fill('input[name="email"]', newEmail);
+
+    // Changing RUT might be tricky if it affects the ID or uniqueness, but let's try
+    await page.fill('input[id="edit_rut_num"]', '11222333');
+    await page.fill('input[id="edit_rut_dv"]', '9');
+
+    await page.click('button:has-text("Guardar Cambios")');
+
+    // Verify changes in the table
+    await expect(page.getByText(newName)).toBeVisible();
+    await expect(page.getByText(newEmail)).toBeVisible();
+    // Verify RUT formatting in table if possible, or just implicit visibility
+    await expect(page.getByText('11.222.333-9')).toBeVisible();
+});

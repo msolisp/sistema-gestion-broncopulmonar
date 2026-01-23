@@ -8,6 +8,8 @@ import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { logAction } from './logger';
 import { loggers } from './structured-logger';
+import { createPatient, createStaffUser, updatePatient, checkPersonaExists, getPersonaByEmail } from '@/lib/fhir-adapters';
+import { validarRutChileno, limpiarRut } from '@/lib/validators';
 import { put } from '@vercel/blob';
 import {
     LoginSchema,
@@ -40,12 +42,16 @@ export async function authenticate(
 
     try {
         console.log('Attempting login for:', email);
+        console.log('Environment E2E_TESTING:', process.env.E2E_TESTING);
+        const portalType = formData.get('portal_type');
+        console.log('Portal Type:', portalType);
 
         // 1. VISUAL CAPTCHA VALIDATION (First layer)
         const visualCaptchaValue = formData.get('visual-captcha-value') as string;
         const visualCaptchaToken = formData.get('visual-captcha-token') as string;
 
-        if (visualCaptchaValue && visualCaptchaToken) {
+        // Skip CAPTCHA validation in E2E testing mode
+        if (process.env.E2E_TESTING !== 'true' && visualCaptchaValue && visualCaptchaToken) {
             try {
                 const { jwtVerify } = await import('jose');
                 const secret = new TextEncoder().encode(
@@ -66,8 +72,9 @@ export async function authenticate(
         }
 
         // 2. Turnstile Captcha Verification (Second layer)
+        // Skip Turnstile validation in E2E testing mode
         const captchaToken = formData.get('cf-turnstile-response');
-        if (process.env.NODE_ENV === 'production' || captchaToken) {
+        if (process.env.E2E_TESTING !== 'true' && (process.env.NODE_ENV === 'production' || captchaToken)) {
             if (!captchaToken) {
                 return 'Captcha inválido. Por favor intenta de nuevo.';
             }
@@ -113,7 +120,7 @@ export async function authenticate(
         }
 
         // Pre-check role to determine redirection
-        const portalType = formData.get('portal_type');
+        // const portalType = formData.get('portal_type'); // Already got above for debug
         let role = '';
         let mustChangePassword = false;
         let active = true;
@@ -169,8 +176,10 @@ export async function authenticate(
 
         if (mustChangePassword) {
             redirectTo = '/change-password';
-        } else if (['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST'].includes(role)) {
+        } else if (role === 'ADMIN') {
             redirectTo = '/dashboard';
+        } else if (['KINESIOLOGIST', 'RECEPTIONIST'].includes(role)) {
+            redirectTo = '/patients';
         } else {
             redirectTo = '/portal';
         }
@@ -219,6 +228,7 @@ export async function authenticate(
 
 export async function registerPatient(prevState: any, formData: FormData) {
     const rawData = Object.fromEntries(formData);
+    const { parseFullName } = await import('./utils');
 
     // Combine RUT
     const rutBody = formData.get('rutBody') as string;
@@ -239,22 +249,36 @@ export async function registerPatient(prevState: any, formData: FormData) {
 
     const { email, password, name, rut, commune } = validation.data;
 
-    // Check if patient exists
-    const existingPatient = await prisma.patient.findUnique({ where: { email } });
-    if (existingPatient) return { message: 'Email already exists' };
+    // Validate RUT format
+    if (!validarRutChileno(rut)) {
+        return { message: 'RUT inválido. Verifica el formato y dígito verificador.' };
+    }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Check if patient exists using FHIR adapter
+    const existingPersona = await checkPersonaExists(rut, email);
+    if (existingPersona) {
+        if (existingPersona.email === email) {
+            return { message: 'El email ya está registrado' };
+        }
+        if (existingPersona.rut === rut) {
+            return { message: 'El RUT ya está registrado' };
+        }
+    }
+
+    // Parse name using helper
+    const { nombre, apellidoPaterno, apellidoMaterno } = parseFullName(name);
 
     try {
-        await prisma.patient.create({
-            data: {
-                email,
-                password: hashedPassword,
-                name,
-                rut,
-                commune,
-                active: true,
-            }
+        // Use FHIR adapter to create patient
+        await createPatient({
+            rut,
+            nombre: nombre || name,
+            apellidoPaterno: apellidoPaterno || 'SIN_APELLIDO',
+            apellidoMaterno,
+            email,
+            password,
+            comuna: commune,
+            creadoPor: 'SELF_REGISTRATION'
         });
     } catch (e) {
         console.error(e)
@@ -282,25 +306,26 @@ export async function bookAppointment(prevState: any, formData: FormData) {
     const { date, notes } = validation.data;
     const dateStr = date;
 
-    const patient = await prisma.patient.findUnique({
-        where: { email: sessionData.user.email },
+    // Find FichaClinica by user ID (session.user.id is now Persona.id)
+    const fichaClinica = await prisma.fichaClinica.findUnique({
+        where: { personaId: sessionData.user.id },
     });
 
-    if (!patient) {
-        return { message: `Patient profile not found for user: ${sessionData.user.email}` };
+    if (!fichaClinica) {
+        return { message: `Ficha clínica no encontrada para el usuario: ${sessionData.user.email}` };
     }
 
     try {
-        await prisma.appointment.create({
+        await prisma.cita.create({
             data: {
-                patientId: patient.id,
-                date: new Date(dateStr),
-                notes,
-                status: 'PENDING'
+                fichaClinicaId: fichaClinica.id,
+                fecha: new Date(dateStr),
+                notas: notes,
+                estado: 'PENDIENTE'
             }
         });
     } catch (e) {
-        return { message: 'Error booking appointment' };
+        return { message: 'Error al agendar cita' };
     }
 
     return { message: 'Success' };
@@ -324,25 +349,35 @@ export async function updatePatientProfile(prevState: any, formData: FormData) {
 
     const { name, phone, address, commune, gender, healthSystem, cota, rut, birthDate } = validation.data;
 
+    // Parse name using helper
+    const { parseFullName } = await import('./utils');
+    const { nombre, apellidoPaterno, apellidoMaterno } = parseFullName(name);
+
+    // Parse sexo from gender
+    let sexo: 'M' | 'F' | 'OTRO' | 'NO_ESPECIFICADO' | undefined;
+    if (gender === 'M') sexo = 'M';
+    else if (gender === 'F') sexo = 'F';
+    else if (gender) sexo = 'OTRO';
+
     try {
-        await prisma.patient.update({
-            where: { id: session.user.id },
-            data: {
-                name,
-                phone,
-                address,
-                commune,
-                gender,
-                healthSystem,
-                cota,
-                rut,
-                birthDate: birthDate ? new Date(birthDate) : undefined
-            }
+        // Use FHIR adapter
+        await updatePatient(session.user.id, {
+            nombre: nombre || name,
+            apellidoPaterno: apellidoPaterno || 'SIN_APELLIDO',
+            apellidoMaterno,
+            telefono: phone,
+            direccion: address,
+            comuna: commune,
+            fechaNacimiento: birthDate ? new Date(birthDate) : undefined,
+            sexo,
+            prevision: healthSystem,
+            cota: cota !== undefined ? parseFloat(cota as any) : undefined,
+            modificadoPor: session.user.email || 'SELF'
         });
 
         revalidatePath('/portal', 'layout');
         revalidatePath('/portal/perfil');
-        revalidatePath('/', 'layout'); // Just to be safe
+        revalidatePath('/', 'layout');
         return { message: 'Success' };
     } catch (e) {
         console.error(e);
@@ -356,7 +391,10 @@ export async function adminCreatePatient(prevState: any, formData: FormData) {
     const { auth } = await import('@/auth');
     const session = await auth();
     if (!session?.user?.email) return { message: 'Unauthorized' };
-    if ((session.user as any).role !== 'ADMIN') return { message: 'Unauthorized: Admin access required' };
+    const userRole = (session.user as any).role;
+    if (!['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST'].includes(userRole)) {
+        return { message: 'Unauthorized: Access denied' };
+    }
 
     const rawData = Object.fromEntries(formData);
     const validation = AdminCreatePatientSchema.safeParse(rawData);
@@ -371,26 +409,53 @@ export async function adminCreatePatient(prevState: any, formData: FormData) {
         return { message: 'La contraseña es obligatoria para nuevos usuarios.' };
     }
 
-    const existingPatient = await prisma.patient.findUnique({ where: { email } });
-    if (existingPatient) return { message: 'El email ya existe' };
+    // Validate RUT format
+    if (!validarRutChileno(rut)) {
+        return { message: 'RUT inválido. Verifica el formato y dígito verificador.' };
+    }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Check RUT uniqueness separately
+    const personaWithRut = await prisma.persona.findUnique({
+        where: { rut }
+    });
+    if (personaWithRut) {
+        return { message: 'El RUT ya está registrado en el sistema' };
+    }
+
+    // Check email uniqueness separately
+    const personaWithEmail = await prisma.persona.findFirst({
+        where: { email }
+    });
+    if (personaWithEmail) {
+        return { message: 'El email ya está registrado en el sistema' };
+    }
+
+    // Parse name using helper
+    const { parseFullName } = await import('./utils');
+    const { nombre, apellidoPaterno, apellidoMaterno } = parseFullName(name);
+
+    // Parse sexo from gender
+    let sexo: 'M' | 'F' | 'OTRO' | 'NO_ESPECIFICADO' | undefined;
+    if (gender === 'M') sexo = 'M';
+    else if (gender === 'F') sexo = 'F';
+    else if (gender) sexo = 'OTRO';
 
     try {
-        await prisma.patient.create({
-            data: {
-                email,
-                password: hashedPassword,
-                name,
-                rut,
-                commune,
-                region,
-                address,
-                gender,
-                healthSystem,
-                birthDate: birthDate ? new Date(birthDate) : undefined,
-                active: true,
-            }
+        // Use FHIR adapter to create patient
+        await createPatient({
+            rut,
+            nombre: nombre || name,
+            apellidoPaterno: apellidoPaterno || 'SIN_APELLIDO',
+            apellidoMaterno,
+            email,
+            password,
+            comuna: commune,
+            region,
+            direccion: address,
+            fechaNacimiento: birthDate ? new Date(birthDate) : undefined,
+            sexo,
+            prevision: healthSystem,
+            creadoPor: session.user.email || 'ADMIN'
         });
 
         // Add Audit Log
@@ -411,7 +476,10 @@ export async function adminUpdatePatient(prevState: any, formData: FormData) {
     const { auth } = await import('@/auth');
     const session = await auth();
     if (!session?.user?.email) return { message: 'Unauthorized' };
-    if ((session.user as any).role !== 'ADMIN') return { message: 'Unauthorized: Admin access required' };
+    const userRole = (session.user as any).role;
+    if (!['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST'].includes(userRole)) {
+        return { message: 'Unauthorized: Access denied' };
+    }
 
     const rawData = {
         ...Object.fromEntries(formData),
@@ -423,24 +491,63 @@ export async function adminUpdatePatient(prevState: any, formData: FormData) {
         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
     }
 
-    const { id, name, rut, commune, region, address, gender, healthSystem, birthDate, diagnosisDate, active } = validation.data;
+    const { id, name, email, rut, commune, region, address, gender, healthSystem, birthDate, diagnosisDate, active, password } = validation.data;
+
+    // Validate RUT format
+    if (!validarRutChileno(rut)) {
+        return { message: 'RUT inválido. Verifica el formato y dígito verificador.' };
+    }
 
     try {
-        await prisma.patient.update({
-            where: { id },
-            data: {
-                name,
-                rut,
-                active,
-                commune,
-                region,
-                address,
-                gender,
-                healthSystem,
-                birthDate: birthDate ? new Date(birthDate) : undefined,
-                diagnosisDate: diagnosisDate ? new Date(diagnosisDate) : undefined
+        // Find Persona by RUT (new schema)
+        const persona = await prisma.persona.findUnique({
+            where: { rut }
+        });
+
+        if (!persona) {
+            return { message: 'Paciente no encontrado' };
+        }
+
+        // Check if email is taken by another persona
+        const duplicateEmail = await prisma.persona.findFirst({
+            where: {
+                email,
+                NOT: { id: persona.id }
             }
         });
+
+        if (duplicateEmail) {
+            return { message: 'El email ya está en uso por otro paciente.' };
+        }
+
+        // Parse name using helper
+        const { parseFullName } = await import('./utils');
+        const { nombre, apellidoPaterno, apellidoMaterno } = parseFullName(name);
+
+        // Parse gender
+        let sexo: 'M' | 'F' | 'OTRO' | 'NO_ESPECIFICADO' | undefined;
+        if (gender === 'Masculino') sexo = 'M';
+        else if (gender === 'Femenino') sexo = 'F';
+        else if (gender === 'Otro') sexo = 'OTRO';
+        else if (gender) sexo = 'OTRO'; // Default any other value to OTRO
+
+        // Use FHIR adapter to update patient
+        await updatePatient(persona.id, {
+            email,
+            nombre: nombre || name,
+            apellidoPaterno: apellidoPaterno || 'SIN_APELLIDO',
+            apellidoMaterno,
+            comuna: commune,
+            region,
+            direccion: address,
+            fechaNacimiento: birthDate ? new Date(birthDate) : undefined,
+            sexo,
+            prevision: healthSystem,
+            fechaDiagnostico: diagnosisDate ? new Date(diagnosisDate) : undefined,
+            password: password && password.trim().length >= 6 ? password : undefined,
+            modificadoPor: session.user.email || 'ADMIN'
+        });
+
         revalidatePath('/dashboard');
         revalidatePath('/patients');
         return { message: 'Success' };
@@ -454,7 +561,10 @@ export async function deletePatient(prevState: any, formData: FormData) {
     const { auth } = await import('@/auth');
     const session = await auth();
     if (!session?.user?.email) return { message: 'Unauthorized' };
-    if ((session.user as any).role !== 'ADMIN') return { message: 'Unauthorized: Admin access required' };
+    const userRole = (session.user as any).role;
+    if (!['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST'].includes(userRole)) {
+        return { message: 'Unauthorized: Access denied' };
+    }
 
     const rawData = Object.fromEntries(formData);
     const validation = DeletePatientSchema.safeParse(rawData);
@@ -465,9 +575,34 @@ export async function deletePatient(prevState: any, formData: FormData) {
 
     const { id } = validation.data;
 
+    // Find corresponding Persona via FichaClinica
+    const fichaClinica = await prisma.fichaClinica.findUnique({
+        where: { numeroFicha: id }
+    });
+
+    if (!fichaClinica) {
+        return { message: 'Paciente no encontrado en el nuevo sistema' };
+    }
+
     try {
-        await prisma.patient.delete({
-            where: { id }
+        // Soft delete: mark as inactive
+        await prisma.persona.update({
+            where: { id: fichaClinica.personaId },
+            data: {
+                activo: false,
+                eliminadoEn: new Date(),
+                eliminadoPor: session.user.email || 'ADMIN'
+            }
+        });
+
+        await prisma.fichaClinica.update({
+            where: { id: fichaClinica.id },
+            data: {
+                activo: false,
+                eliminadoEn: new Date(),
+                eliminadoPor: session.user.email || 'ADMIN',
+                motivoEliminacion: 'Eliminado por administrador'
+            }
         });
 
         revalidatePath('/dashboard');
@@ -493,6 +628,12 @@ export async function uploadMedicalExam(formData: FormData) {
 
     if (!file || !patientId || !centerName || !doctorName || !examDate) {
         return { message: 'Faltan campos obligatorios' };
+    }
+
+    // 5MB Limit Check
+    const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+    if (file.size > MAX_SIZE) {
+        return { message: 'El archivo excede el límite de 5MB' };
     }
 
     // RBAC & IDOR Check
@@ -568,10 +709,31 @@ export async function adminCreateSystemUser(prevState: any, formData: FormData) 
     if (!session?.user?.email) return { message: 'Unauthorized' };
     if ((session.user as any).role !== 'ADMIN') return { message: 'Unauthorized: Admin access required' };
 
+    // Handle separate RUT fields if present
+    const rutBody = formData.get('rutBody') as string;
+    const rutDv = formData.get('rutDv') as string;
+    let rut = formData.get('rut') as string;
+
+    if (rutBody && rutDv) {
+        // Simple formatting: remove dots from body, uppercase DV
+        const cleanBody = rutBody.replace(/\D/g, '');
+        // Just verify basic structure before formatting
+        if (!cleanBody || cleanBody.length < 1) {
+            return { message: 'RUT inválido. El cuerpo debe ser numérico.' };
+        }
+        rut = `${cleanBody}-${rutDv.toUpperCase()}`;
+    }
+
     const rawData = {
         ...Object.fromEntries(formData),
+        rut: rut, // Ensure unified RUT is used
         active: formData.get('active') === 'on'
     };
+
+    // Remove individual fields to avoid schema errors if strict
+    delete rawData.rutBody;
+    delete rawData.rutDv;
+
     const validation = AdminCreateSystemUserSchema.safeParse(rawData);
 
     if (!validation.success) {
@@ -579,27 +741,54 @@ export async function adminCreateSystemUser(prevState: any, formData: FormData) 
     }
 
     const { name, email, password, role, active } = validation.data;
+    rut = validation.data.rut; // Use validated/transformed RUT
 
     // Prevent creation of new ADMIN users
     if (role === 'ADMIN') {
         return { message: 'No se puede crear otro administrador. Solo puede existir un administrador en el sistema.' };
     }
 
-    const existingUser = await prisma.user.findUnique({ where: { email } });
-    if (existingUser) return { message: 'El email ya existe' };
+    // Validate RUT format - using clean logic
+    // RUT should be like "10904419-9" (no dots) or "10904419-9" with dots depending on what frontend sends
+    // validarRutChileno handles determining format
+    if (!validarRutChileno(rut)) {
+        return { message: 'RUT inválido. Verifica el formato y dígito verificador.' };
+    }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Check if user exists using FHIR adapter
+    const existingPersona = await checkPersonaExists(rut, email);
+    if (existingPersona) {
+        if (existingPersona.email === email) {
+            return { message: 'El email ya existe' };
+        }
+        if (existingPersona.rut === rut) {
+            return { message: 'RUT ya está en uso por otro usuario' };
+        }
+    }
+
+    // Parse name using helper
+    const { parseFullName } = await import('./utils');
+    const { nombre, apellidoPaterno, apellidoMaterno } = parseFullName(name);
+
+    // Map legacy role to RolUsuario enum
+    const rolMap: Record<string, any> = {
+        'KINESIOLOGIST': 'KINESIOLOGO',
+        'ADMIN': 'ADMIN',
+        'RECEPTIONIST': 'RECEPCIONISTA',
+    };
+    const rolEnum = rolMap[role] || 'RECEPCIONISTA';
 
     try {
-        await prisma.user.create({
-            data: {
-                email,
-                password: hashedPassword,
-                name,
-                role,
-                active: active ?? true,
-                mustChangePassword: true
-            }
+        // Use FHIR adapter to create staff user
+        await createStaffUser({
+            rut,
+            nombre: nombre || name,
+            apellidoPaterno: apellidoPaterno || 'SIN_APELLIDO',
+            apellidoMaterno,
+            email,
+            password,
+            rol: rolEnum,
+            creadoPor: session.user.email || 'ADMIN'
         });
         await logAction('CREATE_SYSTEM_USER', `User created: ${email}, Role: ${role}`, (session.user as any).id, session.user.email);
         revalidatePath('/dashboard');
@@ -616,19 +805,47 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
     if (!session?.user?.email) return { message: 'Unauthorized' };
     if ((session.user as any).role !== 'ADMIN') return { message: 'Unauthorized: Admin access required' };
 
+    // Handle separate RUT fields if present for update
+    const rutBody = formData.get('rutBody') as string;
+    const rutDv = formData.get('rutDv') as string;
+    let rut = formData.get('rut') as string;
+
+    if (rutBody && rutDv) {
+        const cleanBody = rutBody.replace(/\D/g, '');
+        if (cleanBody && cleanBody.length > 0) {
+            rut = `${cleanBody}-${rutDv.toUpperCase()}`;
+        }
+    }
+
     const rawData = {
         ...Object.fromEntries(formData),
-        active: formData.get('active') === 'on' // Checkbox handling
+        rut: rut,
+        active: formData.get('active') === 'on'
     };
 
-    // Zod expects booleans, so we handled it above.
+    // Remove separate fields
+    delete rawData.rutBody;
+    delete rawData.rutDv;
+
+    // Handle optional password
+    if (rawData.password === '' || (rawData as any).password === undefined) {
+        delete (rawData as any).password;
+    }
+
     const validation = AdminUpdateSystemUserSchema.safeParse(rawData);
 
     if (!validation.success) {
         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
     }
 
+    // Extract validated data (rut is here)
     const { id, name, email, role, active } = validation.data;
+    rut = validation.data.rut; // Use validated rut
+
+    // Validate RUT format if provided
+    if (rut && !validarRutChileno(rut)) {
+        return { message: 'RUT inválido. Verifica el formato y dígito verificador.' };
+    }
 
     // Check if email exists for ANOTHER user
     const existingUser = await prisma.user.findFirst({
@@ -640,6 +857,16 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
 
     if (existingUser) {
         return { message: 'El email ya está en uso por otro usuario.' };
+    }
+
+    if (rut) {
+        const existingUserByRut = await prisma.user.findFirst({
+            where: {
+                rut,
+                id: { not: id }
+            }
+        });
+        if (existingUserByRut) return { message: 'El RUT ya está en uso por otro usuario.' };
     }
 
     // Check if target user is ADMIN
@@ -775,19 +1002,14 @@ export async function seedPermissions() {
     if (!session?.user?.email || (session.user as any).role !== 'ADMIN') return { message: 'Unauthorized' };
 
     const actions = [
-        // Pacientes
-        'Crear Pacientes',
+        // Módulos Principales
+        'Ver Agendamiento',
         'Ver Pacientes',
-        'Editar Pacientes',
-        'Eliminar Pacientes',
-        // Usuarios
-        'Crear Usuarios',
-        'Ver Usuarios',
-        'Editar Usuarios',
-        'Eliminar Usuarios',
-        // Otros
         'Ver Reportes BI',
-        'Configuración Global'
+        'Ver Asistente',
+        'Ver HL7',
+        'Configuración Global',
+        'Ver Usuarios'
     ];
 
     const defaultPermissions = [

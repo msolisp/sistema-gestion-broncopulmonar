@@ -22,13 +22,13 @@ export async function uploadPatientExam(
             return { message: 'No autorizado. Debe iniciar sesión.' }
         }
 
-        // Find patient by email
-        const patient = await prisma.patient.findUnique({
-            where: { email: session.user.email },
+        // Find FichaClinica by personaId (session.user.id is now Persona.id)
+        const fichaClinica = await prisma.fichaClinica.findUnique({
+            where: { personaId: session.user.id },
         })
 
-        if (!patient) {
-            return { message: 'Paciente no encontrado.' }
+        if (!fichaClinica) {
+            return { message: 'Ficha clínica no encontrada.' }
         }
 
         // Extract form data
@@ -59,10 +59,10 @@ export async function uploadPatientExam(
             return { message: 'Solo se permiten archivos PDF.' }
         }
 
-        // Validate file size (10MB max)
-        const maxSize = 10 * 1024 * 1024 // 10MB
+        // Validate file size (5MB max)
+        const maxSize = 5 * 1024 * 1024 // 5MB
         if (file.size > maxSize) {
-            return { message: 'El archivo no debe superar los 10MB.' }
+            return { message: 'El archivo no debe superar los 5MB.' }
         }
 
         // 2. Check Magic Bytes (Secure check)
@@ -100,30 +100,35 @@ export async function uploadPatientExam(
         // Parse exam date
         const examDate = new Date(examDateStr)
 
-        // Save to database
-        const exam = await prisma.medicalExam.create({
+        // Save to database using FHIR model
+        const exam = await prisma.examenMedico.create({
             data: {
-                patientId: patient.id,
-                source: 'portal pacientes',
-                uploadedByUserId: patient.id,
-                centerName: centerName.trim(),
-                doctorName: doctorName.trim(),
-                examDate: examDate,
-                fileUrl: fileUrl,
-                fileName: file.name,
+                fichaClinicaId: fichaClinica.id,
+                origen: 'PORTAL_PACIENTE',
+                subidoPor: session.user.id,
+                nombreCentro: centerName.trim(),
+                nombreDoctor: doctorName.trim(),
+                fechaExamen: examDate,
+                archivoUrl: fileUrl,
+                archivoNombre: file.name,
             },
         })
 
         // Create notification for internal portal (non-blocking)
         try {
-            await prisma.notification.create({
+            // Get persona for notification message
+            const persona = await prisma.persona.findUnique({
+                where: { id: session.user.id }
+            });
+
+            await prisma.notificacionMedica.create({
                 data: {
-                    type: 'EXAM_UPLOADED',
-                    title: 'Nuevo examen subido',
-                    message: `${patient.name} subió un examen médico de ${centerName.trim()}`,
-                    patientId: patient.id,
-                    examId: exam.id,
-                    read: false,
+                    fichaClinicaId: fichaClinica.id,
+                    tipo: 'EXAM_UPLOADED',
+                    titulo: 'Nuevo examen subido',
+                    mensaje: `${persona?.nombre} ${persona?.apellidoPaterno} subió un examen médico de ${centerName.trim()}`,
+                    examenId: exam.id,
+                    leido: false,
                 },
             })
         } catch (notifError) {

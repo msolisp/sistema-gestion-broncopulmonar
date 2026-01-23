@@ -15,7 +15,7 @@ export const RegisterPatientSchema = z.object({
         //.regex(/[0-9]/, { message: 'Debe contener al menos un número' })
         .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, { message: 'Debe contener al menos un carácter especial' }),
     rut: z.string().min(8, { message: 'RUT inválido' }), // Basic length check, ideally regex
-    commune: z.string().min(1, { message: 'Comuna requerida' }),
+    commune: z.string().min(1, { message: 'Debes seleccionar una comuna de residencia' }),
 });
 
 export const BookAppointmentSchema = z.object({
@@ -49,8 +49,8 @@ export const AdminCreatePatientSchema = z.object({
     name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
     email: z.string().email({ message: 'Email inválido' }),
     rut: z.string().min(8, { message: 'RUT inválido' }),
-    region: z.string().min(1, { message: 'Región requerida' }),
-    commune: z.string().min(1, { message: 'Comuna requerida' }),
+    region: z.string().min(1, { message: 'Debes seleccionar una región' }),
+    commune: z.string().min(1, { message: 'Debes seleccionar una comuna' }),
     address: z.string().optional(),
     gender: z.string().optional(),
     healthSystem: z.string().optional(),
@@ -61,8 +61,9 @@ export const AdminCreatePatientSchema = z.object({
 export const AdminUpdatePatientSchema = z.object({
     id: z.string().min(1, { message: 'ID de paciente requerido' }),
     name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
+    email: z.string().email({ message: 'Email inválido' }),
     rut: z.string().min(8, { message: 'RUT inválido' }),
-    region: z.string().min(1, { message: 'Región requerida' }).optional(),
+    region: z.string().min(1, { message: 'Debes seleccionar una región' }).optional(),
     commune: z.string().optional(),
     address: z.string().optional(),
     gender: z.string().optional(),
@@ -70,6 +71,7 @@ export const AdminUpdatePatientSchema = z.object({
     birthDate: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), { message: 'Fecha de nacimiento inválida' }),
     diagnosisDate: z.string().optional().refine((val) => !val || !isNaN(Date.parse(val)), { message: 'Fecha de diagnóstico inválida' }),
     active: z.boolean(),
+    password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres' }).optional().or(z.literal('')),
 });
 
 export const DeletePatientSchema = z.object({
@@ -86,6 +88,10 @@ export const AdminCreateSystemUserSchema = z.object({
         .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, { message: 'Debe contener al menos un carácter especial' }),
     role: z.enum(['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST']),
     active: z.boolean().optional(),
+    rut: z.string().optional(),
+    region: z.string().optional(),
+    commune: z.string().optional(),
+    address: z.string().optional(),
 });
 
 export const AdminUpdateSystemUserSchema = z.object({
@@ -94,4 +100,8 @@ export const AdminUpdateSystemUserSchema = z.object({
     email: z.string().email({ message: 'Email inválido' }),
     role: z.enum(['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST']),
     active: z.boolean(),
+    rut: z.string().optional().nullable(),
+    region: z.string().optional().nullable(),
+    commune: z.string().optional().nullable(),
+    address: z.string().optional().nullable(),
 });
