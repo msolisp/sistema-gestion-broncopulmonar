@@ -5,7 +5,7 @@ test.describe('Internal Portal - User Creation with Password Validation', () => 
     // Helper to login as admin
     async function loginAsAdmin(page: any) {
         await page.goto('/intranet/login');
-        await page.fill('input[type="email"]', 'admin@example.com');
+        await page.fill('input[type="email"]', 'admin@hospital.cl');
         await page.fill('input[type="password"]', 'Admin123!');
         await page.click('button[type="submit"]');
         await expect(page).toHaveURL(/\/dashboard/, { timeout: 30000 });

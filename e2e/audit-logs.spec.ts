@@ -7,7 +7,7 @@ test.describe('Audit Logs Verification', () => {
         // This generates a 'USER_LOGIN' event ideally, or at least we check previous events if login isn't logged 
         // (but usually login is logged).
         await page.goto('/intranet/login');
-        await page.fill('input[name="email"]', 'admin@example.com');
+        await page.fill('input[name="email"]', 'admin@hospital.cl');
         await page.fill('input[name="password"]', 'Admin123!');
         await page.click('button:has-text("Iniciar Sesión Segura")');
 
@@ -22,14 +22,14 @@ test.describe('Audit Logs Verification', () => {
         await expect(page.getByRole('heading', { name: 'Logs de Sistema' })).toBeVisible();
 
         // 4. Check for the specific log entry
-        const logEntry = page.locator('div').filter({ hasText: 'admin@example.com' }).first();
+        const logEntry = page.locator('div').filter({ hasText: 'admin@hospital.cl' }).first();
         await expect(logEntry).toBeVisible();
     });
 
     test('Should log Patient Creation event', async ({ page }) => {
         // 1. Login
         await page.goto('/intranet/login');
-        await page.fill('input[name="email"]', 'admin@example.com');
+        await page.fill('input[name="email"]', 'admin@hospital.cl');
         await page.fill('input[name="password"]', 'Admin123!');
         await page.click('button:has-text("Iniciar Sesión Segura")');
 
@@ -86,7 +86,7 @@ test.describe('Audit Logs Verification', () => {
         await expect(page.getByText('CREATE_PATIENT')).toBeVisible();
         // Look for details containing the email or user
         const logRow = page.locator('div').filter({ hasText: 'CREATE_PATIENT' }).first();
-        await expect(logRow).toContainText('admin@example.com');
+        await expect(logRow).toContainText('admin@hospital.cl');
     });
 
 });

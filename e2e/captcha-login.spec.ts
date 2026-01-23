@@ -14,7 +14,7 @@ test.describe('CAPTCHA Login Flow', () => {
         await page.waitForSelector('input[placeholder="Ingresa el código"]', { timeout: 10000 });
 
         // 3. Llenar email y contraseña
-        await page.fill('#email', 'admin@example.com');
+        await page.fill('#email', 'admin@hospital.cl');
         await page.fill('#password', 'Admin123!');
 
         // 4. Obtener el código CAPTCHA de la imagen (para testing, usamos el token directamente)

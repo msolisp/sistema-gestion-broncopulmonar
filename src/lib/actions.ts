@@ -44,7 +44,9 @@ export async function authenticate(
         console.log('Attempting login for:', email);
         console.log('Environment E2E_TESTING:', process.env.E2E_TESTING);
         const portalType = formData.get('portal_type');
-        console.log('Portal Type:', portalType);
+        console.log('DEBUG: Auth Attempt:', email);
+        console.log('DEBUG: E2E_TESTING:', process.env.E2E_TESTING);
+        console.log('DEBUG: Portal Type:', portalType);
 
         // 1. VISUAL CAPTCHA VALIDATION (First layer)
         const visualCaptchaValue = formData.get('visual-captcha-value') as string;
@@ -131,10 +133,27 @@ export async function authenticate(
                 select: { role: true, mustChangePassword: true, active: true }
             });
             if (!user) {
-                // If not found in User table, check if it's a Patient trying to login
-                const patient = await prisma.patient.findUnique({ where: { email } });
-                if (patient) {
-                    return 'No tiene acceso al portal interno.';
+                // If not found in User table, check if exists as Persona (Staff)
+                const persona = await prisma.persona.findUnique({
+                    where: { email },
+                    include: { usuarioSistema: true }
+                });
+                if (persona && persona.usuarioSistema) {
+                    // Map generic roles if needed or usage direct role
+                    const roleMap: Record<string, string> = {
+                        'KINESIOLOGO': 'KINESIOLOGIST',
+                        'MEDICO': 'DOCTOR',
+                        'ADMIN': 'ADMIN',
+                        'RECEPCIONISTA': 'RECEPTIONIST'
+                    };
+                    role = roleMap[persona.usuarioSistema.rol] || persona.usuarioSistema.rol;
+                    active = persona.activo && persona.usuarioSistema.activo;
+                } else {
+                    // Check if it is a patient trying to access internal portal
+                    const patientPersona = await prisma.persona.findUnique({ where: { email } });
+                    if (patientPersona) {
+                        return 'No tiene acceso al portal interno.';
+                    }
                 }
                 // Otherwise let signIn handle invalid credentials
             } else {
@@ -143,13 +162,14 @@ export async function authenticate(
                 active = user.active;
             }
         } else {
-            const patient = await prisma.patient.findUnique({
+            // Check Persona (Patient)
+            const persona = await prisma.persona.findUnique({
                 where: { email },
-                select: { active: true }
+                select: { activo: true }
             });
-            if (patient) {
+            if (persona) {
                 role = 'PATIENT';
-                active = patient.active;
+                active = persona.activo;
             }
         }
 
@@ -169,8 +189,11 @@ export async function authenticate(
                 // The explicit message "No tiene acceso" helps if a USER (Staff) tries to login but has restricted role?
                 // Or if we want to give feedback to patient.
                 // If we want to check if it IS a patient trying:
-                const isPatient = await prisma.patient.findUnique({ where: { email } });
-                if (isPatient) return 'No tiene acceso al portal interno.';
+                // Logic hole: Patient won't be found in User table.
+                const isPatient = await prisma.persona.findUnique({ where: { email } });
+                // If found in Persona but NO UsuarioSistema, it is likely a patient
+                const isStaff = await prisma.usuarioSistema.findFirst({ where: { persona: { email } } });
+                if (isPatient && !isStaff) return 'No tiene acceso al portal interno.';
             }
         }
 
@@ -360,6 +383,7 @@ export async function updatePatientProfile(prevState: any, formData: FormData) {
     else if (gender) sexo = 'OTRO';
 
     try {
+        if (!session.user?.id) return { message: 'Session error: No user ID' };
         // Use FHIR adapter
         await updatePatient(session.user.id, {
             nombre: nombre || name,
@@ -436,7 +460,10 @@ export async function adminCreatePatient(prevState: any, formData: FormData) {
 
     // Parse sexo from gender
     let sexo: 'M' | 'F' | 'OTRO' | 'NO_ESPECIFICADO' | undefined;
-    if (gender === 'M') sexo = 'M';
+    if (gender === 'Masculino') sexo = 'M';
+    else if (gender === 'Femenino') sexo = 'F';
+    else if (gender === 'Otro') sexo = 'OTRO';
+    else if (gender === 'M') sexo = 'M';
     else if (gender === 'F') sexo = 'F';
     else if (gender) sexo = 'OTRO';
 
@@ -577,11 +604,11 @@ export async function deletePatient(prevState: any, formData: FormData) {
 
     // Find corresponding Persona via FichaClinica
     const fichaClinica = await prisma.fichaClinica.findUnique({
-        where: { numeroFicha: id }
+        where: { personaId: id }
     });
 
     if (!fichaClinica) {
-        return { message: 'Paciente no encontrado en el nuevo sistema' };
+        return { message: 'Ficha clínica no encontrada para el nuevo sistema' };
     }
 
     try {
@@ -639,11 +666,11 @@ export async function uploadMedicalExam(formData: FormData) {
     // RBAC & IDOR Check
     const userRole = (session.user as any).role;
     if (userRole !== 'ADMIN' && userRole !== 'KINESIOLOGIST') {
-        const patient = await prisma.patient.findUnique({
+        const persona = await prisma.persona.findUnique({
             where: { email: session.user.email as string },
         });
 
-        if (!patient || patient.id !== patientId) {
+        if (!persona || persona.id !== patientId) {
             return { message: 'No autorizado para subir exámenes a este perfil.' };
         }
     }
@@ -675,7 +702,7 @@ export async function uploadMedicalExam(formData: FormData) {
         if ((process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') && !process.env.BLOB_READ_WRITE_TOKEN) {
             console.warn('Using Mock Upload (No BLOB_READ_WRITE_TOKEN provided)');
             // Use localhost API route instead of mock-storage.local for iframe compatibility
-            fileUrl = `http://localhost:3000/api/mock-storage/${fileName}`;
+            fileUrl = `/api/mock-storage/${fileName}`;
         } else {
             // Upload to Vercel Blob
             const blob = await put(fileName, file, {
@@ -684,14 +711,40 @@ export async function uploadMedicalExam(formData: FormData) {
             fileUrl = blob.url;
         }
 
-        await prisma.medicalExam.create({
+        // Find FichaClinica
+        const ficha = await prisma.fichaClinica.findUnique({
+            where: { personaId: patientId }
+        });
+
+        if (!ficha) {
+            return { message: 'Ficha clínica no encontrada para este paciente.' };
+        }
+
+        const userRole = (session.user as any).role;
+        const origen = userRole === 'PATIENT' ? 'PORTAL_PACIENTES' : 'PORTAL_INTERNO';
+
+        await prisma.examenMedico.create({
             data: {
-                patientId,
-                centerName,
-                doctorName,
-                examDate: new Date(examDate),
-                fileUrl,
-                fileName: file.name
+                fichaClinicaId: ficha.id,
+                fechaExamen: new Date(examDate),
+                nombreCentro: centerName,
+                nombreDoctor: doctorName,
+                archivoUrl: fileUrl,
+                archivoNombre: file.name,
+                revisado: false,
+                origen: origen,
+                subidoPor: session.user.email
+            }
+        });
+
+        // Audit Log
+        await prisma.systemLog.create({
+            data: {
+                action: 'UPLOAD_EXAM',
+                details: `Patient: ${patientId}, File: ${file.name}, Origin: ${origen}`,
+                userId: session.user.id || 'system',
+                userEmail: session.user.email || 'system',
+                ipAddress: '::1'
             }
         });
 
@@ -724,9 +777,9 @@ export async function adminCreateSystemUser(prevState: any, formData: FormData) 
         rut = `${cleanBody}-${rutDv.toUpperCase()}`;
     }
 
-    const rawData = {
+    const rawData: Record<string, any> = {
         ...Object.fromEntries(formData),
-        rut: rut, // Ensure unified RUT is used
+        rut: rut || '', // Ensure no undefined
         active: formData.get('active') === 'on'
     };
 
@@ -740,7 +793,8 @@ export async function adminCreateSystemUser(prevState: any, formData: FormData) 
         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
     }
 
-    const { name, email, password, role, active } = validation.data;
+    const { name, email, role, active } = validation.data;
+    const password = validation.data.password || '';
     rut = validation.data.rut; // Use validated/transformed RUT
 
     // Prevent creation of new ADMIN users
@@ -817,9 +871,9 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
         }
     }
 
-    const rawData = {
+    const rawData: Record<string, any> = {
         ...Object.fromEntries(formData),
-        rut: rut,
+        rut: rut || '',
         active: formData.get('active') === 'on'
     };
 
@@ -828,8 +882,8 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
     delete rawData.rutDv;
 
     // Handle optional password
-    if (rawData.password === '' || (rawData as any).password === undefined) {
-        delete (rawData as any).password;
+    if (rawData.password === '' || rawData.password === undefined) {
+        delete rawData.password;
     }
 
     const validation = AdminUpdateSystemUserSchema.safeParse(rawData);
@@ -840,7 +894,7 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
 
     // Extract validated data (rut is here)
     const { id, name, email, role, active } = validation.data;
-    rut = validation.data.rut; // Use validated rut
+    rut = validation.data.rut || ''; // Use validated rut or empty string
 
     // Validate RUT format if provided
     if (rut && !validarRutChileno(rut)) {

@@ -6,7 +6,7 @@ test.describe.skip('Patient Management Workflow', () => {
     test('should allow admin to toggle patient active status', async ({ page }) => {
         // 1. Login as Admin
         await page.goto('/login');
-        await page.fill('input[name="email"]', 'admin@example.com');
+        await page.fill('input[name="email"]', 'admin@hospital.cl');
         await page.fill('input[name="password"]', 'Admin123!'); // Assuming these creds or similar
         await page.click('button:has-text("Ingresar")');
 

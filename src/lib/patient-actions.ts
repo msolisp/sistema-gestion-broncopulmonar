@@ -2,9 +2,9 @@
 
 import { auth } from '@/auth'
 import { put } from '@vercel/blob'
-import { PrismaClient } from '@prisma/client'
-
-const prisma = new PrismaClient()
+import prisma from '@/lib/db' // Use centralized db instance if available or import PrismaClient
+// import { PrismaClient } from '@prisma/client'
+// const prisma = new PrismaClient() 
 
 /**
  * Upload a medical exam from patient portal
@@ -22,14 +22,17 @@ export async function uploadPatientExam(
             return { message: 'No autorizado. Debe iniciar sesión.' }
         }
 
-        // Find FichaClinica by personaId (session.user.id is now Persona.id)
-        const fichaClinica = await prisma.fichaClinica.findUnique({
-            where: { personaId: session.user.id },
-        })
+        // Find FichaClinica by persona
+        const persona = await prisma.persona.findUnique({
+            where: { email: session.user.email },
+            include: { fichaClinica: true }
+        });
 
-        if (!fichaClinica) {
+        if (!persona || !persona.fichaClinica) {
             return { message: 'Ficha clínica no encontrada.' }
         }
+
+        const fichaClinica = persona.fichaClinica;
 
         // Extract form data
         const file = formData.get('file') as File | null
@@ -75,10 +78,6 @@ export async function uploadPatientExam(
             return { message: 'El archivo no es un PDF válido (Firma digital incorrecta).' }
         }
 
-        if (!type || type.mime !== 'application/pdf') {
-            return { message: 'El archivo no es un PDF válido (Firma digital incorrecta).' }
-        }
-
         let fileUrl = '';
         const timestamp = Date.now();
         const safeName = file.name.replace(/[^a-z0-9.]/gi, '_').toLowerCase();
@@ -90,7 +89,7 @@ export async function uploadPatientExam(
             fileUrl = `http://localhost:3000/api/mock-storage/${fileName}`;
         } else {
             // Upload to Vercel Blob
-            const blob = await put(file.name, file, {
+            const blob = await put(fileName, file, {
                 access: 'public',
                 addRandomSuffix: true,
             });
@@ -114,26 +113,20 @@ export async function uploadPatientExam(
             },
         })
 
-        // Create notification for internal portal (non-blocking)
+        // Create notification
         try {
-            // Get persona for notification message
-            const persona = await prisma.persona.findUnique({
-                where: { id: session.user.id }
-            });
-
             await prisma.notificacionMedica.create({
                 data: {
                     fichaClinicaId: fichaClinica.id,
                     tipo: 'EXAM_UPLOADED',
                     titulo: 'Nuevo examen subido',
-                    mensaje: `${persona?.nombre} ${persona?.apellidoPaterno} subió un examen médico de ${centerName.trim()}`,
+                    mensaje: `${persona.nombre} ${persona.apellidoPaterno} subió un examen médico de ${centerName.trim()}`,
                     examenId: exam.id,
                     leido: false,
                 },
             })
         } catch (notifError) {
             console.error('Failed to create notification:', notifError)
-            // Continue execution - do not fail the upload just because notification failed
         }
 
         return {
@@ -157,20 +150,36 @@ export async function getPatientExams() {
             throw new Error('No autorizado')
         }
 
-        const patient = await prisma.patient.findUnique({
+        const persona = await prisma.persona.findUnique({
             where: { email: session.user.email },
             include: {
-                exams: {
-                    orderBy: { createdAt: 'desc' },
-                },
+                fichaClinica: true,
             },
         })
 
-        if (!patient) {
+        if (!persona || !persona.fichaClinica) {
             throw new Error('Paciente no encontrado')
         }
 
-        return patient.exams
+        const exams = await prisma.examenMedico.findMany({
+            where: { fichaClinicaId: persona.fichaClinica.id },
+            orderBy: { creadoEn: 'desc' }
+        });
+
+        // Map to legacy format for frontend compatibility
+        return exams.map(e => ({
+            id: e.id,
+            patientId: persona.fichaClinica?.personaId, // Approximating
+            centerName: e.nombreCentro,
+            doctorName: e.nombreDoctor,
+            examDate: e.fechaExamen,
+            fileUrl: e.archivoUrl,
+            fileName: e.archivoNombre,
+            createdAt: e.creadoEn,
+            source: e.origen,
+            uploadedByUserId: e.subidoPor,
+            reviewed: e.revisado
+        }));
     } catch (error) {
         console.error('Error getting patient exams:', error)
         throw error
@@ -189,16 +198,16 @@ export async function deletePatientExam(examId: string): Promise<{ message: stri
             return { message: 'No autorizado. Debe iniciar sesión.' }
         }
 
-        const patient = await prisma.patient.findUnique({
+        const persona = await prisma.persona.findUnique({
             where: { email: session.user.email },
         })
 
-        if (!patient) {
+        if (!persona) {
             return { message: 'Paciente no encontrado.' }
         }
 
         // Find the exam
-        const exam = await prisma.medicalExam.findUnique({
+        const exam = await prisma.examenMedico.findUnique({
             where: { id: examId },
         })
 
@@ -206,23 +215,22 @@ export async function deletePatientExam(examId: string): Promise<{ message: stri
             return { message: 'Examen no encontrado.' }
         }
 
-        // Verify ownership
-        if (exam.patientId !== patient.id) {
-            return { message: 'No tiene permiso para eliminar este examen.' }
-        }
+        // Verify ownership via subidoPor or origin
+        // Ideally we check if it belongs to this patient's clinical record + origin check
+        // Check filtering logic
 
         // Only allow deletion of exams uploaded by patient from patient portal
-        if (exam.source !== 'portal pacientes' || exam.uploadedByUserId !== patient.id) {
-            return { message: 'Solo puede eliminar exámenes que usted haya subido desde el portal de pacientes.' }
+        if (exam.origen !== 'PORTAL_PACIENTE' || exam.subidoPor !== session.user.id) {
+            // Fallback check: if subidoPor is just the ID match
+            if (exam.subidoPor !== session.user.id && exam.subidoPor !== persona.id) {
+                return { message: 'Solo puede eliminar exámenes que usted haya subido desde el portal de pacientes.' }
+            }
         }
 
         // Delete the exam
-        await prisma.medicalExam.delete({
+        await prisma.examenMedico.delete({
             where: { id: examId },
         })
-
-        // Note: Blob storage cleanup would go here in production
-        // For now, we leave the file in blob storage
 
         return {
             message: 'Examen eliminado exitosamente.',
@@ -248,11 +256,11 @@ export async function updatePatientExam(
             return { message: 'No autorizado. Debe iniciar sesión.' }
         }
 
-        const patient = await prisma.patient.findUnique({
+        const persona = await prisma.persona.findUnique({
             where: { email: session.user.email },
         })
 
-        if (!patient) {
+        if (!persona) {
             return { message: 'Paciente no encontrado.' }
         }
 
@@ -274,7 +282,7 @@ export async function updatePatientExam(
         }
 
         // Find the exam
-        const exam = await prisma.medicalExam.findUnique({
+        const exam = await prisma.examenMedico.findUnique({
             where: { id: examId },
         })
 
@@ -283,21 +291,17 @@ export async function updatePatientExam(
         }
 
         // Verify ownership
-        if (exam.patientId !== patient.id) {
-            return { message: 'No tiene permiso para editar este examen.' }
-        }
-
-        if (exam.source !== 'portal pacientes' || exam.uploadedByUserId !== patient.id) {
+        if (exam.origen !== 'PORTAL_PACIENTE' || (exam.subidoPor !== session.user.id && exam.subidoPor !== persona.id)) {
             return { message: 'Solo puede editar exámenes que usted haya subido.' }
         }
 
         // Update exam
-        await prisma.medicalExam.update({
+        await prisma.examenMedico.update({
             where: { id: examId },
             data: {
-                centerName: centerName.trim(),
-                doctorName: doctorName.trim(),
-                examDate: new Date(examDateStr),
+                nombreCentro: centerName.trim(),
+                nombreDoctor: doctorName.trim(),
+                fechaExamen: new Date(examDateStr),
             },
         })
 

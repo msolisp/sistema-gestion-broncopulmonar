@@ -118,12 +118,12 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
     }
 
     const filteredPatients = patients.filter(patient => {
-        const normalize = (str: string) => str.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        const normalize = (str: string | null | undefined) => (str || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")
 
         const term = normalize(searchTerm)
-        const name = normalize(patient.name || '')
+        const name = normalize(patient.name)
         const email = normalize(patient.email)
-        const rut = normalize(patient.rut || '')
+        const rut = normalize(patient.rut)
         const commune = normalize(patient.commune)
 
         return name.includes(term) || email.includes(term) || rut.includes(term) || commune.includes(term)

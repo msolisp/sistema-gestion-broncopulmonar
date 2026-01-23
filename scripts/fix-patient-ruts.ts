@@ -31,31 +31,32 @@ async function main() {
     console.log('🔧 Actualizando RUTs de pacientes de prueba...\n');
 
     // Obtener todos los patients
-    const patients = await prisma.patient.findMany({
-        orderBy: { createdAt: 'asc' }
+    // Obtener todas las personas (nuevo esquema)
+    const personas = await prisma.persona.findMany({
+        orderBy: { creadoEn: 'asc' }
     });
 
-    console.log(`Encontrados ${patients.length} pacientes\n`);
+    console.log(`Encontradas ${personas.length} personas\n`);
 
     let updated = 0;
 
-    for (const patient of patients) {
+    for (const persona of personas) {
         // Generar un RUT válido basado en un número secuencial
         // Usar rango 20.000.000 - 20.999.999 para datos de prueba
         const baseRUT = 20000000 + updated;
         const newRUT = generarRUTValido(baseRUT);
 
-        // Actualizar el patient
-        await prisma.patient.update({
-            where: { id: patient.id },
+        // Actualizar la persona
+        await prisma.persona.update({
+            where: { id: persona.id },
             data: { rut: newRUT }
         });
 
-        console.log(`✓ Paciente ${patient.name || patient.email}: ${patient.rut} → ${newRUT}`);
+        console.log(`✓ Persona ${persona.nombre} ${persona.apellidoPaterno}: ${persona.rut} → ${newRUT}`);
         updated++;
     }
 
-    console.log(`\n✅ ${updated} pacientes actualizados con RUTs válidos`);
+    console.log(`\n✅ ${updated} personas actualizadas con RUTs válidos`);
 }
 
 main()

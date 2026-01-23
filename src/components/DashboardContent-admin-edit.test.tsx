@@ -31,7 +31,8 @@ describe('DashboardContent - Admin User Editing', () => {
         name: 'Admin User',
         email: 'admin@hospital.cl',
         role: 'ADMIN' as const,
-        active: true
+        active: true,
+        rut: '11.111.111-1'
     };
 
     const regularUser = {
@@ -39,7 +40,8 @@ describe('DashboardContent - Admin User Editing', () => {
         name: 'Regular User',
         email: 'user@hospital.cl',
         role: 'KINESIOLOGIST' as const,
-        active: true
+        active: true,
+        rut: '22.222.222-2'
     };
 
     const mockProps = {
@@ -47,7 +49,7 @@ describe('DashboardContent - Admin User Editing', () => {
         logs: [],
         initialPermissions: [],
         appointments: [],
-        currentUserRole: 'ADMIN',
+        currentUserRole: 'ADMIN' as const,
         pendingExams: [],
     };
 

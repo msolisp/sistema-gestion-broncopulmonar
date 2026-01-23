@@ -8,7 +8,7 @@ import { auth } from '@/auth';
 
 // Mock dependencies
 jest.mock('@/lib/prisma', () => ({
-    patient: {
+    persona: {
         findUnique: jest.fn(),
     },
 }));
@@ -35,19 +35,33 @@ describe('getPatientProfile', () => {
             user: { id: 'patient-1', email: 'test@example.com' }
         });
 
-        const mockPatient = {
+        const mockPersona = {
+            id: 'patient-1',
+            nombre: 'Test',
+            apellidoPaterno: 'Patient',
+            apellidoMaterno: '',
+            email: 'test@example.com',
+            rut: '12345678-9',
+            comuna: 'SANTIAGO',
+            direccion: 'Calle Falsa 123',
+            region: 'METROPOLITANA'
+        };
+
+        const expectedUser = {
             id: 'patient-1',
             name: 'Test Patient',
             email: 'test@example.com',
             rut: '12345678-9',
-            commune: 'SANTIAGO'
+            commune: 'SANTIAGO',
+            address: 'Calle Falsa 123',
+            region: 'METROPOLITANA'
         };
 
-        (prisma.patient.findUnique as jest.Mock).mockResolvedValue(mockPatient);
+        (prisma.persona.findUnique as jest.Mock).mockResolvedValue(mockPersona);
 
         const result = await getPatientProfile();
 
-        expect(result).toEqual({ user: mockPatient });
+        expect(result).toEqual({ user: expectedUser });
     });
 
     it('should return error if user not found in DB', async () => {
@@ -55,7 +69,7 @@ describe('getPatientProfile', () => {
             user: { id: 'patient-1', email: 'test@example.com' }
         });
 
-        (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null);
+        (prisma.persona.findUnique as jest.Mock).mockResolvedValue(null);
 
         const result = await getPatientProfile();
 
@@ -67,7 +81,7 @@ describe('getPatientProfile', () => {
             user: { id: 'user-1', email: 'test@example.com' }
         });
 
-        (prisma.patient.findUnique as jest.Mock).mockRejectedValue(new Error('DB Error'));
+        (prisma.persona.findUnique as jest.Mock).mockRejectedValue(new Error('DB Error'));
 
         const result = await getPatientProfile();
 

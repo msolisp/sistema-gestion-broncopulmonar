@@ -1,11 +1,11 @@
 import prisma from "@/lib/prisma";
 import DashboardContent from "@/components/DashboardContent";
-
 import { auth } from "@/auth";
-import { redirect } from "next/navigation";
 import { protectRoute } from "@/lib/route-protection";
+import { UserRole } from "@/components/admin/users/types";
 
-export default async function DashboardPage() {
+export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+    const searchParams = await props.searchParams;
     // Protect route - only internal staff allowed
     await protectRoute({
         allowedRoles: ['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST'],
@@ -15,14 +15,11 @@ export default async function DashboardPage() {
     // protectRoute already validated session
     const session = await auth();
 
-    const patients = await prisma.patient.findMany({
-    });
-
     const systemUsers = await prisma.user.findMany({
         where: {
             role: {
                 in: ['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST']
-            }
+            },
         },
         select: {
             id: true,
@@ -33,58 +30,89 @@ export default async function DashboardPage() {
         }
     });
 
+    // Date Filters for Audit Logs
+    const fromDate = typeof searchParams?.auditFrom === 'string' ? new Date(searchParams.auditFrom) : undefined;
+    const toDate = typeof searchParams?.auditTo === 'string' ? new Date(searchParams.auditTo) : undefined;
+
+    // Adjust toDate to end of day if present
+    if (toDate) {
+        toDate.setHours(23, 59, 59, 999);
+    }
+
     const logsRaw = await prisma.systemLog.findMany({
+        where: {
+            createdAt: {
+                gte: fromDate,
+                lte: toDate
+            }
+        },
         orderBy: { createdAt: 'desc' },
-        take: 50
+        take: 100 // Increased limit for filtered views
     });
+
     const logs = logsRaw.map((log: any) => ({
         ...log,
         createdAt: log.createdAt.toISOString()
     }));
 
     // Fetch Pending Exams (Uploaded by Patient & Not Reviewed)
-    const pendingExamsRaw = await prisma.medicalExam.findMany({
+    const pendingExamsRaw = await prisma.examenMedico.findMany({
         where: {
-            source: 'portal pacientes',
-            reviewed: false
+            origen: 'PORTAL_PACIENTE',
+            revisado: false
         },
         include: {
-            patient: {
-                select: { id: true, name: true, rut: true }
+            fichaClinica: {
+                include: {
+                    persona: {
+                        select: { id: true, nombre: true, apellidoPaterno: true, apellidoMaterno: true, rut: true }
+                    }
+                }
             }
         },
-        orderBy: { examDate: 'asc' }
+        orderBy: { fechaExamen: 'asc' }
     });
 
     const pendingExams = pendingExamsRaw.map((exam: any) => ({
         id: exam.id,
-        fileName: exam.fileName,
-        fileUrl: exam.fileUrl,
-        examDate: exam.examDate.toISOString(),
-        patient: exam.patient
+        fileName: exam.nombreArchivo,
+        fileUrl: exam.urlArchivo,
+        examDate: exam.fechaExamen.toISOString(),
+        patient: {
+            id: exam.fichaClinica.persona.id,
+            name: `${exam.fichaClinica.persona.nombre} ${exam.fichaClinica.persona.apellidoPaterno} ${exam.fichaClinica.persona.apellidoMaterno || ''}`.trim(),
+            rut: exam.fichaClinica.persona.rut
+        }
     }));
 
     const permissions = await prisma.rolePermission.findMany();
 
-    const appointmentsRaw = await prisma.appointment.findMany({
+    const appointmentsRaw = await prisma.cita.findMany({
         include: {
-            patient: {
-                select: { name: true, email: true, rut: true }
+            fichaClinica: {
+                include: {
+                    persona: {
+                        select: { nombre: true, apellidoPaterno: true, apellidoMaterno: true, email: true, rut: true }
+                    }
+                }
             }
         },
-        orderBy: { date: 'desc' },
+        orderBy: { fecha: 'desc' },
         take: 100 // Limit for performance
     });
     const appointments = appointmentsRaw.map((apt: any) => ({
         id: apt.id,
-        date: apt.date.toISOString(),
-        status: apt.status,
-        notes: apt.notes,
-        patient: apt.patient
+        date: apt.fecha.toISOString(),
+        status: apt.estado,
+        notes: apt.notas,
+        patient: {
+            name: `${apt.fichaClinica.persona.nombre} ${apt.fichaClinica.persona.apellidoPaterno} ${apt.fichaClinica.persona.apellidoMaterno || ''}`.trim(),
+            email: apt.fichaClinica.persona.email,
+            rut: apt.fichaClinica.persona.rut
+        }
     }));
 
     // Transform permissions for Matrix [Action][Role] = boolean
-    // Client expects: { action: string, kine: boolean, recep: boolean }[]
     const actions: string[] = Array.from(new Set(permissions.map((p: any) => p.action)));
     const permissionMatrix = actions.map(action => {
         const kinePerm = permissions.find((p: any) => p.action === action && p.role === 'KINESIOLOGIST');
@@ -102,7 +130,6 @@ export default async function DashboardPage() {
         initialPermissions={permissionMatrix}
         appointments={appointments}
         pendingExams={pendingExams}
-        currentUserRole={(session?.user?.role as string) || 'KINESIOLOGIST'}
+        currentUserRole={(session?.user?.role as UserRole) || 'KINESIOLOGIST'}
     />;
-
 }

@@ -9,7 +9,7 @@ test.describe('Mandatory Password Change Flow', () => {
         await page.goto('http://localhost:3000/intranet/login');
 
         // 3. Login with admin credentials (we'll set admin to mustChangePassword first)
-        await page.fill('input[name="email"]', 'admin@example.com');
+        await page.fill('input[name="email"]', 'admin@hospital.cl');
         await page.fill('input[name="password"]', 'Admin123!');
         await page.click('button[type="submit"]');
 
@@ -69,7 +69,7 @@ test.describe('Mandatory Password Change Flow', () => {
 
             // 14. Login again with NEW password
             await page.waitForURL(/login/);
-            await page.fill('input[name="email"]', 'admin@example.com');
+            await page.fill('input[name="email"]', 'admin@hospital.cl');
             await page.fill('input[name="password"]', newPassword);
             await page.click('button[type="submit"]');
 

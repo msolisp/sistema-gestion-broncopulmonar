@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Admin User Management', () => {
     test.beforeEach(async ({ page }) => {
         await page.goto('/intranet/login');
-        await page.fill('input[name="email"]', 'admin@example.com');
+        await page.fill('input[name="email"]', 'admin@hospital.cl');
         await page.fill('input[name="password"]', 'Admin123!');
         await page.click('button:has-text("Iniciar Sesión Segura")');
 

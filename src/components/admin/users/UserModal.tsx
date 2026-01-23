@@ -146,8 +146,9 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                 {/* Body */}
                 <div className="p-6 space-y-4 overflow-y-auto flex-1">
                     <div>
-                        <label className="block text-xs font-medium text-zinc-700 mb-1">Nombre Completo</label>
+                        <label htmlFor="userName" className="block text-xs font-medium text-zinc-700 mb-1">Nombre Completo</label>
                         <input
+                            id="userName"
                             type="text"
                             value={formData.name || ''}
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
@@ -156,8 +157,9 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-zinc-700 mb-1">Email</label>
+                        <label htmlFor="userEmail" className="block text-xs font-medium text-zinc-700 mb-1">Email</label>
                         <input
+                            id="userEmail"
                             type="email"
                             value={formData.email || ''}
                             onChange={e => setFormData({ ...formData, email: e.target.value })}
@@ -166,8 +168,9 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-zinc-700 mb-1">RUT</label>
+                        <label htmlFor="userRut" className="block text-xs font-medium text-zinc-700 mb-1">RUT</label>
                         <input
+                            id="userRut"
                             type="text"
                             value={formData.rut || ''}
                             onChange={e => {
@@ -183,11 +186,12 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
 
                     {/* Password Field */}
                     <div>
-                        <label className="block text-xs font-medium text-zinc-700 mb-1">
+                        <label htmlFor="userPassword" className="block text-xs font-medium text-zinc-700 mb-1">
                             Contraseña {userToEdit && <span className="text-zinc-400">(dejar vacío para mantener)</span>}
                         </label>
                         <div className="relative">
                             <input
+                                id="userPassword"
                                 type={showPassword ? "text" : "password"}
                                 value={password}
                                 onChange={e => {
@@ -212,8 +216,9 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                     {/* Region/Commune */}
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs font-medium text-zinc-700 mb-1">Región</label>
+                            <label htmlFor="userRegion" className="block text-xs font-medium text-zinc-700 mb-1">Región</label>
                             <select
+                                id="userRegion"
                                 value={formData.region || ''}
                                 onChange={e => setFormData({ ...formData, region: e.target.value, commune: '' })}
                                 className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500"
@@ -225,8 +230,9 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-medium text-zinc-700 mb-1">Comuna</label>
+                            <label htmlFor="userCommune" className="block text-xs font-medium text-zinc-700 mb-1">Comuna</label>
                             <select
+                                id="userCommune"
                                 value={formData.commune || ''}
                                 onChange={e => setFormData({ ...formData, commune: e.target.value })}
                                 disabled={!formData.region}
@@ -241,8 +247,9 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-zinc-700 mb-1">Dirección</label>
+                        <label htmlFor="userAddress" className="block text-xs font-medium text-zinc-700 mb-1">Dirección</label>
                         <input
+                            id="userAddress"
                             type="text"
                             value={formData.address || ''}
                             onChange={e => setFormData({ ...formData, address: e.target.value })}
@@ -251,8 +258,9 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                     </div>
 
                     <div>
-                        <label className="block text-xs font-medium text-zinc-700 mb-1">Rol</label>
+                        <label htmlFor="userRole" className="block text-xs font-medium text-zinc-700 mb-1">Rol</label>
                         <select
+                            id="userRole"
                             value={formData.role || 'KINESIOLOGIST'}
                             onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
                             disabled={userToEdit?.role === 'ADMIN'}
@@ -262,6 +270,7 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                             <option value="KINESIOLOGIST">KINESIÓLOGO</option>
                             <option value="RECEPTIONIST">RECEPCIONISTA</option>
                         </select>
+                        {userToEdit?.role === 'ADMIN' && <p className="text-xs text-zinc-400 mt-1">El rol de administrador no puede ser modificado</p>}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -273,7 +282,10 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                             disabled={userToEdit?.role === 'ADMIN'}
                             className="rounded text-indigo-600 focus:ring-indigo-500"
                         />
-                        <label htmlFor="activeCheck" className="text-sm text-zinc-700">Usuario Activo</label>
+                        <label htmlFor="activeCheck" className="text-sm text-zinc-700">
+                            Usuario Activo
+                            {userToEdit?.role === 'ADMIN' && <span className="ml-2 text-zinc-400">(No se puede desactivar admin)</span>}
+                        </label>
                     </div>
                 </div>
 

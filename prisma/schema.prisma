@@ -76,6 +76,8 @@ model Persona {
   eliminadoEn  DateTime?
   eliminadoPor String?
 
+  notifications Notification[]
+
   @@index([rut])
   @@index([nombre, apellidoPaterno])
   @@map("persona")
@@ -220,6 +222,8 @@ model ExamenMedico {
   origen    String  @default("portal interno")
   subidoPor String?
 
+  notifications Notification[]
+
   @@index([fichaClinicaId, fechaExamen])
   @@map("examen_medico")
 }
@@ -353,94 +357,6 @@ model User {
   region             String?
 }
 
-/// @deprecated Use Persona + FichaClinica + Credencial instead
-model Patient {
-  id             String                  @id @default(cuid())
-  phone          String?
-  commune        String
-  gender         String?
-  address        String?
-  birthDate      DateTime?
-  healthSystem   String?
-  diagnosisDate  DateTime?
-  createdAt      DateTime                @default(now())
-  updatedAt      DateTime                @updatedAt
-  active         Boolean                 @default(true)
-  email          String                  @unique
-  name           String
-  password       String
-  rut            String                  @unique
-  region         String?
-  cota           Float?
-  appointments   Appointment[]
-  exams          MedicalExam[]
-  notifications  Notification[]
-  pulmonaryTests PulmonaryFunctionTest[]
-}
-
-/// @deprecated Use Cita instead
-model Appointment {
-  id        String   @id @default(cuid())
-  patientId String
-  date      DateTime
-  status    String   @default("PENDING")
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-}
-
-/// @deprecated Use ExamenMedico instead
-model MedicalExam {
-  id               String   @id @default(cuid())
-  patientId        String
-  centerName       String
-  doctorName       String
-  examDate         DateTime
-  fileUrl          String
-  fileName         String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  reviewed         Boolean  @default(false)
-  source           String   @default("portal interno")
-  uploadedByUserId String?
-  patient          Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-}
-
-/// @deprecated Use NotificacionMedica instead
-model Notification {
-  id        String   @id @default(cuid())
-  type      String
-  title     String
-  message   String
-  patientId String
-  examId    String?
-  read      Boolean  @default(false)
-  createdAt DateTime @default(now())
-  patient   Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-
-  @@index([read, createdAt])
-}
-
-/// @deprecated Use PruebaFuncionPulmonar instead
-model PulmonaryFunctionTest {
-  id             String   @id @default(cuid())
-  patientId      String
-  date           DateTime
-  cvfValue       Float?
-  cvfPercent     Int?
-  vef1Value      Float?
-  vef1Percent    Int?
-  dlcoPercent    Int?
-  walkDistance   Float?
-  spo2Rest       Int?
-  spo2Final      Int?
-  heartRateRest  Int?
-  heartRateFinal Int?
-  notes          String?
-  createdAt      DateTime @default(now())
-  patient        Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
-}
 
 // ═══════════════════════════════════════════════════════
 // SYSTEM & REFERENCE DATA
@@ -546,4 +462,23 @@ model Feriado {
   updatedAt DateTime @updatedAt
 
   @@unique([fecha, region])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  type      String   @default("INFO")
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  
+  patientId String
+  patient   Persona @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  
+  examId    String?
+  exam      ExamenMedico? @relation(fields: [examId], references: [id])
+
+  @@index([read])
+  @@index([createdAt])
+  @@map("notification")
 }

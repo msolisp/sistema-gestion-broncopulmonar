@@ -30,7 +30,7 @@ test.describe('RUT Validation in Forms', () => {
         // Login as admin first
         await page.goto('/intranet/login');
         await page.fill('input[name="email"]', 'admin@test.com');
-        await page.fill('input[name="password"]', 'admin123');
+        await page.fill('input[name="password"]', 'Admin123!');
         await page.click('button[type="submit"]');
 
         // Wait for redirect to dashboard

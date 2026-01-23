@@ -24,6 +24,24 @@ jest.mock('@/lib/actions', () => ({
     deletePatient: jest.fn(),
 }))
 
+const mockRegions = [
+    {
+        name: 'Metropolitana',
+        communes: ['Santiago', 'Maipú', 'Providencia']
+    },
+    {
+        name: 'Valparaíso',
+        communes: ['Viña del Mar', 'Valparaíso']
+    }
+]
+
+global.fetch = jest.fn(() =>
+    Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve(mockRegions),
+    })
+) as jest.Mock
+
 const mockPatients = [
     {
         id: '1',
@@ -291,8 +309,13 @@ describe('PatientsTable Component', () => {
         fireEvent.click(screen.getByText('Cancelar'))
         expect(screen.queryByText('Nuevo Paciente', { selector: 'h3' })).not.toBeInTheDocument()
     })
-    it('updates commune options when region changes', () => {
+    it('updates commune options when region changes', async () => {
         render(<PatientsTable patients={mockPatients} />)
+
+        // Wait for regions to load (fetch to complete)
+        await waitFor(() => {
+            expect(screen.queryByText('Cargando...')).not.toBeInTheDocument()
+        })
 
         fireEvent.click(screen.getByText('Nuevo Paciente'))
 

@@ -14,10 +14,13 @@ export function AddPulmonaryModal({ patientId }: { patientId: string }) {
         const formData = new FormData(event.currentTarget);
         formData.append('patientId', patientId);
 
+        console.log('Sending form data...');
         const result = await addPulmonaryRecord(formData);
+        console.log('Server response:', result);
 
         if (result?.message && !result.message.includes('exitosamente')) {
-            alert(result.message); // Simple alert for now, or use a toast
+            console.error('Error from server:', result.message);
+            alert(result.message);
             setLoading(false);
             return;
         }

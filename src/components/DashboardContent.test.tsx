@@ -111,8 +111,8 @@ describe('DashboardContent Component', () => {
 
         // Auditoría
         fireEvent.click(screen.getByText('Auditoría'))
-        expect(screen.getByText('Logs de Sistema (Últimas 24h)')).toBeInTheDocument()
-        expect(screen.getByText('LOGIN_SUCCESS')).toBeInTheDocument()
+        expect(screen.getByText(/Logs de Sistema/i)).toBeInTheDocument()
+        expect(screen.getByText('Inicio de Sesión Exitoso')).toBeInTheDocument()
     })
 
     it('renders and interacts with Permission Matrix', async () => {

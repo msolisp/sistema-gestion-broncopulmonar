@@ -24,22 +24,56 @@ export default async function PatientHistoryPage({ params }: PageProps) {
 
     const { id } = await params
 
-    // Fetch patient data with exams
-    const patient = await prisma.patient.findUnique({
+    // Fetch patient data with exams from Person/FichaClinica
+    const persona = await prisma.persona.findUnique({
         where: { id },
         include: {
-            exams: {
-                orderBy: { createdAt: 'desc' }
-            },
-            appointments: {
-                orderBy: { date: 'desc' },
-                take: 10
+            fichaClinica: {
+                include: {
+                    examenes: {
+                        orderBy: { creadoEn: 'desc' }
+                    },
+                    citas: {
+                        orderBy: { fecha: 'desc' },
+                        take: 10
+                    }
+                }
             }
         }
     })
 
-    if (!patient) {
+    if (!persona) {
         notFound()
+    }
+
+    // Map to interface expected by the UI
+    const patient = {
+        id: persona.id,
+        name: `${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`.trim(),
+        rut: persona.rut,
+        email: persona.email || 'Sin email',
+        commune: persona.comuna || 'Sin Comuna',
+        address: persona.direccion || 'Sin Dirección',
+        active: persona.activo,
+        appointments: persona.fichaClinica?.citas.map(c => ({
+            id: c.id,
+            date: c.fecha,
+            notes: c.notas,
+            status: c.estado === 'PENDIENTE' ? 'PENDING' :
+                c.estado === 'CONFIRMADA' ? 'CONFIRMED' :
+                    c.estado === 'CANCELADA' ? 'CANCELLED' : c.estado
+        })) || [],
+        exams: persona.fichaClinica?.examenes.map(e => ({
+            id: e.id,
+            fileName: e.archivoNombre,
+            fileUrl: e.archivoUrl.includes('api/mock-storage')
+                ? `/api/mock-storage/${e.archivoUrl.split('/').pop()}`
+                : e.archivoUrl,
+            centerName: e.nombreCentro,
+            doctorName: e.nombreDoctor,
+            examDate: e.fechaExamen,
+            source: e.origen === 'PORTAL_PACIENTES' ? 'portal pacientes' : 'interno'
+        })) || []
     }
 
     return (
@@ -48,11 +82,11 @@ export default async function PatientHistoryPage({ params }: PageProps) {
                 {/* Header */}
                 <div className="mb-6">
                     <Link
-                        href="/dashboard"
+                        href="/patients"
                         className="inline-flex items-center gap-2 text-indigo-600 hover:text-indigo-700 mb-4"
                     >
                         <ArrowLeft className="w-4 h-4" />
-                        Volver al Dashboard
+                        Volver a Gestión de Pacientes
                     </Link>
                     <h1 className="text-3xl font-bold text-gray-900">
                         Historial de {patient.name}
@@ -64,54 +98,25 @@ export default async function PatientHistoryPage({ params }: PageProps) {
 
                 <div className="space-y-8">
 
-                    {/* Section 1: Patient Information & Appointments */}
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        {/* Patient Info - Spans 2 cols */}
-                        <div className="md:col-span-2 bg-white rounded-lg shadow-md p-6">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                                Información del Paciente
-                            </h2>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                                <div><span className="text-sm text-gray-500">Nombre:</span> <p className="font-medium">{patient.name}</p></div>
-                                <div><span className="text-sm text-gray-500">RUT:</span> <p className="font-medium">{patient.rut}</p></div>
-                                <div><span className="text-sm text-gray-500">Email:</span> <p className="font-medium">{patient.email}</p></div>
-                                <div><span className="text-sm text-gray-500">Comuna:</span> <p className="font-medium">{patient.commune}</p></div>
-                                <div><span className="text-sm text-gray-500">Dirección:</span> <p className="font-medium">{patient.address}</p></div>
-                                <div>
-                                    <span className="text-sm text-gray-500">Estado:</span>
-                                    <p className="font-medium">
-                                        <span className={`px-2 py-1 text-xs rounded-full ${patient.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                            {patient.active ? 'Activo' : 'Inactivo'}
-                                        </span>
-                                    </p>
-                                </div>
+                    {/* Section 1: Patient Information */}
+                    <div className="bg-white rounded-lg shadow-md p-6">
+                        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                            Información del Paciente
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                            <div><span className="text-sm text-gray-500">Nombre:</span> <p className="font-medium">{patient.name}</p></div>
+                            <div><span className="text-sm text-gray-500">RUT:</span> <p className="font-medium">{patient.rut}</p></div>
+                            <div><span className="text-sm text-gray-500">Email:</span> <p className="font-medium">{patient.email}</p></div>
+                            <div><span className="text-sm text-gray-500">Comuna:</span> <p className="font-medium">{patient.commune}</p></div>
+                            <div><span className="text-sm text-gray-500">Dirección:</span> <p className="font-medium">{patient.address}</p></div>
+                            <div>
+                                <span className="text-sm text-gray-500">Estado:</span>
+                                <p className="font-medium">
+                                    <span className={`px-2 py-1 text-xs rounded-full ${patient.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        {patient.active ? 'Activo' : 'Inactivo'}
+                                    </span>
+                                </p>
                             </div>
-                        </div>
-
-                        {/* Appointments - Spans 1 col */}
-                        <div className="bg-white rounded-lg shadow-md p-6">
-                            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                                Últimas Citas
-                            </h2>
-                            {patient.appointments.length > 0 ? (
-                                <div className="space-y-3 max-h-[200px] overflow-y-auto pr-2">
-                                    {patient.appointments.map((apt) => (
-                                        <div key={apt.id} className="flex items-center justify-between p-3 border border-gray-200 rounded-lg text-sm">
-                                            <div>
-                                                <p className="font-medium text-gray-900">
-                                                    {new Date(apt.date).toLocaleDateString('es-CL')}
-                                                </p>
-                                                {apt.notes && <p className="text-xs text-gray-500 line-clamp-1">{apt.notes}</p>}
-                                            </div>
-                                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${apt.status === 'CONFIRMED' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-700'}`}>
-                                                {apt.status === 'CONFIRMED' ? 'Conf.' : apt.status}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="text-center py-4 text-gray-500 text-sm">No hay citas recientes</div>
-                            )}
                         </div>
                     </div>
 

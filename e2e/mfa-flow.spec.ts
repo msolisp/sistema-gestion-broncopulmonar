@@ -6,7 +6,7 @@ test.describe('MFA (Multi-Factor Authentication)', () => {
             // Login as admin
             await page.goto('/intranet/login');
             await page.fill('input[name="email"]', 'admin@test.com');
-            await page.fill('input[name="password"]', 'admin123');
+            await page.fill('input[name="password"]', 'Admin123!');
             await page.click('button[type="submit"]');
 
             await page.waitForURL('**/dashboard', { timeout: 10000 });
@@ -53,7 +53,7 @@ test.describe('MFA (Multi-Factor Authentication)', () => {
 
             await page.goto('/intranet/login');
             await page.fill('input[name="email"]', 'admin@test.com');
-            await page.fill('input[name="password"]', 'admin123');
+            await page.fill('input[name="password"]', 'Admin123!');
             await page.click('button[type="submit"]');
 
             await page.waitForURL('**/dashboard', { timeout: 10000 });
@@ -73,7 +73,7 @@ test.describe('MFA (Multi-Factor Authentication)', () => {
         test('should require password to disable MFA', async ({ page }) => {
             await page.goto('/intranet/login');
             await page.fill('input[name="email"]', 'admin@test.com');
-            await page.fill('input[name="password"]', 'admin123');
+            await page.fill('input[name="password"]', 'Admin123!');
             await page.click('button[type="submit"]');
 
             await page.waitForURL('**/dashboard', { timeout: 10000 });
@@ -118,7 +118,7 @@ test.describe('MFA (Multi-Factor Authentication)', () => {
         test('should allow regenerating backup codes', async ({ page }) => {
             await page.goto('/intranet/login');
             await page.fill('input[name="email"]', 'admin@test.com');
-            await page.fill('input[name="password"]', 'admin123');
+            await page.fill('input[name="password"]', 'Admin123!');
             await page.click('button[type="submit"]');
 
             await page.waitForURL('**/dashboard', { timeout: 10000 });

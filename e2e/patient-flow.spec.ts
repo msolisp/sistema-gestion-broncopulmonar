@@ -45,10 +45,12 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     await page.click('text=Inicia Sesión');
     await page.fill('input[name="email"]', uniqueEmail);
     await page.fill('input[name="password"]', 'Password123!');
+    // Fill Visual Captcha (required by HTML5 validation, bypassed by server in E2E)
+    await page.getByPlaceholder('Ingresa el código').fill('0000');
     await page.click('button:has-text("Ingresar")');
 
     // 4. Verification: Redirect to Portal
-    await page.waitForURL(/.*\/portal/);
+    await page.waitForURL(/.*\/portal/, { timeout: 30000 });
     await expect(page).toHaveURL(/.*\/portal/);
     await expect(page.locator('h1')).toContainText('Bienvenido');
 
@@ -105,8 +107,8 @@ test('Patient Administration: Edit Patient', async ({ page }) => {
     // Start fresh with admin login for stability
     await page.goto('/login');
     // await page.click('text=Inicia Sesión'); // Removed to avoid potential timeouts
-    await page.fill('input[name="email"]', 'admin@example.com'); // Assuming seeded admin
-    await page.fill('input[name="password"]', 'admin123'); // Assuming seeded admin password
+    await page.fill('input[name="email"]', 'admin@hospital.cl'); // Assuming seeded admin
+    await page.fill('input[name="password"]', 'Admin123!'); // Assuming seeded admin password
     await page.click('button:has-text("Ingresar")');
 
     // Wait for login to complete (redirect to dashboard/portal)

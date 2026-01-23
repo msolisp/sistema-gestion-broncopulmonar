@@ -11,28 +11,40 @@ export default async function MyReservationsPage() {
         redirect('/login?callbackUrl=/mis-reservas');
     }
 
-    const user = await prisma.patient.findUnique({
-        where: { email: session.user.email },
+    // Query FichaClinica via Persona email
+    const ficha = await prisma.fichaClinica.findFirst({
+        where: {
+            persona: {
+                email: session.user.email
+            }
+        },
         include: {
-            appointments: {
-                orderBy: { date: 'desc' }
+            citas: {
+                orderBy: { fecha: 'desc' }
             }
         }
     });
 
-    if (!user) {
+    if (!ficha) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-zinc-50 p-4">
                 <div className="bg-white p-8 rounded-xl shadow-md border border-zinc-100 max-w-md w-full text-center">
                     <h1 className="text-xl font-bold text-red-600 mb-2">Perfil no encontrado</h1>
-                    <p className="text-zinc-600 mb-6">No pudimos encontrar tu perfil de paciente.</p>
+                    <p className="text-zinc-600 mb-6">No pudimos encontrar tu ficha clínica.</p>
                     <Link href="/" className="text-indigo-600 hover:underline">Volver al inicio</Link>
                 </div>
             </div>
         );
     }
 
-    const appointments = user.appointments;
+    const appointments = ficha.citas.map(apt => ({
+        id: apt.id,
+        date: apt.fecha,
+        status: apt.estado === 'PENDIENTE' ? 'PENDING' :
+            apt.estado === 'CONFIRMADA' ? 'CONFIRMED' :
+                apt.estado === 'CANCELADA' ? 'CANCELLED' : apt.estado,
+        notes: apt.notas
+    }));
 
     return (
         <div className="min-h-screen bg-zinc-50 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center">

@@ -4,9 +4,9 @@ import { NextRequest, NextResponse } from "next/server";
 // Returns a simple PDF placeholder when files are requested
 export async function GET(
     request: NextRequest,
-    { params }: { params: { filename: string } }
+    { params }: { params: Promise<{ filename: string }> }
 ) {
-    const filename = params.filename;
+    const { filename } = await params;
 
     // Return a simple PDF with text indicating it's a mock file
     const mockPdfContent = `%PDF-1.4

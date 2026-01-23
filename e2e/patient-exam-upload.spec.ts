@@ -154,7 +154,7 @@ test.describe('Admin View Patient Exams', () => {
     test('should show badge for patients with uploaded exams', async ({ page }) => {
         // Login as admin
         await page.goto('/intranet/login')
-        await page.fill('input[name="email"]', 'admin@example.com')
+        await page.fill('input[name="email"]', 'admin@hospital.cl')
         await page.fill('input[name="password"]', 'Admin123!')
         await page.click('button:has-text("Iniciar Sesión Segura")')
 
@@ -172,7 +172,7 @@ test.describe('Admin View Patient Exams', () => {
     test.skip('should display pre-uploaded exams in patient detail', async ({ page }) => {
         // Login as admin  
         await page.goto('/intranet/login')
-        await page.fill('input[name="email"]', 'admin@example.com')
+        await page.fill('input[name="email"]', 'admin@hospital.cl')
         await page.fill('input[name="password"]', 'Admin123!')
         await page.click('button:has-text("Iniciar Sesión Segura")')
 

@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test('Assistente Clínico loads correctly', async ({ page }) => {
     // 1. Login
     await page.goto('/intranet/login');
-    await page.fill('input[name="email"]', 'admin@example.com');
+    await page.fill('input[name="email"]', 'admin@hospital.cl');
     await page.fill('input[name="password"]', 'Admin123!');
     await page.click('button:has-text("Iniciar Sesión Segura")');
     await expect(page).toHaveURL(/.*\/dashboard/, { timeout: 30000 });
@@ -30,7 +30,7 @@ test('Assistant renders images from markdown', async ({ page }) => {
 
     // 2. Login & Navigate
     await page.goto('/intranet/login');
-    await page.fill('input[name="email"]', 'admin@example.com');
+    await page.fill('input[name="email"]', 'admin@hospital.cl');
     await page.fill('input[name="password"]', 'Admin123!');
     await page.click('button:has-text("Iniciar Sesión Segura")');
     await page.click('a[href="/asistente"]');

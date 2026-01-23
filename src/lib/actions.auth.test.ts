@@ -12,7 +12,7 @@ jest.mock('@/lib/prisma', () => ({
     user: {
         findUnique: jest.fn(),
     },
-    patient: {
+    persona: {
         findUnique: jest.fn(),
     }
 }));
@@ -51,8 +51,8 @@ describe('authenticate action', () => {
         });
 
         // Mock patient find
-        (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
-            active: true,
+        (prisma.persona.findUnique as jest.Mock).mockResolvedValue({
+            activo: true,
             email: 'test@example.com'
         });
 
@@ -80,8 +80,8 @@ describe('authenticate action', () => {
         // No portal_type -> Patient
 
         // Mock patient find
-        (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
-            active: true,
+        (prisma.persona.findUnique as jest.Mock).mockResolvedValue({
+            activo: true,
             email: 'test@example.com'
         });
 
@@ -126,8 +126,8 @@ describe('authenticate action', () => {
         formData.append('password', 'wrong-password');
         // No portal_type -> Patient
 
-        (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
-            active: true,
+        (prisma.persona.findUnique as jest.Mock).mockResolvedValue({
+            activo: true,
             email: 'test@example.com'
         });
 

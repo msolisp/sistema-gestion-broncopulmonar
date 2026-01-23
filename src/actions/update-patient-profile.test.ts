@@ -6,8 +6,21 @@ import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
 
 jest.mock('@/lib/prisma', () => ({
-    patient: {
-        update: jest.fn(),
+    __esModule: true,
+    default: {
+        $transaction: jest.fn((callback) => callback(prisma)),
+        patient: {
+            update: jest.fn(),
+        },
+        persona: {
+            update: jest.fn(),
+        },
+        fichaClinica: {
+            update: jest.fn(),
+        },
+        credencial: {
+            update: jest.fn(),
+        }
     },
 }));
 
@@ -33,18 +46,19 @@ describe('updatePatientProfile', () => {
         formData.append('phone', '+56912345678');
         formData.append('address', 'New Address');
         formData.append('commune', 'PROVIDENCIA');
-        formData.append('gender', 'Masculino');
+        formData.append('gender', 'M');
         formData.append('healthSystem', 'FONASA');
         formData.append('birthDate', '1990-01-01');
 
         const result = await updatePatientProfile(null, formData);
 
         expect(result).toEqual({ message: 'Success' });
-        expect(prisma.patient.update).toHaveBeenCalledWith({
+        // Check update on Persona (split name, commune, etc)
+        expect(prisma.persona.update).toHaveBeenCalledWith({
             where: { id: 'p1' },
             data: expect.objectContaining({
-                name: 'New Name',
-                commune: 'PROVIDENCIA'
+                comuna: 'PROVIDENCIA',
+                sexo: 'M'
             })
         });
     });

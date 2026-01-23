@@ -143,22 +143,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     }
                 }
 
-                // Fallback to legacy Patient table
-                const patient = await prisma.patient.findUnique({
-                    where: { email },
-                });
-
-                if (patient) {
-                    const passwordMatch = await bcrypt.compare(password, patient.password);
-                    if (passwordMatch) {
-                        return {
-                            id: patient.id,
-                            email: patient.email,
-                            name: patient.name,
-                            role: 'PATIENT',
-                        };
-                    }
-                }
 
                 throw new Error('Credenciales inválidas');
             },

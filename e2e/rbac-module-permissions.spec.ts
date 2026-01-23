@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
  * and not at the grid/action level (buttons within pages).
  * 
  * Test Credentials (from seed.ts):
- * - Admin: admin@example.com / Admin123!
+ * - Admin: admin@hospital.cl / Admin123!
  * - Patient: paciente1@test.com / Password123!
  * 
  * Note: E2E_TESTING=true in playwright.config bypasses CAPTCHA validation in backend
@@ -22,7 +22,7 @@ test.describe('RBAC Module-Level Permissions', () => {
         await page.waitForSelector('#email', { timeout: 10000 });
 
         // 3. Fill in credentials
-        await page.fill('#email', 'admin@example.com');
+        await page.fill('#email', 'admin@hospital.cl');
         await page.fill('#password', 'Admin123!');
 
         // 4. Fill visual CAPTCHA (any value works in E2E mode)

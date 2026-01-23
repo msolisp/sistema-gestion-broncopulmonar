@@ -3,12 +3,15 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { FileSpreadsheet, FileText, ChevronLeft, ChevronRight, FileDown } from 'lucide-react';
+import { FileSpreadsheet, FileText, ChevronLeft, ChevronRight, FileDown, Trash2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
+import { EditPulmonaryModal } from './EditPulmonaryModal';
+import { deletePulmonaryRecord } from '@/lib/pulmonary';
 
 interface PulmonaryRecord {
     id: string;
+    patientId: string;
     date: Date;
     walkDistance: number | null;
     spo2Rest: number | null;
@@ -55,6 +58,26 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
     };
 
     const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+    const [deleteConfirmation, setDeleteConfirmation] = useState<{ isOpen: boolean; recordId: string | null; patientId: string | null }>({
+        isOpen: false,
+        recordId: null,
+        patientId: null
+    });
+
+    const confirmDelete = (recordId: string, patientId: string) => {
+        setDeleteConfirmation({ isOpen: true, recordId, patientId });
+    };
+
+    const handleDelete = async () => {
+        if (!deleteConfirmation.recordId || !deleteConfirmation.patientId) return;
+
+        const res = await deletePulmonaryRecord(deleteConfirmation.recordId, deleteConfirmation.patientId);
+        if (res.message) {
+            alert(res.message);
+        }
+        setDeleteConfirmation({ isOpen: false, recordId: null, patientId: null });
+    };
 
     const handleGeneratePDF = (record: PulmonaryRecord) => {
         const doc = new jsPDF();
@@ -160,7 +183,6 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
                             <th className="px-6 py-3 text-blue-700">CVF %</th>
                             <th className="px-6 py-3 text-blue-700">VEF1 %</th>
                             <th className="px-6 py-3 text-orange-700">DLCO %</th>
-                            <th className="px-6 py-3">Notas</th>
                             <th className="px-6 py-3 text-right">Acciones</th>
                         </tr>
                     </thead>
@@ -188,23 +210,30 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
                                 <td className="px-6 py-4 font-bold text-orange-700">
                                     {record.dlcoPercent ? `${record.dlcoPercent}%` : '-'}
                                 </td>
-                                <td className="px-6 py-4 text-zinc-900 max-w-[150px] truncate" title={record.notes || ''}>
-                                    {record.notes || '-'}
-                                </td>
                                 <td className="px-6 py-4 text-right">
-                                    <button
-                                        onClick={() => handleGeneratePDF(record)}
-                                        className="p-1 text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors"
-                                        title="Generar PDF"
-                                    >
-                                        <FileText className="h-4 w-4" />
-                                    </button>
+                                    <div className="flex justify-end gap-2">
+                                        <EditPulmonaryModal patientId={record.patientId} record={record} />
+                                        <button
+                                            onClick={() => confirmDelete(record.id, record.patientId)}
+                                            className="p-1 text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 rounded transition-colors"
+                                            title="Eliminar Registro"
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            onClick={() => handleGeneratePDF(record)}
+                                            className="p-1 text-orange-600 hover:text-orange-700 bg-orange-50 hover:bg-orange-100 rounded transition-colors"
+                                            title="Generar PDF"
+                                        >
+                                            <FileText className="h-4 w-4" />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
                         {history.length === 0 && (
                             <tr>
-                                <td colSpan={8} className="px-6 py-8 text-center text-zinc-500">
+                                <td colSpan={7} className="px-6 py-8 text-center text-zinc-500">
                                     Sin datos registrados.
                                 </td>
                             </tr>
@@ -281,6 +310,32 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
                                 </svg>
                                 Imprimir
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {deleteConfirmation.isOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+                    <div className="bg-white rounded-xl shadow-lg w-full max-w-md p-6 animate-in zoom-in-95 duration-200">
+                        <h3 className="text-lg font-bold text-zinc-900 mb-2">Confirmar Eliminación</h3>
+                        <p className="text-zinc-600 mb-6">
+                            ¿Estás seguro de que deseas eliminar este registro? Esta acción no se puede deshacer.
+                        </p>
+                        <div className="flex justify-end gap-3">
+                            <button
+                                onClick={() => setDeleteConfirmation({ isOpen: false, recordId: null, patientId: null })}
+                                className="px-4 py-2 text-zinc-700 hover:bg-zinc-100 rounded-lg transition-colors font-medium border border-zinc-200"
+                            >
+                                Cancelar
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                className="px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded-lg transition-colors font-medium"
+                            >
+                                Eliminar
                             </button>
                         </div>
                     </div>

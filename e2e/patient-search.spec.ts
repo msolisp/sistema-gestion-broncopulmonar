@@ -4,7 +4,7 @@ import { test, expect } from '@playwright/test';
 test('Patient Search and Sorting', async ({ page }) => {
     // Login as Admin
     await page.goto('/intranet/login');
-    await page.fill('input[name="email"]', 'admin@example.com');
+    await page.fill('input[name="email"]', 'admin@hospital.cl');
     await page.fill('input[name="password"]', 'Admin123!');
 
     // Check for error message

@@ -1,18 +1,16 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import { Users, FileText, X, Check, Shield, Eye, EyeOff } from "lucide-react"
+import { Users, FileText, X, Check, Shield, Eye, EyeOff, FileDown, Disc, Save } from "lucide-react"
+import jsPDF from 'jspdf';
+import { useRouter, useSearchParams } from "next/navigation";
 
 import { adminCreateSystemUser, adminUpdateSystemUser, toggleRolePermission, seedPermissions, adminDeleteSystemUser, bulkUpdateRolePermissions, updateRolePermissions } from "@/lib/actions";
-import { useRouter, useSearchParams } from "next/navigation";
 import PatientsManagementTable from './PatientsManagementTable'
 import AppointmentCalendar from './AppointmentCalendar'
 import PendingExamsWidget from './PendingExamsWidget'
-import { Disc, Save } from "lucide-react";
 import { ComunasManager, PrevisionesManager, DiagnosticosManager, MedicamentosManager, InsumosManager, FeriadosManager } from './master-tables';
 import { REGIONS } from '@/lib/chile-data';
-
-
 import { UserModal } from './admin/users/UserModal';
 import { SystemUser, UserRole } from './admin/users/types';
 
@@ -245,6 +243,7 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
     const [editingUser, setEditingUser] = useState<SystemUser | null>(null)
     const [activeMasterTable, setActiveMasterTable] = useState<string | null>(null);
     const [permissionFeedback, setPermissionFeedback] = useState<string | null>(null);
+    const [selectedLog, setSelectedLog] = useState<any | null>(null);
 
     const handleCreateUser = () => {
         setEditingUser(null)
@@ -273,9 +272,165 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
         }
     }
 
+    const handleDownloadLogPDF = () => {
+        if (!selectedLog) return;
+
+        const doc = new jsPDF();
+
+        // Header
+        doc.setFontSize(16);
+        doc.text("Reporte de Auditoría de Sistema", 20, 20);
+
+        doc.setFontSize(10);
+        doc.setTextColor(100);
+        doc.text(`Generado el: ${new Date().toLocaleString()}`, 20, 28);
+        doc.text("Sistema de Gestión Broncopulmonar", 20, 33);
+
+        doc.setDrawColor(200);
+        doc.line(20, 38, 190, 38);
+
+        // Content
+        doc.setTextColor(0);
+        doc.setFontSize(12);
+
+        let y = 50;
+        const lineHeight = 10;
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Fecha:", 20, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(new Date(selectedLog.createdAt).toLocaleString(), 60, y);
+        y += lineHeight;
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Acción:", 20, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(selectedLog.action, 60, y);
+        y += lineHeight;
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Usuario:", 20, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(selectedLog.userEmail || 'System', 60, y);
+        y += lineHeight;
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Dirección IP:", 20, y);
+        doc.setFont("helvetica", "normal");
+        doc.text(selectedLog.ipAddress || 'Unknown', 60, y);
+        y += lineHeight * 1.5;
+
+        doc.setFont("helvetica", "bold");
+        doc.text("Detalles Técnicos:", 20, y);
+        y += lineHeight;
+
+        doc.setFont("courier", "normal");
+        doc.setFontSize(10);
+
+        // Split text to fit page
+        const detailsText = selectedLog.details || 'Sin detalles adicionales.';
+        // Simplify details for PDF if it's too complex, or just dump it.
+        // If it's the comma separated list, maybe we prefer newlines.
+        const formattedDetails = detailsText.replace(/, /g, '\n');
+
+        const splitText = doc.splitTextToSize(formattedDetails, 170);
+        doc.text(splitText, 20, y);
+
+        // Footer
+        doc.setFont("helvetica", "italic");
+        doc.setFontSize(8);
+        doc.setTextColor(150);
+        doc.text("Este documento es confidencial y para uso exclusivo de auditoría interna.", 105, 280, { align: "center" });
+
+        doc.save(`audit-log-${selectedLog.id.substring(0, 8)}.pdf`);
+    };
+
     return (
         <div className="space-y-8 relative">
             {/* User Modal */}
+            {/* Log Detail Modal */}
+            {selectedLog && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
+                            <h3 className="font-bold text-zinc-800 flex items-center gap-2">
+                                <FileText className="w-5 h-5 text-indigo-600" />
+                                Detalle de Auditoría
+                            </h3>
+                            <button
+                                onClick={() => setSelectedLog(null)}
+                                className="text-zinc-400 hover:text-zinc-600 transition-colors"
+                            >
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1">Fecha</label>
+                                    <p className="text-sm font-medium text-zinc-900 border border-zinc-200 rounded px-3 py-2 bg-zinc-50">
+                                        {new Date(selectedLog.createdAt).toLocaleString()}
+                                    </p>
+                                </div>
+                                <div>
+                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1">IP</label>
+                                    <p className="text-sm font-mono text-zinc-900 border border-zinc-200 rounded px-3 py-2 bg-zinc-50">
+                                        {selectedLog.ipAddress || 'N/A'}
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1">Acción</label>
+                                <p className="text-sm font-medium text-zinc-900 border border-zinc-200 rounded px-3 py-2 bg-zinc-50 flex items-center gap-2">
+                                    <span className={`w-2 h-2 rounded-full ${selectedLog.action.includes('FAILURE') || selectedLog.action.includes('DELETE') ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
+                                    {selectedLog.action}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1">Usuario</label>
+                                <p className="text-sm text-zinc-900 border border-zinc-200 rounded px-3 py-2 bg-zinc-50">
+                                    {selectedLog.userEmail || 'System'}
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1">Detalles Técnicos</label>
+                                <div className="text-xs font-mono text-zinc-700 border border-zinc-200 rounded px-3 py-2 bg-zinc-50 max-h-48 overflow-y-auto">
+                                    {selectedLog.details ? (
+                                        <ul className="list-disc pl-4 space-y-1">
+                                            {selectedLog.details.split(',').map((detail: string, i: number) => (
+                                                <li key={i} className="break-words">
+                                                    {detail.trim()}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    ) : (
+                                        <span className="italic text-zinc-400">Sin detalles adicionales.</span>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                        <div className="px-6 py-4 bg-zinc-50 border-t border-zinc-100 flex justify-end gap-3">
+                            <button
+                                onClick={handleDownloadLogPDF}
+                                className="bg-indigo-600 text-white font-medium px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
+                            >
+                                <FileDown className="w-4 h-4" />
+                                Descargar PDF
+                            </button>
+                            <button
+                                onClick={() => setSelectedLog(null)}
+                                className="bg-white border border-zinc-300 text-zinc-700 font-medium px-4 py-2 rounded-lg hover:bg-zinc-50 transition-colors shadow-sm"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             {/* User Modal */}
             <UserModal
                 isOpen={isUserModalOpen}
@@ -521,33 +676,100 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
                 {activeTab === 'Auditoría' && (
                     can('Configuración Global') ? (
                         <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50">
-                                <h3 className="font-bold text-zinc-700">Logs de Sistema (Últimas 24h)</h3>
-                            </div>
-                            <div className="divide-y divide-zinc-100">
-                                <div className="divide-y divide-zinc-100">
-                                    {logs?.map((log) => (
-                                        <div key={log.id} className="px-6 py-3 flex items-center justify-between hover:bg-zinc-50 text-sm">
-                                            <div className="flex items-center gap-3">
-                                                <div className={`w-2 h-2 rounded-full ${log.action.includes('FAILURE') ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
-                                                <span className="font-mono text-zinc-600" suppressHydrationWarning>
-                                                    {new Date(log.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </span>
-                                                <span className="font-medium text-zinc-900">{log.action}</span>
-                                            </div>
-                                            <div className="flex gap-4 text-zinc-500 text-xs items-center">
-                                                {/* IP Address Display */}
-                                                {log.ipAddress && (
-                                                    <span className="bg-zinc-100 px-2 py-1 rounded text-zinc-500 font-mono">
-                                                        {log.ipAddress === '::1' ? 'Localhost' : log.ipAddress}
-                                                    </span>
-                                                )}
-                                                <span>User: {log.userEmail || 'System'}</span>
-                                                <span className="text-zinc-400 italic truncate max-w-[200px]" title={log.details || ''}>{log.details}</span>
-                                            </div>
-                                        </div>
-                                    ))}
+                            <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50 flex flex-col md:flex-row justify-between items-center gap-4">
+                                <h3 className="font-bold text-zinc-700">Logs de Sistema (Últimas 24h o Filtrados)</h3>
+                                <div className="flex gap-2 items-center">
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-zinc-500">Desde:</span>
+                                        <input
+                                            type="date"
+                                            className="text-sm border border-zinc-200 rounded px-2 py-1"
+                                            onChange={(e) => {
+                                                const params = new URLSearchParams(searchParams);
+                                                if (e.target.value) params.set('auditFrom', e.target.value);
+                                                else params.delete('auditFrom');
+                                                router.push(`?${params.toString()}`);
+                                            }}
+                                            defaultValue={searchParams.get('auditFrom') || ''}
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-zinc-500">Hasta:</span>
+                                        <input
+                                            type="date"
+                                            className="text-sm border border-zinc-200 rounded px-2 py-1"
+                                            onChange={(e) => {
+                                                const params = new URLSearchParams(searchParams);
+                                                if (e.target.value) params.set('auditTo', e.target.value);
+                                                else params.delete('auditTo');
+                                                router.push(`?${params.toString()}`);
+                                            }}
+                                            defaultValue={searchParams.get('auditTo') || ''}
+                                        />
+                                    </div>
                                 </div>
+                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-zinc-50 text-zinc-500 font-medium border-b border-zinc-100">
+                                        <tr>
+                                            <th className="px-6 py-3">Fecha</th>
+                                            <th className="px-6 py-3">Acción</th>
+                                            <th className="px-6 py-3">Usuario</th>
+                                            <th className="px-6 py-3">IP</th>
+                                            <th className="px-6 py-3">Detalles</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-100">
+                                        {logs?.map((log) => {
+                                            const actionMap: { [key: string]: string } = {
+                                                'CREATE_PULMONARY_TEST': 'Creación Examen Pulmonar',
+                                                'UPDATE_PULMONARY_TEST': 'Edición Examen Pulmonar',
+                                                'DELETE_PULMONARY_TEST': 'Eliminación Examen Pulmonar',
+                                                'LOGIN_SUCCESS': 'Inicio de Sesión Exitoso',
+                                                'LOGIN_FAILURE': 'Fallo de Inicio de Sesión',
+                                                // Add more mappings as needed
+                                            };
+                                            const label = actionMap[log.action] || log.action;
+
+                                            return (
+                                                <tr key={log.id} className="hover:bg-zinc-50 transition-colors">
+                                                    <td className="px-6 py-3 whitespace-nowrap text-zinc-500">
+                                                        {new Date(log.createdAt).toLocaleString()}
+                                                    </td>
+                                                    <td className="px-6 py-3 font-medium text-zinc-900">
+                                                        <div className="flex items-center gap-2">
+                                                            <div className={`w-2 h-2 rounded-full ${log.action.includes('FAILURE') || log.action.includes('DELETE') ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+                                                            {label}
+                                                        </div>
+                                                    </td>
+                                                    <td className="px-6 py-3 text-zinc-600">
+                                                        {log.userEmail || 'System'}
+                                                    </td>
+                                                    <td className="px-6 py-3 font-mono text-xs text-zinc-500">
+                                                        {log.ipAddress === '::1' ? 'Localhost' : log.ipAddress}
+                                                    </td>
+                                                    <td className="px-6 py-3">
+                                                        <button
+                                                            onClick={() => setSelectedLog(log)}
+                                                            className="text-zinc-400 hover:text-indigo-600 transition-colors p-1 rounded-full hover:bg-indigo-50"
+                                                            title="Ver Detalle"
+                                                        >
+                                                            <Eye className="w-5 h-5" />
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {logs?.length === 0 && (
+                                            <tr>
+                                                <td colSpan={5} className="px-6 py-8 text-center text-zinc-500">
+                                                    No se encontraron registros para el periodo seleccionado.
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     ) : (

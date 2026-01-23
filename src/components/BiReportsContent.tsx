@@ -157,8 +157,8 @@ export default function BiReportsContent({ patients }: BiReportsContentProps) {
             // Demographics Avg Age
             if (p.birthDate) {
                 const age = new Date().getFullYear() - new Date(p.birthDate).getFullYear()
-                if (p.gender === 'Masculino') { maleSum += age; maleCount++ }
-                else if (p.gender === 'Femenino') { femaleSum += age; femaleCount++ }
+                if (p.gender === 'Masculino' || p.gender === 'M') { maleSum += age; maleCount++ }
+                else if (p.gender === 'Femenino' || p.gender === 'F') { femaleSum += age; femaleCount++ }
             }
         })
 
@@ -197,11 +197,15 @@ export default function BiReportsContent({ patients }: BiReportsContentProps) {
         // 5. Gender (Masculino/Femenino only)
         const genderCounts: Record<string, number> = {}
         filteredPatients.forEach(p => {
-            const g = p.gender
+            let g = p.gender
+            if (g === 'M') g = 'Masculino'
+            if (g === 'F') g = 'Femenino'
+
             if (g === 'Masculino' || g === 'Femenino') {
                 genderCounts[g] = (genderCounts[g] || 0) + 1
             }
         })
+
         const genderData = Object.entries(genderCounts).map(([name, value]) => ({ name, value }))
 
         // 6. Yearly Evolution (Diagnosis Trend)
@@ -282,7 +286,7 @@ export default function BiReportsContent({ patients }: BiReportsContentProps) {
                             onChange={(e) => setSelectedYear(e.target.value)}
                         >
                             <option value="">Todos</option>
-                            {years.map(y => <option key={y} value={y}>{y}</option>)}
+                            {years.map(y => <option key={`year-${y}`} value={y}>{y}</option>)}
                         </select>
                     </div>
                     <div className="flex items-center gap-2">
@@ -293,7 +297,7 @@ export default function BiReportsContent({ patients }: BiReportsContentProps) {
                             onChange={(e) => setSelectedCommune(e.target.value)}
                         >
                             <option value="">Todas</option>
-                            {communes.map(c => <option key={c} value={c}>{c}</option>)}
+                            {communes.map(c => <option key={`commune-${c}`} value={c}>{c}</option>)}
                         </select>
                     </div>
                     <div className="h-8 w-px bg-zinc-200 mx-2" />
