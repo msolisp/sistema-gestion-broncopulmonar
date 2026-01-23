@@ -59,14 +59,16 @@ export default function LoginPage() {
 
                         <VisualCaptcha onCaptchaChange={handleVisualCaptchaChange} />
 
-                        <TurnstileCaptcha onVerify={(token) => setCaptchaToken(token)} />
-
                         {errorMessage && (
                             <div className="flex items-center space-x-2 text-sm text-red-500">
                                 <p>{errorMessage}</p>
                             </div>
                         )}
                         <LoginButton disabled={(!captchaToken || !visualCaptchaValue) && process.env.NODE_ENV === 'production'} />
+
+                        <div className="relative z-0">
+                            <TurnstileCaptcha onVerify={(token) => setCaptchaToken(token)} />
+                        </div>
                     </form>
 
                     <div className="mt-6 text-center text-sm text-zinc-500">
