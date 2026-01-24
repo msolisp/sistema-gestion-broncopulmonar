@@ -3,7 +3,7 @@
 
 import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { authenticate } from '@/lib/actions'
+import { authenticate } from '@/lib/actions.auth'
 import TurnstileCaptcha from '@/components/TurnstileCaptcha'
 import VisualCaptcha from '@/components/VisualCaptcha'
 

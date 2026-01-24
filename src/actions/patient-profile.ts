@@ -16,13 +16,15 @@ export async function getPatientProfile() {
 
         if (session.user.id) {
             persona = await prisma.persona.findUnique({
-                where: { id: session.user.id }
+                where: { id: session.user.id },
+                include: { fichaClinica: true }
             });
         }
 
         if (!persona) {
             persona = await prisma.persona.findUnique({
-                where: { email: session.user.email }
+                where: { email: session.user.email },
+                include: { fichaClinica: true }
             });
         }
 
@@ -39,7 +41,11 @@ export async function getPatientProfile() {
             address: persona.direccion,
             commune: persona.comuna,
             region: persona.region,
-            // Add other fields if necessary
+            phone: persona.telefono,
+            birthDate: persona.fechaNacimiento,
+            gender: persona.sexo === 'M' ? 'Masculino' : (persona.sexo === 'F' ? 'Femenino' : (persona.sexo === 'OTRO' ? 'Otro' : '')),
+            healthSystem: persona.fichaClinica?.prevision,
+            cota: persona.fichaClinica?.cota,
         };
 
         return { user };

@@ -1,16 +1,38 @@
 'use client';
 
-import { useState } from 'react';
-import { Upload } from 'lucide-react';
-import { uploadMedicalExam } from '@/lib/actions';
+import { useState, useEffect } from 'react';
+import { Upload, CheckCircle2, AlertCircle } from 'lucide-react';
+import { uploadMedicalExam } from '@/lib/actions.patients';
 import { useRouter } from 'next/navigation';
 
 export default function ExamUploadForm({ patientId }: { patientId: string }) {
     const [isUploading, setIsUploading] = useState(false);
+    const [formData, setFormData] = useState({
+        centerName: '',
+        doctorName: '',
+        examDate: new Date().toISOString().split('T')[0]
+    });
+    const [status, setStatus] = useState<{ type: 'success' | 'error' | null; message: string | null }>({
+        type: null,
+        message: null
+    });
     const router = useRouter();
 
-    async function handleSubmit(formData: FormData) {
-        const file = formData.get('file') as File;
+    // Auto-clear success message after 5 seconds
+    useEffect(() => {
+        if (status.type === 'success') {
+            const timer = setTimeout(() => {
+                setStatus({ type: null, message: null });
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [status]);
+
+    async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+        e.preventDefault();
+        const form = e.currentTarget;
+        const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
+        const file = fileInput?.files?.[0];
         const MAX_SIZE = 5 * 1024 * 1024; // 5MB
 
         if (file && file.size > MAX_SIZE) {
@@ -19,20 +41,28 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
         }
 
         setIsUploading(true);
-        formData.append('patientId', patientId);
+        const data = new FormData();
+        if (file) data.append('file', file);
+        data.append('centerName', formData.centerName);
+        data.append('doctorName', formData.doctorName);
+        data.append('examDate', formData.examDate);
+        data.append('patientId', patientId);
 
-        const res = await uploadMedicalExam(formData);
+        const res = await uploadMedicalExam(data);
 
         setIsUploading(false);
         if (res?.message) {
-            alert(res.message);
+            setStatus({ type: 'error', message: res.message });
         } else if (res?.success) {
-            alert('Examen subido correctamente');
+            setStatus({ type: 'success', message: '¡Examen subido exitosamente!' });
             router.refresh();
-            // Reset form? Usually requires ref or Controlled inputs.
-            // basic reset via DOM for now or let page refresh handle it if we redirect?
-            // Actually router.refresh() keeps state, so standard form reset is needed.
-            (document.getElementById('upload-form') as HTMLFormElement)?.reset();
+            // Reset form
+            setFormData({
+                centerName: '',
+                doctorName: '',
+                examDate: new Date().toISOString().split('T')[0]
+            });
+            if (fileInput) fileInput.value = '';
         }
     }
 
@@ -46,16 +76,13 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
             </div>
 
             <div className="p-4">
-                <form id="upload-form" onSubmit={(e) => {
-                    e.preventDefault();
-                    handleSubmit(new FormData(e.currentTarget as HTMLFormElement));
-                }} className="space-y-4">
+                <form id="upload-form" onSubmit={handleSubmit} className="space-y-4">
 
                     <div className="flex flex-col md:flex-row gap-4">
                         {/* File Input - Takes up 40% */}
                         <div className="w-full md:w-5/12">
                             <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
-                                Archivo PDF <span className="text-zinc-400 lowercase font-normal">(Máximo 5MB)</span>
+                                Archivo PDF <span className="text-red-500 lowercase font-normal">(Máximo 5MB)</span>
                                 <input
                                     type="file"
                                     name="file"
@@ -82,6 +109,8 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
                                     <input
                                         type="text"
                                         name="centerName"
+                                        value={formData.centerName}
+                                        onChange={(e) => setFormData({ ...formData, centerName: e.target.value })}
                                         required
                                         placeholder="Ej: Clínica..."
                                         className="mt-1 w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs text-zinc-900 p-2 h-[38px]"
@@ -94,6 +123,8 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
                                     <input
                                         type="text"
                                         name="doctorName"
+                                        value={formData.doctorName}
+                                        onChange={(e) => setFormData({ ...formData, doctorName: e.target.value })}
                                         required
                                         placeholder="Ej: Dr. Pérez"
                                         className="mt-1 w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs text-zinc-900 p-2 h-[38px]"
@@ -106,6 +137,8 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
                                     <input
                                         type="date"
                                         name="examDate"
+                                        value={formData.examDate}
+                                        onChange={(e) => setFormData({ ...formData, examDate: e.target.value })}
                                         required
                                         className="mt-1 w-full rounded-md border-zinc-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-xs text-zinc-900 p-2 h-[38px]"
                                     />
@@ -114,7 +147,20 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
                         </div>
                     </div>
 
-                    <div className="pt-1 flex justify-end">
+                    <div className="pt-2 flex flex-col items-end gap-3">
+                        {status.message && (
+                            <div className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all animate-in fade-in slide-in-from-top-2 duration-300 ${status.type === 'success'
+                                ? 'bg-green-50 text-green-700 border border-green-200'
+                                : 'bg-red-50 text-red-700 border border-red-200'
+                                }`}>
+                                {status.type === 'success' ? (
+                                    <CheckCircle2 className="h-4 w-4" />
+                                ) : (
+                                    <AlertCircle className="h-4 w-4" />
+                                )}
+                                {status.message}
+                            </div>
+                        )}
                         <button
                             type="submit"
                             disabled={isUploading}

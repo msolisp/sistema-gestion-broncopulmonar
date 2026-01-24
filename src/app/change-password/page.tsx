@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useFormStatus } from 'react-dom';
-import { changePassword } from '@/lib/actions';
+import { changePassword } from '@/lib/actions.auth';
 import { Eye, EyeOff } from 'lucide-react';
 
 export default function ChangePasswordPage() {

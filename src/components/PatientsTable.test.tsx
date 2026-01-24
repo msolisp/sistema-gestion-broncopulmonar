@@ -18,7 +18,7 @@ jest.mock('xlsx', () => ({
     writeFile: jest.fn(),
 }))
 
-jest.mock('@/lib/actions', () => ({
+jest.mock('@/lib/actions.patients', () => ({
     adminCreatePatient: jest.fn(),
     adminUpdatePatient: jest.fn(),
     deletePatient: jest.fn(),

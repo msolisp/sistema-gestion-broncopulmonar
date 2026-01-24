@@ -8,13 +8,22 @@ jest.mock('@/auth', () => ({
 }))
 
 jest.mock('@/lib/prisma', () => ({
-    pulmonaryFunctionTest: {
+    pruebaFuncionPulmonar: {
         create: jest.fn(),
         findMany: jest.fn(),
     },
-    patient: {
+    persona: {
         findUnique: jest.fn(),
     },
+    fichaClinica: {
+        findUnique: jest.fn(),
+    },
+    usuarioSistema: {
+        findFirst: jest.fn(),
+    },
+    logAccesoSistema: {
+        create: jest.fn(),
+    }
 }))
 
 jest.mock('next/cache', () => ({
@@ -48,13 +57,15 @@ describe('Pulmonary Actions', () => {
 
         it('successfully creates a record', async () => {
             (auth as jest.Mock).mockResolvedValue({ user: { email: 'test@test.com', id: 'u1', role: 'ADMIN' } })
-                ; (prisma.pulmonaryFunctionTest.create as jest.Mock).mockResolvedValue({ id: 'pf1' })
+                // Mock Ficha resolution
+                ; (prisma.fichaClinica.findUnique as jest.Mock).mockResolvedValue({ id: 'fc1' })
+                ; (prisma.pruebaFuncionPulmonar.create as jest.Mock).mockResolvedValue({ id: 'pf1' })
 
             const result = await addPulmonaryRecord(formData)
 
-            expect(prisma.pulmonaryFunctionTest.create).toHaveBeenCalledWith({
+            expect(prisma.pruebaFuncionPulmonar.create).toHaveBeenCalledWith({
                 data: expect.objectContaining({
-                    patientId: 'p1',
+                    fichaClinicaId: 'fc1',
                     walkDistance: 400,
                     spo2Rest: 98,
                     spo2Final: 95,
@@ -63,7 +74,7 @@ describe('Pulmonary Actions', () => {
                     vef1Value: 2.8,
                     vef1Percent: 75,
                     dlcoPercent: 60,
-                    notes: 'Test Notes'
+                    notas: 'Test Notes'
                 })
             })
             expect(result).toEqual({ message: 'Registro guardado exitosamente' })
@@ -71,7 +82,7 @@ describe('Pulmonary Actions', () => {
 
         it('blocks unauthorized roles (PATIENT)', async () => {
             (auth as jest.Mock).mockResolvedValue({
-                user: { email: 'patient@test.com', role: 'PATIENT' }
+                user: { email: 'patient@test.com', role: 'PACIENTE' }
             })
             const result = await addPulmonaryRecord(formData)
             expect(result.message).toContain('No autorizado')
@@ -79,9 +90,10 @@ describe('Pulmonary Actions', () => {
 
         it('allows KINESIOLOGIST role', async () => {
             (auth as jest.Mock).mockResolvedValue({
-                user: { email: 'kin@test.com', role: 'KINESIOLOGIST' }
+                user: { email: 'kin@test.com', role: 'KINESIOLOGO' }
             })
-                ; (prisma.pulmonaryFunctionTest.create as jest.Mock).mockResolvedValue({ id: 'pf2' })
+                ; (prisma.fichaClinica.findUnique as jest.Mock).mockResolvedValue({ id: 'fc1' })
+                ; (prisma.pruebaFuncionPulmonar.create as jest.Mock).mockResolvedValue({ id: 'pf2' })
 
             const result = await addPulmonaryRecord(formData)
             expect(result.message).toBe('Registro guardado exitosamente')
@@ -89,7 +101,8 @@ describe('Pulmonary Actions', () => {
 
         it('creates record with null optional values', async () => {
             (auth as jest.Mock).mockResolvedValue({ user: { email: 'test@test.com', id: 'u1', role: 'ADMIN' } })
-                ; (prisma.pulmonaryFunctionTest.create as jest.Mock).mockResolvedValue({ id: 'pf2' })
+                ; (prisma.fichaClinica.findUnique as jest.Mock).mockResolvedValue({ id: 'fc1' })
+                ; (prisma.pruebaFuncionPulmonar.create as jest.Mock).mockResolvedValue({ id: 'pf2' })
 
             const emptyFormData = new FormData()
             emptyFormData.append('patientId', 'p1')
@@ -98,7 +111,7 @@ describe('Pulmonary Actions', () => {
 
             await addPulmonaryRecord(emptyFormData)
 
-            expect(prisma.pulmonaryFunctionTest.create).toHaveBeenCalledWith({
+            expect(prisma.pruebaFuncionPulmonar.create).toHaveBeenCalledWith({
                 data: expect.objectContaining({
                     walkDistance: null,
                     spo2Rest: null,
@@ -114,10 +127,11 @@ describe('Pulmonary Actions', () => {
 
         it('handles database errors gracefully', async () => {
             (auth as jest.Mock).mockResolvedValue({ user: { email: 'test@test.com', id: 'u1', role: 'ADMIN' } })
-                ; (prisma.pulmonaryFunctionTest.create as jest.Mock).mockRejectedValue(new Error('DB Error'))
+                ; (prisma.fichaClinica.findUnique as jest.Mock).mockResolvedValue({ id: 'fc1' })
+                ; (prisma.pruebaFuncionPulmonar.create as jest.Mock).mockRejectedValue(new Error('DB Error'))
 
             const result = await addPulmonaryRecord(formData)
-            expect(result).toEqual({ message: 'Error al guardar el registro' })
+            expect(result).toEqual({ message: 'Error al guardar el registro: DB Error' })
         })
     })
 
@@ -130,19 +144,22 @@ describe('Pulmonary Actions', () => {
 
         it('returns records if authenticated', async () => {
             (auth as jest.Mock).mockResolvedValue({ user: { email: 'test@test.com', id: 'u1', role: 'ADMIN' } })
-            const mockHistory = [{ id: '1', date: new Date() }]
-                ; (prisma.pulmonaryFunctionTest.findMany as jest.Mock).mockResolvedValue(mockHistory)
+            const mockHistory = [{ id: '1', fecha: new Date() }]
+                ; (prisma.fichaClinica.findUnique as jest.Mock).mockResolvedValue({ id: 'fc1' })
+                ; (prisma.pruebaFuncionPulmonar.findMany as jest.Mock).mockResolvedValue(mockHistory)
 
             const result = await getPulmonaryHistory('p1')
-            expect(result).toEqual(mockHistory)
+            // Tests expectation: mapped date property
+            expect(result).toMatchObject([{ id: '1', date: mockHistory[0].fecha }])
         })
 
         it('blocks IDOR for PATIENT accessing another profile', async () => {
             (auth as jest.Mock).mockResolvedValue({
-                user: { id: 'user1', role: 'PATIENT' }
+                user: { id: 'user1', email: 'user1@test.com', role: 'PACIENTE' }
             })
-            // Patient user1 tries to access profile of patientId 'p2'
-            // Code checks if patientId ('p2') === session.user.id ('user1') -> False
+                // Patient user1 tries to access profile of patientId 'p2'
+                // Mock finding persona for the logged in user
+                ; (prisma.persona.findUnique as jest.Mock).mockResolvedValue({ id: 'user1', email: 'user1@test.com' })
 
             const result = await getPulmonaryHistory('p2')
             expect(result).toEqual([])
@@ -150,21 +167,24 @@ describe('Pulmonary Actions', () => {
 
         it('allows PATIENT accessing their own profile', async () => {
             (auth as jest.Mock).mockResolvedValue({
-                user: { id: 'user1', role: 'PATIENT' }
+                user: { id: 'user1', email: 'user1@test.com', role: 'PACIENTE' }
             })
 
-            // Code checks if patientId ('user1') === session.user.id ('user1') -> True
+                // Mock finding persona for the logged in user (matches requested p1)
+                ; (prisma.persona.findUnique as jest.Mock).mockResolvedValue({ id: 'user1', email: 'user1@test.com' })
+                ; (prisma.fichaClinica.findUnique as jest.Mock).mockResolvedValue({ id: 'fc1' })
 
-            const mockHistory = [{ id: '1', date: new Date() }]
-                ; (prisma.pulmonaryFunctionTest.findMany as jest.Mock).mockResolvedValue(mockHistory)
+            const mockHistory = [{ id: '1', fecha: new Date() }]
+                ; (prisma.pruebaFuncionPulmonar.findMany as jest.Mock).mockResolvedValue(mockHistory)
 
             const result = await getPulmonaryHistory('user1')
-            expect(result).toEqual(mockHistory)
+            expect(result).toMatchObject([{ id: '1', date: mockHistory[0].fecha }])
         })
 
         it('returns empty array on db error', async () => {
             (auth as jest.Mock).mockResolvedValue({ user: { email: 'test@test.com' } })
-                ; (prisma.pulmonaryFunctionTest.findMany as jest.Mock).mockRejectedValue(new Error('DB Error'))
+                ; (prisma.fichaClinica.findUnique as jest.Mock).mockResolvedValue({ id: 'fc1' })
+                ; (prisma.pruebaFuncionPulmonar.findMany as jest.Mock).mockRejectedValue(new Error('DB Error'))
 
             const result = await getPulmonaryHistory('p1')
             expect(result).toEqual([])

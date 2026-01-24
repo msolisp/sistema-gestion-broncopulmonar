@@ -1,26 +1,25 @@
+
 import { PrismaClient } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
 async function main() {
-    const users = await prisma.user.findMany({
-        select: {
-            email: true,
-            role: true,
-            name: true,
-            password: true // Only checking if it looks like a hash or plain text (will not display full hash)
+    console.log('Listing Personas (Patients/Users):')
+    const personas = await prisma.persona.findMany({
+        take: 10,
+        include: {
+            usuarioSistema: true
         }
     })
-    console.log('Available Configured Users:')
-    users.forEach(u => {
-        console.log(`- Role: ${u.role} | Name: ${u.name} | Email: ${u.email}`)
+
+    personas.forEach(p => {
+        console.log(`- ${p.nombre} ${p.apellidoPaterno} (${p.rut}) [${p.usuarioSistema ? 'STAFF: ' + p.usuarioSistema.rol : 'PATIENT'}]`)
     })
 }
 
 main()
     .catch(e => {
-        console.error(e)
-        process.exit(1)
+        throw e
     })
     .finally(async () => {
         await prisma.$disconnect()

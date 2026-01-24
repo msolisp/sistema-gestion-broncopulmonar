@@ -2,7 +2,7 @@
 
 import { auth } from '@/auth'
 import { put } from '@vercel/blob'
-import prisma from '@/lib/db' // Use centralized db instance if available or import PrismaClient
+import prisma from '@/lib/prisma' // Use centralized db instance if available or import PrismaClient
 // import { PrismaClient } from '@prisma/client'
 // const prisma = new PrismaClient() 
 

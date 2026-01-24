@@ -1,10 +1,11 @@
-export type UserRole = 'ADMIN' | 'KINESIOLOGIST' | 'RECEPTIONIST' | 'PATIENT';
+export type UserRole = string;
 
 export interface SystemUser {
     id: string;
-    name: string | null;
+    name: string;
     email: string;
-    role: UserRole;
+    role: string;
+    roleName: string;
     active: boolean;
     rut?: string | null;
     region?: string | null;

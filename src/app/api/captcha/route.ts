@@ -11,12 +11,12 @@ function generateCaptchaText(length: number = 6): string {
 }
 
 function generateCaptchaSVG(text: string): string {
-    const width = 200;
+    const width = 240; // Increased internal width
     const height = 80;
 
     // Noise lines
     let noiseLine = '';
-    for (let i = 0; i < 5; i++) {
+    for (let i = 0; i < 7; i++) { // Increased noise for larger width
         const x1 = Math.random() * width;
         const y1 = Math.random() * height;
         const x2 = Math.random() * width;
@@ -27,20 +27,20 @@ function generateCaptchaSVG(text: string): string {
 
     // Text elements with better spacing
     let textElements = '';
-    const charWidth = width / text.length;
+    const charWidth = (width - 40) / text.length; // Leave padding on sides
     for (let i = 0; i < text.length; i++) {
         const char = text[i];
-        // Adjust starting position to prevent clipping - start at 10 instead of 20
-        const x = charWidth * i + 10;
+        const x = 20 + charWidth * i + (charWidth / 2); // Center in slot
         const y = 50;
-        const rotation = (Math.random() - 0.5) * 20; // Rotation in degrees
+        const rotation = (Math.random() - 0.5) * 30; // Reduce rotation slightly
         const hue = Math.random() * 360;
-        const fontSize = 30 + Math.random() * 10; // Random size between 30-40
+        const fontSize = 32 + Math.random() * 8; // Slightly smaller font
 
         textElements += `
       <text 
         x="${x}" 
         y="${y}" 
+        text-anchor="middle"
         font-size="${fontSize}" 
         font-weight="bold" 
         fill="hsl(${hue}, 70%, 40%)"
@@ -50,7 +50,7 @@ function generateCaptchaSVG(text: string): string {
     }
 
     const svg = `
-    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+    <svg viewBox="0 0 ${width} ${height}" width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid meet">
       <rect width="${width}" height="${height}" fill="#f8fafc"/>
       ${noiseLine}
       ${textElements}

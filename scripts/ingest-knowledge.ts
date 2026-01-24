@@ -157,8 +157,8 @@ async function main() {
             const id = crypto.randomUUID();
 
             await prisma.$executeRaw`
-        INSERT INTO "MedicalKnowledge" (id, content, "imageUrl", source, page, embedding, "createdAt")
-        VALUES (${id}, ${content}, ${publicImageUrl}, ${file}, 1, ${vectorString}::vector, NOW());
+        INSERT INTO "MedicalKnowledge" (id, content, "imageUrl", source, page, embedding, "createdAt", "updatedAt")
+        VALUES (${id}, ${content}, ${publicImageUrl}, ${file}, 1, ${vectorString}::vector, NOW(), NOW());
       `;
 
             bar.increment();

@@ -2,15 +2,19 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import PatientExamsUpload from './PatientExamsUpload'
 import { useRouter } from 'next/navigation'
 import { useFormState } from 'react-dom'
+import { useActionState } from 'react'
 
-// Mock Hooks and Actions
+jest.mock('react', () => ({
+    ...jest.requireActual('react'),
+    useActionState: jest.fn(),
+}))
+
 jest.mock('next/navigation', () => ({
     useRouter: jest.fn()
 }))
 
 jest.mock('react-dom', () => ({
     ...jest.requireActual('react-dom'),
-    useFormState: jest.fn(),
     useFormStatus: jest.fn(() => ({ pending: false })),
 }))
 
@@ -31,13 +35,10 @@ describe('PatientExamsUpload', () => {
             })
 
             // Default FormState Mock: Initial state (not success)
-            ; (useFormState as jest.Mock).mockReturnValue([
+            ; (useActionState as jest.Mock).mockReturnValue([
                 { message: '' },
                 mockAction
             ])
-
-        // Mock window.alert
-        window.alert = jest.fn()
 
         // Mock DataTransfer for file handling
         global.DataTransfer = class DataTransfer {
@@ -69,7 +70,7 @@ describe('PatientExamsUpload', () => {
 
         fireEvent.change(fileInput, { target: { files: [file] } })
 
-        expect(window.alert).toHaveBeenCalledWith('Solo se permiten archivos PDF')
+        expect(screen.getByText('Solo se permiten archivos PDF')).toBeInTheDocument()
     })
 
     it('updates file name when valid PDF is selected', () => {
@@ -102,7 +103,7 @@ describe('PatientExamsUpload', () => {
         const mockOnSuccess = jest.fn()
 
             // Setup mock to return success state
-            ; (useFormState as jest.Mock).mockReturnValue([
+            ; (useActionState as jest.Mock).mockReturnValue([
                 { message: 'Success', success: true },
                 mockAction
             ])
@@ -116,7 +117,7 @@ describe('PatientExamsUpload', () => {
 
     it('displays error message from state', () => {
         // Setup mock to return error state
-        ; (useFormState as jest.Mock).mockReturnValue([
+        ; (useActionState as jest.Mock).mockReturnValue([
             { message: 'Error al subir', success: false },
             mockAction
         ])

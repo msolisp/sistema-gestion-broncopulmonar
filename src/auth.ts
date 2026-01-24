@@ -38,7 +38,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                                 codigosBackup: true
                             }
                         },
-                        usuarioSistema: true,
+                        usuarioSistema: {
+                            include: { rol_rel: true }
+                        },
                         fichaClinica: true,
                     },
                 });
@@ -106,16 +108,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     });
 
                     // Determine role (staff or patient)
-                    let role = 'PATIENT';
+                    let role = 'PACIENTE';
                     if (persona.usuarioSistema) {
-                        const roleMap: Record<string, string> = {
-                            KINESIOLOGO: 'KINESIOLOGIST',
-                            MEDICO: 'DOCTOR',
-                            ADMIN: 'ADMIN',
-                            RECEPCIONISTA: 'RECEPTIONIST',
-                            ENFERMERA: 'NURSE',
-                        };
-                        role = roleMap[persona.usuarioSistema.rol] || 'STAFF';
+                        role = (persona.usuarioSistema as any).rol_rel.nombre;
                     }
 
                     return {
@@ -123,26 +118,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                         email: persona.email || undefined,
                         name: `${persona.nombre} ${persona.apellidoPaterno}`,
                         role: role,
+                        usuarioSistemaId: persona.usuarioSistema?.id,
+                        mustChangePassword: persona.credencial.debeCambiarPassword
                     };
                 }
 
-                // Fallback to legacy User table (for backward compatibility)
-                const user = await prisma.user.findUnique({
-                    where: { email },
-                });
-
-                if (user) {
-                    const passwordMatch = await bcrypt.compare(password, user.password);
-                    if (passwordMatch) {
-                        return {
-                            id: user.id,
-                            email: user.email,
-                            name: user.name || user.email,
-                            role: user.role,
-                        };
-                    }
-                }
-
+                // Legacy User table fallback removed.
 
                 throw new Error('Credenciales inválidas');
             },

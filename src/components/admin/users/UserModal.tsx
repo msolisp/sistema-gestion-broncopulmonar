@@ -2,18 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { X, Eye, EyeOff } from 'lucide-react';
-import { adminCreateSystemUser, adminUpdateSystemUser } from '@/lib/actions';
+import { adminCreateSystemUser, adminUpdateSystemUser } from "@/lib/actions.staff";
 import { REGIONS } from '@/lib/chile-data';
 import { SystemUser, UserRole } from './types';
+import { obtenerCuerpoRut, obtenerDigitoVerificador, validarRutChileno } from '@/lib/validators';
 
 interface UserModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSuccess: () => void;
     userToEdit: SystemUser | null;
+    roles: any[];
 }
 
-export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalProps) {
+export function UserModal({ isOpen, onClose, onSuccess, userToEdit, roles }: UserModalProps) {
     const [formData, setFormData] = useState<Partial<SystemUser>>({});
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -25,14 +27,27 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
     useEffect(() => {
         if (isOpen) {
             if (userToEdit) {
-                setFormData({ ...userToEdit });
+                const fullRut = userToEdit.rut || '';
+                setFormData({
+                    ...userToEdit,
+                    name: userToEdit.name || '',
+                    email: userToEdit.email || '',
+                    rut: fullRut,
+                    rutBody: obtenerCuerpoRut(fullRut),
+                    rutDv: obtenerDigitoVerificador(fullRut),
+                    region: userToEdit.region || '',
+                    commune: userToEdit.commune || '',
+                    address: userToEdit.address || '',
+                });
             } else {
                 setFormData({
                     name: '',
                     email: '',
-                    role: 'KINESIOLOGIST',
+                    role: roles.find(r => r.nombre === 'KINESIOLOGO')?.id || roles[0]?.id || '',
                     active: true,
                     rut: '',
+                    rutBody: '',
+                    rutDv: '',
                     region: '',
                     commune: '',
                     address: ''
@@ -59,15 +74,18 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
 
     const handleSave = async () => {
         // 1. Basic Validation
-        if (!formData.name || !formData.email || !formData.rut) {
+        const rutBody = (formData as any).rutBody || '';
+        const rutDv = (formData as any).rutDv || '';
+        const fullRut = rutBody && rutDv ? `${rutBody}-${rutDv}` : '';
+
+        if (!formData.name || !formData.email || !rutBody || !rutDv) {
             setSaveFeedback({ type: 'error', message: 'Nombre, Email y RUT son obligatorios' });
             return;
         }
 
-        // 2. Client-side RUT Validation (Simple format check)
-        // Note: Real validation happens on backend, but we can do a quick check here
-        if (formData.rut.length < 8) {
-            setSaveFeedback({ type: 'error', message: 'El RUT parece incompleto' });
+        // 2. Client-side RUT Validation
+        if (!validarRutChileno(fullRut)) {
+            setSaveFeedback({ type: 'error', message: 'RUT inválido. Verifique el cuerpo y dígito verificador.' });
             return;
         }
 
@@ -93,8 +111,9 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
             const data = new FormData();
             data.append('name', formData.name || '');
             data.append('email', formData.email || '');
-            data.append('role', formData.role || 'KINESIOLOGIST');
-            data.append('rut', formData.rut || '');
+            data.append('role', formData.role || 'KINESIOLOGO');
+            data.append('rutBody', (formData as any).rutBody || '');
+            data.append('rutDv', (formData as any).rutDv || '');
 
             // Handle optional fields
             if (formData.region) data.append('region', formData.region);
@@ -168,20 +187,34 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                     </div>
 
                     <div>
-                        <label htmlFor="userRut" className="block text-xs font-medium text-zinc-700 mb-1">RUT</label>
-                        <input
-                            id="userRut"
-                            type="text"
-                            value={formData.rut || ''}
-                            onChange={e => {
-                                const val = e.target.value.toUpperCase().replace(/[^0-9K\.\-]/g, '');
-                                setFormData({ ...formData, rut: val });
-                            }}
-                            maxLength={12}
-                            placeholder="12.345.678-9"
-                            className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
-                        />
-                        <p className="text-xs text-gray-500 mt-1">Formato: 12.345.678-9</p>
+                        <label className="block text-xs font-medium text-zinc-700 mb-1">RUT</label>
+                        <div className="flex gap-2">
+                            <input
+                                id="userRutBody"
+                                type="text"
+                                value={(formData as any).rutBody || ''}
+                                onChange={e => {
+                                    const val = e.target.value.replace(/[^0-9]/g, '');
+                                    setFormData({ ...formData, rutBody: val });
+                                }}
+                                maxLength={8}
+                                placeholder="12345678"
+                                className="flex-1 px-3 py-2 border border-zinc-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                            <span className="flex items-center text-zinc-400">-</span>
+                            <input
+                                id="userRutDv"
+                                type="text"
+                                value={(formData as any).rutDv || ''}
+                                onChange={e => {
+                                    const val = e.target.value.toUpperCase().replace(/[^0-9K]/g, '');
+                                    setFormData({ ...formData, rutDv: val });
+                                }}
+                                maxLength={1}
+                                placeholder="K"
+                                className="w-12 px-3 py-2 border border-zinc-300 rounded-lg text-sm text-center outline-none focus:ring-2 focus:ring-indigo-500"
+                            />
+                        </div>
                     </div>
 
                     {/* Password Field */}
@@ -199,6 +232,7 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                                     if (e.target.value) setPasswordError(validatePassword(e.target.value));
                                     else setPasswordError(null);
                                 }}
+                                placeholder={userToEdit ? 'Dejar vacío para no cambiar' : 'Mínimo 8 caracteres'}
                                 className={`w-full px-3 py-2 pr-10 border rounded-lg text-sm outline-none focus:ring-2 ${passwordError ? 'border-red-500 focus:ring-red-500' : 'border-zinc-300 focus:ring-indigo-500'
                                     }`}
                             />
@@ -261,14 +295,16 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                         <label htmlFor="userRole" className="block text-xs font-medium text-zinc-700 mb-1">Rol</label>
                         <select
                             id="userRole"
-                            value={formData.role || 'KINESIOLOGIST'}
-                            onChange={e => setFormData({ ...formData, role: e.target.value as UserRole })}
+                            value={formData.role || ''}
+                            onChange={e => setFormData({ ...formData, role: e.target.value })}
                             disabled={userToEdit?.role === 'ADMIN'}
                             className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-zinc-100"
                         >
-                            {userToEdit?.role === 'ADMIN' && <option value="ADMIN">ADMINISTRADOR</option>}
-                            <option value="KINESIOLOGIST">KINESIÓLOGO</option>
-                            <option value="RECEPTIONIST">RECEPCIONISTA</option>
+                            {roles.map(role => (
+                                <option key={role.id} value={role.id}>
+                                    {role.nombre}
+                                </option>
+                            ))}
                         </select>
                         {userToEdit?.role === 'ADMIN' && <p className="text-xs text-zinc-400 mt-1">El rol de administrador no puede ser modificado</p>}
                     </div>
@@ -277,7 +313,7 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit }: UserModalP
                         <input
                             type="checkbox"
                             id="activeCheck"
-                            checked={formData.active}
+                            checked={!!formData.active}
                             onChange={e => setFormData({ ...formData, active: e.target.checked })}
                             disabled={userToEdit?.role === 'ADMIN'}
                             className="rounded text-indigo-600 focus:ring-indigo-500"

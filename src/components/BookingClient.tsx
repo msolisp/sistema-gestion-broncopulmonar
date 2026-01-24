@@ -1,7 +1,8 @@
 'use client'
 
 import { useActionState, useState } from 'react'
-import { bookAppointment, logout } from '@/lib/actions'
+import { bookAppointment } from '@/lib/actions.appointments'
+import { logout } from '@/lib/actions.auth'
 import BookingInterface from '@/components/BookingInterface'
 import { LogOut, ArrowLeft, User } from 'lucide-react'
 import Link from 'next/link'

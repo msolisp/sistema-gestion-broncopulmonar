@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect } from 'react'
-import { useFormState, useFormStatus } from 'react-dom'
+import { useState, useEffect, useActionState } from 'react'
+import { useFormStatus } from 'react-dom'
 import { useRouter } from 'next/navigation'
 import { uploadPatientExam } from '@/lib/patient-actions'
 
@@ -30,14 +30,16 @@ function SubmitButton() {
 
 export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => void }) {
     const router = useRouter()
-    const [state, formAction] = useFormState(uploadPatientExam, initialState)
+    const [state, formAction] = useActionState(uploadPatientExam, initialState)
     const [fileName, setFileName] = useState<string>('')
     const [isDragging, setIsDragging] = useState(false)
+    const [localError, setLocalError] = useState<string | null>(null)
 
     // Monitor state changes to handle success
     useEffect(() => {
         if (state.success) {
             setFileName('')
+            setLocalError(null)
             const form = document.getElementById('exam-upload-form') as HTMLFormElement
             form?.reset()
             onSuccess?.()
@@ -53,13 +55,14 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
     }
 
     const handleFileSelection = (file: File) => {
+        setLocalError(null)
         if (file.type !== 'application/pdf') {
-            alert('Solo se permiten archivos PDF')
+            setLocalError('Solo se permiten archivos PDF')
             return
         }
         const maxSize = 5 * 1024 * 1024 // 5MB
         if (file.size > maxSize) {
-            alert('El archivo no debe superar los 5MB')
+            setLocalError('El archivo no debe superar los 5MB')
             return
         }
         setFileName(file.name)
@@ -93,6 +96,15 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
         }
     }
 
+    const handleSubmit = async (formData: FormData) => {
+        const file = formData.get('file') as File;
+        if (!file || file.size === 0) {
+            setLocalError('Debe seleccionar un archivo PDF antes de continuar.');
+            return;
+        }
+        formAction(formData);
+    }
+
     return (
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
             <div className="flex items-center gap-2 mb-6">
@@ -102,7 +114,7 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
                 <h2 className="text-2xl font-bold text-gray-900">Subir Examen Médico</h2>
             </div>
 
-            <form id="exam-upload-form" action={formAction} className="space-y-4">
+            <form id="exam-upload-form" action={handleSubmit} className="space-y-4">
                 {/* File Upload */}
                 <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -111,7 +123,7 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
                     <div
                         className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${isDragging
                             ? 'border-indigo-500 bg-indigo-50'
-                            : 'border-gray-300 hover:border-indigo-500'
+                            : localError ? 'border-red-500 bg-red-50' : 'border-gray-300 hover:border-indigo-500'
                             }`}
                         onDragOver={handleDragOver}
                         onDragLeave={handleDragLeave}
@@ -124,14 +136,13 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
                             onChange={handleFileChange}
                             className="hidden"
                             id="file-upload"
-                            required
                         />
                         <label
                             htmlFor="file-upload"
                             className="cursor-pointer block w-full h-full"
                         >
                             <div className="flex flex-col items-center">
-                                <svg className={`w-12 h-12 mb-2 ${isDragging ? 'text-indigo-600' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className={`w-12 h-12 mb-2 ${isDragging ? 'text-indigo-600' : localError ? 'text-red-400' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                                 </svg>
                                 <span className="text-indigo-600 font-medium">Seleccionar archivo</span>
@@ -145,7 +156,8 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
                             </div>
                         )}
                     </div>
-                    {!fileName && <p className="text-xs text-gray-500 mt-1">Sin archivos seleccionados</p>}
+                    {localError && <p className="text-xs text-red-500 mt-2 font-medium">{localError}</p>}
+                    {!fileName && !localError && <p className="text-xs text-gray-500 mt-1">Sin archivos seleccionados</p>}
                 </div>
 
                 {/* Centro Médico */}

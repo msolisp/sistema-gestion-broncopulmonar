@@ -42,13 +42,13 @@ export default function PatientsManagementTable({ currentUserRole, permissions }
     const can = (action: string) => {
         if (!currentUserRole || !permissions) return true; // Default allow if no props passed (dev safety) or maybe restrictive? Let's default allow to strict check below.
         if (currentUserRole === 'ADMIN') return true;
-        if (currentUserRole === 'PATIENT') return false;
+        if (currentUserRole === 'PACIENTE') return false;
 
         const perm = permissions.find(p => p.action === action);
         if (!perm) return false;
 
-        if (currentUserRole === 'KINESIOLOGIST') return perm.kine;
-        if (currentUserRole === 'RECEPTIONIST') return perm.recep;
+        if (currentUserRole === 'KINESIOLOGO') return perm.kine;
+        if (currentUserRole === 'RECEPCIONISTA') return perm.recep;
 
         return false;
     };

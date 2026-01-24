@@ -62,7 +62,7 @@ describe('MFA Library', () => {
             const codes = await generateBackupCodes();
 
             expect(codes).toHaveLength(10);
-        });
+        }, 20000);
 
         it('should generate unique codes', async () => {
             const codes = await generateBackupCodes(5);

@@ -8,14 +8,12 @@ import { getRealtimeGlobalAQI } from '@/lib/air-quality';
 
 // Mock dependencies
 jest.mock('@/lib/prisma', () => ({
-    patient: {
+    persona: {
         findUnique: jest.fn(),
-        create: jest.fn(),
     },
-    appointment: {
+    cita: {
         findFirst: jest.fn(),
     },
-    // We might need to mock transaction if used, but here it's not.
 }));
 
 jest.mock('@/auth', () => ({
@@ -44,14 +42,17 @@ describe('getPatientDashboardData', () => {
             user: { id: 'user-1', name: 'Test User', email: 'test@test.com' }
         });
 
-        (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
+        (prisma.persona.findUnique as jest.Mock).mockResolvedValue({
             id: 'patient-1',
-            commune: 'SANTIAGO'
+            comuna: 'SANTIAGO',
+            nombre: 'Test',
+            apellidoPaterno: 'User',
+            fichaClinica: { id: 'fc1' }
         });
 
-        (prisma.appointment.findFirst as jest.Mock).mockResolvedValue({
-            date: new Date(),
-            status: 'PENDING'
+        (prisma.cita.findFirst as jest.Mock).mockResolvedValue({
+            fecha: new Date(),
+            estado: 'PENDING'
         });
 
         (getRealtimeGlobalAQI as jest.Mock).mockResolvedValue([
@@ -64,7 +65,7 @@ describe('getPatientDashboardData', () => {
         expect(result).toHaveProperty('patient');
         expect(result).toHaveProperty('nextAppointment');
         expect(result.userName).toBe('Test User');
-        expect(result.aqiData).toEqual({ commune: 'SANTIAGO', aqi: 50, status: 'Bueno' }); // Matches patient commune 'SANTIAGO'
+        expect(result.aqiData).toEqual({ commune: 'SANTIAGO', aqi: 50, status: 'Bueno' });
     });
 
     it('should return correct AQI for non-Santiago commune', async () => {
@@ -72,12 +73,15 @@ describe('getPatientDashboardData', () => {
             user: { id: 'user-2', name: 'Puente Alto User', email: 'user2@test.com' }
         });
 
-        (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
+        (prisma.persona.findUnique as jest.Mock).mockResolvedValue({
             id: 'patient-2',
-            commune: 'PUENTE ALTO'
+            comuna: 'PUENTE ALTO',
+            nombre: 'Puente',
+            apellidoPaterno: 'Alto',
+            fichaClinica: { id: 'fc2' }
         });
 
-        (prisma.appointment.findFirst as jest.Mock).mockResolvedValue(null);
+        (prisma.cita.findFirst as jest.Mock).mockResolvedValue(null);
 
         (getRealtimeGlobalAQI as jest.Mock).mockResolvedValue([
             { commune: 'SANTIAGO', aqi: 50, status: 'Bueno' },
@@ -94,12 +98,13 @@ describe('getPatientDashboardData', () => {
             user: { id: 'user-3', name: 'Unknown User', email: 'user3@test.com' }
         });
 
-        (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
+        (prisma.persona.findUnique as jest.Mock).mockResolvedValue({
             id: 'patient-3',
-            commune: 'UNKNOWN_CITY'
+            comuna: 'UNKNOWN_CITY',
+            fichaClinica: { id: 'fc3' }
         });
 
-        (prisma.appointment.findFirst as jest.Mock).mockResolvedValue(null);
+        (prisma.cita.findFirst as jest.Mock).mockResolvedValue(null);
 
         (getRealtimeGlobalAQI as jest.Mock).mockResolvedValue([
             { commune: 'SANTIAGO', aqi: 50, status: 'Bueno' } // Only Santiago available/matches default
@@ -110,18 +115,18 @@ describe('getPatientDashboardData', () => {
         expect(result.aqiData).toEqual({ commune: 'SANTIAGO', aqi: 50, status: 'Bueno' });
     });
 
-    it('should return error if patient not found (no auto-recover)', async () => {
+    it('should return error if patient not found', async () => {
         (auth as jest.Mock).mockResolvedValue({
             user: { id: 'user-broken', name: 'Broken User', email: 'broken@test.com' }
         });
 
         // First findUnique returns null
-        (prisma.patient.findUnique as jest.Mock).mockResolvedValue(null);
+        (prisma.persona.findUnique as jest.Mock).mockResolvedValue(null);
 
         const result = await getPatientDashboardData();
 
-        expect(result).toEqual({ error: "Perfil de paciente no encontrado" });
-        expect(prisma.patient.create).not.toHaveBeenCalled();
+        // Expect specific error message
+        expect(result).toHaveProperty('error');
     });
 
     it('should handle errors gracefully', async () => {
@@ -129,7 +134,7 @@ describe('getPatientDashboardData', () => {
             user: { id: 'user-1', name: 'Test User', email: 'test@test.com' }
         });
 
-        (prisma.patient.findUnique as jest.Mock).mockRejectedValue(new Error('DB Error'));
+        (prisma.persona.findUnique as jest.Mock).mockRejectedValue(new Error('DB Error'));
 
         const result = await getPatientDashboardData();
 

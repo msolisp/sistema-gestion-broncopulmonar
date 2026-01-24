@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     const userRole = (session.user as any).role
-    const allowedRoles = ['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST']
+    const allowedRoles = ['ADMIN', 'KINESIOLOGO', 'RECEPCIONISTA']
 
     if (!allowedRoles.includes(userRole)) {
         return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -30,54 +30,36 @@ export async function POST(request: NextRequest) {
             }, { status: 400 })
         }
 
-        // Prepare update data
-        const updateData: any = {
-            name,
+        // prepare update using FHIR adapter
+        const { updatePatient } = await import('@/lib/fhir-adapters');
+        const { parseFullName } = await import('@/lib/utils');
+        const { nombre, apellidoPaterno, apellidoMaterno } = parseFullName(name);
+
+        await updatePatient(id, {
+            nombre: nombre || name,
+            apellidoPaterno: apellidoPaterno || 'SIN_APELLIDO',
+            apellidoMaterno,
+            comuna: commune,
             region,
-            commune,
-            address
+            direccion: address,
+            password: password && password.trim() ? password : undefined,
+            modificadoPor: session.user.email || 'SYSTEM'
+        });
+
+        // Audit Log
+        const userStaff = await prisma.usuarioSistema.findFirst({ where: { persona: { email: session.user.email as string } } });
+        if (userStaff) {
+            await prisma.logAccesoSistema.create({
+                data: {
+                    accion: 'PATIENT_UPDATED',
+                    accionDetalle: `Patient ${name} updated by ${session.user.email}`,
+                    usuarioId: userStaff.id,
+                    recurso: 'PERSONA',
+                    recursoId: id,
+                    ipAddress: '::1'
+                }
+            });
         }
-
-        // If password is provided, hash it
-        if (password && password.trim()) {
-            // Validate password
-            if (password.length < 8) {
-                return NextResponse.json({
-                    message: 'La contraseña debe tener al menos 8 caracteres'
-                }, { status: 400 })
-            }
-            if (!/[A-Z]/.test(password)) {
-                return NextResponse.json({
-                    message: 'La contraseña debe contener al menos una mayúscula'
-                }, { status: 400 })
-            }
-            if (!/[a-z]/.test(password)) {
-                return NextResponse.json({
-                    message: 'La contraseña debe contener al menos una minúscula'
-                }, { status: 400 })
-            }
-            if (!/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
-                return NextResponse.json({
-                    message: 'La contraseña debe contener al menos un carácter especial'
-                }, { status: 400 })
-            }
-
-            updateData.password = await bcrypt.hash(password, 10)
-        }
-
-        // Update patient
-        await prisma.patient.update({
-            where: { id },
-            data: updateData
-        })
-
-        // Log action
-        await logAction(
-            'PATIENT_UPDATED',
-            `Patient ${name} updated by ${session.user.email}`,
-            null,
-            session.user.email
-        )
 
         return NextResponse.json({ message: 'Paciente actualizado correctamente' })
     } catch (error) {

@@ -1,8 +1,7 @@
 
-// ... existing imports
+import prisma from '@/lib/prisma';
+import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
-
-// ... existing code
 
 export async function requestPasswordReset(prevState: any, formData: FormData) {
     const email = formData.get('email') as string;
@@ -10,11 +9,14 @@ export async function requestPasswordReset(prevState: any, formData: FormData) {
     if (!email) return { message: 'El email es obligatorio' };
 
     try {
-        const user = await prisma.user.findUnique({ where: { email } });
+        const persona = await prisma.persona.findUnique({
+            where: { email },
+            include: { usuarioSistema: true }
+        });
 
         // Security: Don't reveal if user exists.
         // Also check if user is active. If inactive, silently fail or return generic message.
-        if (!user || !user.active) {
+        if (!persona || !persona.activo) {
             // Fake delay to prevent timing attacks
             await new Promise(resolve => setTimeout(resolve, 500));
             return { message: 'Si el correo existe y está activo, recibirás instrucciones.' };
@@ -68,18 +70,18 @@ export async function resetPassword(prevState: any, formData: FormData) {
             return { message: 'El enlace ha expirado. Solicita uno nuevo.' };
         }
 
-        // Find user
-        const user = await prisma.user.findUnique({ where: { email: storedToken.email } });
-        if (!user) return { message: 'Usuario no encontrado' };
-        if (!user.active) return { message: 'Usuario inactivo' };
+        // Find Persona
+        const persona = await prisma.persona.findUnique({ where: { email: storedToken.email } });
+        if (!persona) return { message: 'Usuario no encontrado' };
+        if (!persona.activo) return { message: 'Usuario inactivo' };
 
-        // Update Password
+        // Update Password in Credencial
         const hashedPassword = await bcrypt.hash(password, 10);
-        await prisma.user.update({
-            where: { id: user.id },
+        await prisma.credencial.update({
+            where: { personaId: persona.id },
             data: {
-                password: hashedPassword,
-                mustChangePassword: false
+                passwordHash: hashedPassword,
+                debeCambiarPassword: false
             }
         });
 

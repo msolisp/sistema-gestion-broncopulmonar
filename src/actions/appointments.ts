@@ -12,7 +12,7 @@ const BookingSchema = z.object({
 
 export async function bookAppointment(prevState: any, formData: FormData) {
     const session = await auth()
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
         return { error: "No autorizado", message: "" }
     }
 
@@ -29,21 +29,22 @@ export async function bookAppointment(prevState: any, formData: FormData) {
         // date is YYYY-MM-DD, timeBlock is HH:mm
         const appointmentDate = new Date(`${rawDate}T${timeBlock}:00`)
 
-        // Verify Patient exists (direct check)
-        const patient = await prisma.patient.findUnique({
-            where: { id: session.user.id }
+        // Verify Persona exists and has FichaClinica
+        const persona = await prisma.persona.findUnique({
+            where: { email: session.user.email },
+            include: { fichaClinica: true }
         })
 
-        if (!patient) {
+        if (!persona || !persona.fichaClinica) {
             return { error: "Perfil de paciente no encontrado", message: "" }
         }
 
-        await prisma.appointment.create({
+        await prisma.cita.create({
             data: {
-                patientId: session.user.id,
-                date: appointmentDate,
-                status: "CONFIRMED",
-                notes: "Reserva web confirmada"
+                fichaClinicaId: persona.fichaClinica.id,
+                fecha: appointmentDate,
+                estado: "CONFIRMADA",
+                notas: "Reserva web confirmada"
             }
         })
 
@@ -59,58 +60,73 @@ export async function bookAppointment(prevState: any, formData: FormData) {
 
 export async function getMyAppointments() {
     const session = await auth()
-    if (!session?.user?.id) return []
+    if (!session?.user?.email) return []
 
-    const patient = await prisma.patient.findUnique({
-        where: { id: session.user.id }
+    const persona = await prisma.persona.findUnique({
+        where: { email: session.user.email },
+        include: { fichaClinica: true }
     })
 
-    if (!patient) return []
+    if (!persona || !persona.fichaClinica) return []
 
-    const appointments = await prisma.appointment.findMany({
-        where: { patientId: session.user.id },
-        orderBy: { date: 'desc' }
+    const citas = await prisma.cita.findMany({
+        where: { fichaClinicaId: persona.fichaClinica.id },
+        orderBy: { fecha: 'desc' }
     })
 
-    return appointments
+    // Map to UI model
+    return citas.map((c: any) => ({
+        id: c.id,
+        date: c.fecha,
+        status: c.estado === 'CONFIRMADA' ? 'CONFIRMED' : (c.estado === 'CANCELADA' ? 'CANCELLED' : 'PENDING'),
+        notes: c.notas
+    }))
 }
 
 export async function cancelAppointment(appointmentId: string, reason: string) {
     const session = await auth()
-    if (!session?.user?.id) {
+    if (!session?.user?.email) {
         return { error: "No autorizado" }
     }
 
     try {
-        const appointment = await prisma.appointment.findUnique({
-            where: { id: appointmentId },
-            include: { patient: true }
+        const persona = await prisma.persona.findUnique({
+            where: { email: session.user.email },
+            include: { fichaClinica: true }
         })
 
-        if (!appointment) {
+        if (!persona?.fichaClinica) {
+            return { error: "Paciente no encontrado" }
+        }
+
+        const cita = await prisma.cita.findUnique({
+            where: { id: appointmentId },
+        })
+
+        if (!cita) {
             return { error: "Cita no encontrada" }
         }
 
         // Verify ownership
-        if (appointment.patientId !== session.user.id) {
+        if (cita.fichaClinicaId !== persona.fichaClinica.id) {
             return { error: "No tienes permiso para cancelar esta cita" }
         }
 
         // Verify status
-        if (appointment.status === 'CANCELLED') {
+        if (cita.estado === 'CANCELADA') {
             return { error: "La cita ya está cancelada" }
         }
 
         // Update status and append reason to notes
-        const newNotes = appointment.notes
-            ? `${appointment.notes}\n[Cancelada por Paciente]: ${reason}`
+        const newNotes = cita.notas
+            ? `${cita.notas}\n[Cancelada por Paciente]: ${reason}`
             : `[Cancelada por Paciente]: ${reason}`;
 
-        await prisma.appointment.update({
+        await prisma.cita.update({
             where: { id: appointmentId },
             data: {
-                status: 'CANCELLED',
-                notes: newNotes
+                estado: 'CANCELADA',
+                notas: newNotes
             }
         })
 

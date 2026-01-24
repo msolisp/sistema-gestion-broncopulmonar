@@ -8,12 +8,8 @@ import { auth } from '@/auth';
 
 // Mock dependencies
 jest.mock('@/lib/prisma', () => ({
-    patient: {
+    persona: {
         findUnique: jest.fn(),
-        create: jest.fn(),
-    },
-    pulmonaryFunctionTest: {
-        findMany: jest.fn(),
     }
 }));
 
@@ -36,33 +32,37 @@ describe('getPatientHistory', () => {
 
     it('should return history for existing patient', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'user-1' }
-        });
-
-        (prisma.patient.findUnique as jest.Mock).mockResolvedValue({
-            id: 'patient-1'
+            user: { email: 'test@test.com' }
         });
 
         const mockTests = [
-            { id: 1, date: new Date(), cvfPercent: 80 }
+            { id: 1, fecha: new Date(), cvfPercent: 80 }
         ];
-        (prisma.pulmonaryFunctionTest.findMany as jest.Mock).mockResolvedValue(mockTests);
+
+        (prisma.persona.findUnique as jest.Mock).mockResolvedValue({
+            id: 'p1',
+            fichaClinica: {
+                pruebasFuncion: mockTests
+            }
+        });
 
         const result = await getPatientHistory();
 
         expect(result).toHaveProperty('tests');
-        expect(result.tests).toEqual(mockTests);
+        const expectedTests = mockTests.map(t => ({
+            id: t.id,
+            date: t.fecha,
+            cvfPercent: t.cvfPercent
+        }));
+        expect(result.tests).toMatchObject(expectedTests);
     });
-
-    // Auto-recover test removed as feature was deprecated due to schema changes
-    // it('should auto-recover if patient not found', async () => ...
 
     it('should handle errors gracefully', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { id: 'user-1' }
+            user: { email: 'test@test.com' }
         });
 
-        (prisma.patient.findUnique as jest.Mock).mockRejectedValue(new Error('DB Error'));
+        (prisma.persona.findUnique as jest.Mock).mockRejectedValue(new Error('DB Error'));
 
         const result = await getPatientHistory();
 

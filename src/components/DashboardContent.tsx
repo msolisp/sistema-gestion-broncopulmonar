@@ -5,7 +5,19 @@ import { Users, FileText, X, Check, Shield, Eye, EyeOff, FileDown, Disc, Save } 
 import jsPDF from 'jspdf';
 import { useRouter, useSearchParams } from "next/navigation";
 
-import { adminCreateSystemUser, adminUpdateSystemUser, toggleRolePermission, seedPermissions, adminDeleteSystemUser, bulkUpdateRolePermissions, updateRolePermissions } from "@/lib/actions";
+import {
+    adminCreateSystemUser,
+    adminUpdateSystemUser,
+    adminDeleteSystemUser,
+    seedPermissions
+} from "@/lib/actions.staff";
+import {
+    createRole,
+    deleteRole,
+    updateRole,
+    updateRolePermissionsBatch
+} from "@/lib/actions/dynamic-rbac";
+
 import PatientsManagementTable from './PatientsManagementTable'
 import AppointmentCalendar from './AppointmentCalendar'
 import PendingExamsWidget from './PendingExamsWidget'
@@ -14,200 +26,536 @@ import { REGIONS } from '@/lib/chile-data';
 import { UserModal } from './admin/users/UserModal';
 import { SystemUser, UserRole } from './admin/users/types';
 
-// PermissionMatrix Restored - Now with Batch Save
-function PermissionMatrix({ initialData }: { initialData: any[] }) {
+// Generic Modern Confirmation Modal
+function ConfirmationModal({ isOpen, onClose, onConfirm, title, message, confirmText = "Confirmar", cancelText = "Cancelar", isDestructive = false }: {
+    isOpen: boolean;
+    onClose: () => void;
+    onConfirm: () => void;
+    title: string;
+    message: string;
+    confirmText?: string;
+    cancelText?: string;
+    isDestructive?: boolean;
+}) {
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200">
+                <div className="p-6">
+                    <div className={`w-12 h-12 rounded-full flex items-center justify-center mb-4 ${isDestructive ? 'bg-red-50 text-red-600' : 'bg-indigo-50 text-indigo-600'}`}>
+                        <Shield className="w-6 h-6" />
+                    </div>
+                    <h3 className="text-lg font-bold text-zinc-900 mb-2">{title}</h3>
+                    <p className="text-sm text-zinc-500">{message}</p>
+                </div>
+                <div className="px-6 py-4 bg-zinc-50 flex justify-end gap-3">
+                    <button onClick={onClose} className="px-4 py-2 text-sm text-zinc-600 font-medium hover:text-zinc-900">
+                        {cancelText}
+                    </button>
+                    <button
+                        onClick={() => { onConfirm(); onClose(); }}
+                        className={`px-4 py-2 text-sm text-white rounded-lg font-medium shadow-sm transition-colors ${isDestructive ? 'bg-red-600 hover:bg-red-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}
+                    >
+                        {confirmText}
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function LogDetailsModal({ isOpen, onClose, log }: { isOpen: boolean, onClose: () => void, log: any }) {
+    if (!isOpen || !log) return null;
+
+    let detailsStr = log.details;
+    let detailsObj = null;
+
+    try {
+        // Try to parse if it looks like JSON/Object, otherwise keep as string
+        if (typeof detailsStr === 'string' && (detailsStr.startsWith('{') || detailsStr.startsWith('['))) {
+            detailsObj = JSON.parse(detailsStr);
+        }
+    } catch (e) {
+        // failed to parse, use string
+    }
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200">
+            <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 flex flex-col max-h-[90vh]">
+                <div className="p-6 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
+                    <div>
+                        <h3 className="text-lg font-bold text-zinc-900">Detalle de Auditoría</h3>
+                        <p className="text-xs text-zinc-500 font-mono mt-1">{log.id}</p>
+                    </div>
+                    <button onClick={onClose} className="text-zinc-400 hover:text-zinc-600">
+                        <X className="w-5 h-5" />
+                    </button>
+                </div>
+
+                <div className="p-6 overflow-y-auto space-y-4">
+                    <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-zinc-500 uppercase">Fecha</label>
+                            <p className="text-sm font-medium text-zinc-900">{new Date(log.createdAt).toLocaleString()}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-zinc-500 uppercase">Usuario</label>
+                            <p className="text-sm font-medium text-zinc-900">{log.userEmail}</p>
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-semibold text-zinc-500 uppercase">Acción</label>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800">
+                                {log.action}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-semibold text-zinc-500 uppercase block">Detalles del Evento</label>
+                        <div className="bg-zinc-900 rounded-lg p-4 overflow-x-auto">
+                            <pre className="text-xs font-mono text-emerald-400 whitespace-pre-wrap">
+                                {detailsObj ? JSON.stringify(detailsObj, null, 2) : log.details}
+                            </pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="px-6 py-4 bg-zinc-50 flex justify-end">
+                    <button
+                        onClick={onClose}
+                        className="px-4 py-2 text-sm bg-white border border-zinc-300 rounded-lg font-medium hover:bg-zinc-50"
+                    >
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// PermissionMatrix - Fully Dynamic
+function PermissionMatrix({ initialData, roles }: { initialData: any[], roles: any[] }) {
     const [permissions, setPermissions] = useState(initialData);
+    const [hasChanges, setHasChanges] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [status, setStatus] = useState<{ type: 'success' | 'error' | 'info' | null; message: string | null }>({
+        type: null,
+        message: null
+    });
+    const router = useRouter();
+
+    useEffect(() => {
+        if (!hasChanges) {
+            setPermissions(initialData);
+        }
+    }, [initialData, hasChanges]);
+
+    useEffect(() => {
+        if (status.type === 'success' || status.type === 'info') {
+            const timer = setTimeout(() => {
+                setStatus({ type: null, message: null });
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [status]);
+
+    const togglePermission = (index: number, roleName: string) => {
+        const newPermissions = [...permissions];
+        const perm = newPermissions[index];
+        const key = roleName.toLowerCase();
+        const newValue = !perm[key];
+
+        newPermissions[index] = { ...perm, [key]: newValue };
+        setPermissions(newPermissions);
+        setHasChanges(true);
+    };
+
+    const handleSavePermissions = async () => {
+        setIsSaving(true);
+        setStatus({ type: 'info', message: 'Guardando cambios...' });
+
+        try {
+            const changes: any[] = [];
+            permissions.forEach(p => {
+                roles.forEach(role => {
+                    const key = role.nombre.toLowerCase();
+                    changes.push({
+                        roleId: role.id,
+                        recurso: p.recurso || p.action.replace('Ver ', ''),
+                        accion: 'Ver',
+                        activo: !!p[key]
+                    });
+                });
+            });
+
+            const res = await updateRolePermissionsBatch(changes);
+            if (res.message === 'Success') {
+                setStatus({ type: 'success', message: '✓ Permisos actualizados correctamente' });
+                setHasChanges(false);
+                router.refresh();
+            } else {
+                setStatus({ type: 'error', message: res.message });
+            }
+        } catch (e) {
+            setStatus({ type: 'error', message: 'Error de conexión' });
+        } finally {
+            setIsSaving(false);
+        }
+    };
+
+    return (
+        <div className="space-y-4">
+            {status.message && (
+                <div className={`p-3 rounded-lg text-sm font-medium ${status.type === 'success' ? 'bg-green-100 text-green-800' :
+                    status.type === 'error' ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800'
+                    }`}>
+                    {status.message}
+                </div>
+            )}
+            <table className="w-full text-xs">
+                <thead className="text-zinc-500 uppercase bg-zinc-50 border-b border-zinc-100">
+                    <tr>
+                        <th className="px-4 py-3 text-left">Módulo</th>
+                        {roles.map(role => (
+                            <th key={role.id} className="px-4 py-3 text-center">
+                                <span className={role.nombre === 'ADMIN' ? 'text-purple-600' : 'text-indigo-600'}>
+                                    {role.nombre}
+                                </span>
+                            </th>
+                        ))}
+                    </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-100">
+                    {permissions.map((m, idx) => (
+                        <tr key={idx} className="hover:bg-zinc-50">
+                            <td className="px-4 py-3 font-medium text-zinc-700">{m.action}</td>
+                            {roles.map(role => {
+                                const key = role.nombre.toLowerCase();
+                                return (
+                                    <td key={role.id} className="px-4 py-3 text-center">
+                                        <button
+                                            onClick={() => togglePermission(idx, role.nombre)}
+                                            disabled={role.nombre === 'ADMIN'}
+                                            className={`p-1.5 rounded transition-colors ${m[key] ? 'bg-emerald-500 text-white' : 'bg-zinc-200 text-zinc-400'}`}
+                                        >
+                                            <Check className="w-4 h-4" />
+                                        </button>
+                                    </td>
+                                );
+                            })}
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+            {hasChanges && (
+                <div className="flex justify-end pt-4">
+                    <button
+                        onClick={handleSavePermissions}
+                        disabled={isSaving}
+                        className="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-indigo-700 disabled:opacity-50"
+                    >
+                        {isSaving ? 'Guardando...' : 'Guardar Matriz'}
+                    </button>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// Role Management Component
+function PatientPortalPermissions({ permissions, roleId }: { permissions: any[], roleId?: string }) {
+    const [perms, setPerms] = useState(permissions);
     const [hasChanges, setHasChanges] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
     const router = useRouter();
 
-    // Sync state when props change, but ONLY if we haven't touched it (to avoid overwriting work in progress?)
-    // Actually, usually we want to sync if server revalidated.
-    // For simplicity, let's reset dirty state if props change (successful save revalidates)
     useEffect(() => {
-        setPermissions(initialData);
-        setHasChanges(false);
-    }, [initialData]);
+        setPerms(permissions);
+    }, [permissions]);
 
-    const togglePermission = (index: number, role: 'kine' | 'recep') => {
-        const newPermissions = [...permissions];
-        const perm = newPermissions[index];
-        const newValue = !perm[role];
-
-        // Update local state ONLY
-        newPermissions[index] = { ...perm, [role]: newValue };
-        setPermissions(newPermissions);
+    const togglePermission = (index: number) => {
+        const newPerms = [...perms];
+        newPerms[index].enabled = !newPerms[index].enabled;
+        setPerms(newPerms);
         setHasChanges(true);
-    }
+    };
 
-    const toggleAll = (role: 'kine' | 'recep', enabled: boolean) => {
-        if (!confirm(`¿${enabled ? 'Activar' : 'Desactivar'} todos los permisos localmente para este rol? (Recuerda Guardar)`)) return;
-
-        // Update local state
-        const newPermissions = permissions.map(p => ({ ...p, [role]: enabled }));
-        setPermissions(newPermissions);
-        setHasChanges(true);
-    }
-
-    const handleSaveChanges = async () => {
+    const handleSave = async () => {
+        if (!roleId) return;
         setIsSaving(true);
 
-        // Calculate changes? Or just send everything?
-        // Sending everything is safer and easier.
-        // Transform current state to flattened array for server action
-        const changes: Array<{ role: string, action: string, enabled: boolean }> = [];
+        const mappedChanges = perms.map((p: any) => ({
+            roleId,
+            recurso: p.recurso,
+            accion: p.dbAction || p.action,
+            activo: p.enabled
+        }));
 
-        permissions.forEach(p => {
-            changes.push({ role: 'KINESIOLOGIST', action: p.action, enabled: p.kine });
-            changes.push({ role: 'RECEPTIONIST', action: p.action, enabled: p.recep });
-        });
-
-        const res = await updateRolePermissions(changes);
-
-        if (res?.message === 'Success') {
-            // refresh is handled by action revalidate, but we can visually confirm
-            // setHasChanges(false) will happen via useEffect when prop comes back
-            // But we can optimistically set it to prevent flicker
-            setHasChanges(false);
-            router.refresh();
-        } else {
-            alert('Error al guardar cambios');
-        }
+        await updateRolePermissionsBatch(mappedChanges);
         setIsSaving(false);
-    }
+        setHasChanges(false);
+        router.refresh();
+    };
 
-    // Sort/Group helper
-    // Only show these modules
-    const moduleOrder = [
-        'Ver Agendamiento',
-        'Ver Pacientes',
-        'Ver Reportes BI',
-        'Ver Asistente',
-        'Ver HL7',
-        'Configuración Global',
-        'Ver Usuarios'
-    ];
-
-    // Filter and Sort permissions
-    const sortedPermissions = [...permissions]
-        .filter(p => moduleOrder.includes(p.action))
-        .sort((a, b) => {
-            const idxA = moduleOrder.indexOf(a.action);
-            const idxB = moduleOrder.indexOf(b.action);
-            return idxA - idxB;
-        });
+    if (!roleId) return <div className="text-sm text-red-500">Rol PACIENTE no encontrado. Créalo en la sección de roles.</div>;
 
     return (
-        <div>
-            {hasChanges && (
-                <div className="bg-amber-50 border border-amber-200 text-amber-800 px-4 py-3 rounded-lg mb-4 flex items-center justify-between animate-in fade-in slide-in-from-top-2">
-                    <span className="text-sm font-medium flex items-center gap-2">
-                        <Disc className="w-4 h-4 animate-pulse" />
-                        Tienes cambios sin guardar en los permisos.
-                    </span>
-                    <button
-                        onClick={handleSaveChanges}
-                        disabled={isSaving}
-                        className="bg-indigo-600 text-white text-xs px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-50"
-                    >
-                        {isSaving ? 'Guardando...' : (
-                            <>
-                                <Save className="w-3 h-3" /> Guardar Cambios
-                            </>
-                        )}
+        <div className="bg-zinc-50 p-6 rounded-xl border border-zinc-200">
+            <div className="flex justify-between items-center mb-4">
+                <h4 className="font-bold text-zinc-700">Permisos del Paciente</h4>
+                {hasChanges && (
+                    <button onClick={handleSave} disabled={isSaving} className="text-xs bg-indigo-600 text-white px-3 py-1 rounded hover:bg-indigo-700">
+                        {isSaving ? 'Guardando...' : 'Guardar Cambios'}
                     </button>
+                )}
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {perms.map((p: any, idx: number) => (
+                    <div key={idx} className="flex items-center justify-between p-3 bg-white rounded border">
+                        <span className="text-sm font-medium text-zinc-600">{p.action || p.label}</span>
+                        <button
+                            onClick={() => togglePermission(idx)}
+                            className={`w-10 h-6 rounded-full flex items-center p-1 transition-colors ${p.enabled ? 'bg-emerald-500 justify-end' : 'bg-zinc-300 justify-start'}`}
+                        >
+                            <div className="w-4 h-4 bg-white rounded-full shadow-sm" />
+                        </button>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+}
+
+// Role Management Component - Grid Refactor
+function RoleManagement({ initialRoles }: { initialRoles: any[] }) {
+    const [roles, setRoles] = useState(initialRoles);
+    const [isAdding, setIsAdding] = useState(false);
+    const [isEditing, setIsEditing] = useState(false);
+    const [currentRoleId, setCurrentRoleId] = useState<string | null>(null);
+    const [formData, setFormData] = useState({ nombre: '', descripcion: '' });
+
+    // Delete Confirmation State
+    const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
+
+    const router = useRouter();
+
+    useEffect(() => {
+        setRoles(initialRoles);
+    }, [initialRoles]);
+
+    const handleCreateRole = async () => {
+        if (!formData.nombre) return;
+        const res = await createRole(formData);
+        if (res.message === 'Success') {
+            setIsAdding(false);
+            setFormData({ nombre: '', descripcion: '' });
+            router.refresh();
+        } else {
+            alert(res.message);
+        }
+    };
+
+    const handleUpdateRole = async () => {
+        if (!currentRoleId || !formData.nombre) return;
+        // Optimization: We could add an updateRole action if not exists, but for now we assume create/delete. 
+        // Wait, the user asked for EDIT. I need to use updateRole action I saw in dynamic-rbac.ts
+        const res = await updateRole(currentRoleId, { ...formData, active: true });
+        if (res.message === 'Success') {
+            setIsEditing(false);
+            setFormData({ nombre: '', descripcion: '' });
+            setCurrentRoleId(null);
+            router.refresh();
+        } else {
+            alert(res.message);
+        }
+    };
+
+    const onDeleteClick = (id: string) => {
+        setRoleToDelete(id);
+        setIsDeleteModalOpen(true);
+    };
+
+    const confirmDeleteRole = async () => {
+        if (!roleToDelete) return;
+        const res = await deleteRole(roleToDelete);
+        if (res.message === 'Success') {
+            router.refresh();
+        } else {
+            alert(res.message); // Should ideally be a toast, but keeping consistent for errors for now
+        }
+        setIsDeleteModalOpen(false);
+        setRoleToDelete(null);
+    };
+
+    const startEdit = (role: any) => {
+        setFormData({ nombre: role.nombre, descripcion: role.descripcion || '' });
+        setCurrentRoleId(role.id);
+        setIsEditing(true);
+        setIsAdding(false);
+    };
+
+    return (
+        <div className="space-y-6">
+            <div className="flex justify-between items-center">
+                <h3 className="font-bold text-zinc-800">Mantenedor de Roles</h3>
+                {!isAdding && !isEditing && (
+                    <button
+                        onClick={() => { setIsAdding(true); setFormData({ nombre: '', descripcion: '' }); }}
+                        className="bg-indigo-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-indigo-700"
+                    >
+                        + Nuevo Rol
+                    </button>
+                )}
+            </div>
+
+            {(isAdding || isEditing) && (
+                <div className="bg-zinc-50 p-6 rounded-xl border border-zinc-200 space-y-4 animate-in fade-in slide-in-from-top-4">
+                    <h4 className="font-bold text-zinc-700">{isAdding ? 'Crear Nuevo Rol' : 'Editar Rol'}</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-zinc-500">Nombre del Rol (Identificador)</label>
+                            <input
+                                placeholder="EJ: SUPERVISOR"
+                                className="w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none uppercase"
+                                value={formData.nombre}
+                                onChange={e => setFormData({ ...formData, nombre: e.target.value.toUpperCase() })}
+                                disabled={isEditing && (formData.nombre === 'ADMIN' || formData.nombre === 'PACIENTE')}
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <label className="text-xs font-medium text-zinc-500">Descripción</label>
+                            <input
+                                placeholder="Descripción breve del rol..."
+                                className="w-full bg-white border border-zinc-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                                value={formData.descripcion}
+                                onChange={e => setFormData({ ...formData, descripcion: e.target.value })}
+                            />
+                        </div>
+                    </div>
+                    <div className="flex justify-end gap-3 pt-2">
+                        <button
+                            onClick={() => { setIsAdding(false); setIsEditing(false); }}
+                            className="px-4 py-2 text-sm text-zinc-600 hover:bg-zinc-100 rounded-lg font-medium"
+                        >
+                            Cancelar
+                        </button>
+                        <button
+                            onClick={isAdding ? handleCreateRole : handleUpdateRole}
+                            className="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700 shadow-sm"
+                        >
+                            {isAdding ? 'Crear Rol' : 'Guardar Cambios'}
+                        </button>
+                    </div>
                 </div>
             )}
-            <table className="w-full text-sm">
-                <thead>
-                    <tr className="border-b border-zinc-100">
-                        <th className="text-left py-3 px-4 text-zinc-500">Módulo / Recurso</th>
-                        <th className="text-center py-3 px-4 text-blue-700">
-                            <div className="flex flex-col items-center gap-1">
-                                <span>KINESIÓLOGO</span>
-                                <div className="flex gap-1">
-                                    <button onClick={() => toggleAll('kine', true)} className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded hover:bg-green-200" title="Activar Todo">✓</button>
-                                    <button onClick={() => toggleAll('kine', false)} className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded hover:bg-red-200" title="Desactivar Todo">✕</button>
-                                </div>
-                            </div>
-                        </th>
-                        <th className="text-center py-3 px-4 text-orange-700">
-                            <div className="flex flex-col items-center gap-1">
-                                <span>RECEPCIONISTA</span>
-                                <div className="flex gap-1">
-                                    <button onClick={() => toggleAll('recep', true)} className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded hover:bg-green-200" title="Activar Todo">✓</button>
-                                    <button onClick={() => toggleAll('recep', false)} className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded hover:bg-red-200" title="Desactivar Todo">✕</button>
-                                </div>
-                            </div>
-                        </th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-zinc-50">
-                    {sortedPermissions.map((p, i) => {
-                        // We must find the index in original 'permissions' array to update state correctly
-                        const originalIndex = permissions.findIndex(perm => perm.action === p.action);
 
-                        // Simplify coloring: just alternate or clean status
-                        return (
-                            <tr key={p.action} className="hover:bg-zinc-50 transition-colors">
-                                <td className="py-3 px-4 font-medium text-zinc-700">
-                                    {p.action}
+            <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-zinc-50 text-xs uppercase text-zinc-500 font-semibold">
+                        <tr>
+                            <th className="px-6 py-4">Nombre Rol</th>
+                            <th className="px-6 py-4">Descripción</th>
+                            <th className="px-6 py-4 text-center">Estado</th>
+                            <th className="px-6 py-4 text-right">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-zinc-100">
+                        {roles.map((role: any) => (
+                            <tr key={role.id} className="hover:bg-zinc-50 transition-colors">
+                                <td className="px-6 py-4 font-bold text-zinc-800">
+                                    {role.nombre}
                                 </td>
-
-                                <td className="text-center py-3">
-                                    <button
-                                        onClick={() => togglePermission(originalIndex, 'kine')}
-                                        className={`w-5 h-5 rounded transition-transform active:scale-95 flex items-center justify-center mx-auto ${p.kine ? 'bg-green-500 text-white shadow-sm shadow-green-200' : 'bg-zinc-200 hover:bg-zinc-300'}`}
-                                    >
-                                        {p.kine && <Check className="w-3 h-3" />}
-                                    </button>
+                                <td className="px-6 py-4 text-zinc-600">
+                                    {role.descripcion || <span className="text-zinc-400 italic">Sin descripción</span>}
                                 </td>
-                                <td className="text-center py-3">
+                                <td className="px-6 py-4 text-center">
+                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                        Activo
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 text-right space-x-2">
                                     <button
-                                        onClick={() => togglePermission(originalIndex, 'recep')}
-                                        className={`w-5 h-5 rounded transition-transform active:scale-95 flex items-center justify-center mx-auto ${p.recep ? 'bg-green-500 text-white shadow-sm shadow-green-200' : 'bg-zinc-200 hover:bg-zinc-300'}`}
+                                        onClick={() => startEdit(role)}
+                                        className="text-indigo-600 hover:text-indigo-900 font-medium text-xs px-2 py-1 rounded hover:bg-indigo-50"
                                     >
-                                        {p.recep && <Check className="w-3 h-3" />}
+                                        Editar
                                     </button>
+                                    {role.nombre !== 'ADMIN' && role.nombre !== 'PACIENTE' && (
+                                        <button
+                                            onClick={() => onDeleteClick(role.id)}
+                                            className="text-red-500 hover:text-red-700 font-medium text-xs px-2 py-1 rounded hover:bg-red-50"
+                                        >
+                                            Eliminar
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
-                        )
-                    })}
-                </tbody>
-            </table>
+                        ))}
+                    </tbody>
+                </table>
+                {roles.length === 0 && (
+                    <div className="p-8 text-center text-zinc-500">
+                        No hay roles definidos.
+                    </div>
+                )}
+            </div>
+
+            <ConfirmationModal
+                isOpen={isDeleteModalOpen}
+                onClose={() => setIsDeleteModalOpen(false)}
+                onConfirm={confirmDeleteRole}
+                title="Eliminar Rol"
+                message="¿Estás seguro de que deseas eliminar este rol? Esta acción no se puede deshacer y podría afectar a usuarios asignados."
+                confirmText="Eliminar"
+                isDestructive={true}
+            />
         </div>
-    )
+    );
 }
 
 interface DashboardContentProps {
     initialUsers: any[]
     logs: any[]
     initialPermissions: any[]
-    appointments?: any[]
-    pendingExams?: any[]
-    currentUserRole: UserRole
+    appointments: any[]
+    pendingExams: any[]
+    currentUserRole: string
+    initialRoles: any[]
+    patientRole?: any
+    patientPermissions?: any[]
 }
-export default function DashboardContent({ initialUsers, logs, initialPermissions, appointments = [], pendingExams = [], currentUserRole }: DashboardContentProps) {
+
+export default function DashboardContent({
+    initialUsers,
+    logs,
+    initialPermissions,
+    appointments,
+    pendingExams,
+    currentUserRole,
+    initialRoles,
+    patientRole,
+    patientPermissions
+}: DashboardContentProps) {
     const router = useRouter();
     const searchParams = useSearchParams()
     const tabFromUrl = searchParams.get('tab')
 
-    // Permission Helper (defined early so we can use it for tab filtering)
     const can = (action: string) => {
-        if (currentUserRole === 'ADMIN') return true; // Admins always can
-        if (currentUserRole === 'PATIENT') return false;
-
-        // Find permission entry
+        if (currentUserRole === 'ADMIN') return true;
         const perm = initialPermissions.find(p => p.action === action);
         if (!perm) return false;
-
-        if (currentUserRole === 'KINESIOLOGIST') return perm.kine;
-        if (currentUserRole === 'RECEPTIONIST') return perm.recep;
-
-        return false;
+        const key = currentUserRole.toLowerCase();
+        return !!perm[key];
     };
 
-    // Define available tabs with their required permissions
+    const patientModules = [
+        { action: 'Mis Citas', recurso: 'Portal_Pacientes', dbAction: 'Ver Citas' },
+        { action: 'Historial Médico', recurso: 'Portal_Pacientes', dbAction: 'Ver Historial' },
+        { action: 'Mis Datos', recurso: 'Portal_Pacientes', dbAction: 'Ver Perfil' }
+    ];
+
     const availableTabs = [
         { name: 'Usuarios y Roles', permission: 'Ver Usuarios' },
         { name: 'Tablas Maestras', permission: 'Configuración Global' },
@@ -215,26 +563,15 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
         { name: 'Auditoría', permission: 'Configuración Global' }
     ];
 
-    // Filter tabs based on permissions
     const visibleTabs = availableTabs.filter(tab => can(tab.permission));
-
-    // Default to first visible tab or fallback
     const defaultTab = visibleTabs.length > 0 ? visibleTabs[0].name : 'Usuarios y Roles';
     const [activeTab, setActiveTab] = useState(tabFromUrl || defaultTab)
 
-    // Update activeTab when URL changes
     useEffect(() => {
-        if (tabFromUrl) {
-            setActiveTab(tabFromUrl)
-        }
+        if (tabFromUrl) setActiveTab(tabFromUrl)
     }, [tabFromUrl])
 
-    // User Management State - Initialize with Real Data
-    // Filter out potential conflicts if needed, but assuming server data is truth
     const [users, setUsers] = useState<SystemUser[]>(initialUsers as SystemUser[]);
-
-    // Sync state when props change (router.refresh())
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
         setUsers(initialUsers as SystemUser[]);
     }, [initialUsers]);
@@ -242,7 +579,6 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
     const [isUserModalOpen, setIsUserModalOpen] = useState(false)
     const [editingUser, setEditingUser] = useState<SystemUser | null>(null)
     const [activeMasterTable, setActiveMasterTable] = useState<string | null>(null);
-    const [permissionFeedback, setPermissionFeedback] = useState<string | null>(null);
     const [selectedLog, setSelectedLog] = useState<any | null>(null);
 
     const handleCreateUser = () => {
@@ -255,203 +591,32 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
         setIsUserModalOpen(true)
     }
 
-    const handleUserSaved = () => {
-        // Refresh happens in modal, but we can double refresh here or just close
-        router.refresh();
-    }
-
-
     const handleDeleteUser = async (user: SystemUser) => {
-        if (!confirm(`¿Estás seguro de que deseas eliminar al usuario ${user.name}?`)) return;
-
+        if (!confirm(`¿Estás seguro?`)) return;
         const res = await adminDeleteSystemUser(user.id);
-        if (res?.message === 'Success') {
-            router.refresh();
-        } else {
-            alert(res?.message || 'Error al eliminar usuario');
-        }
+        if (res?.message === 'Success') router.refresh();
+        else alert(res?.message);
     }
-
-    const handleDownloadLogPDF = () => {
-        if (!selectedLog) return;
-
-        const doc = new jsPDF();
-
-        // Header
-        doc.setFontSize(16);
-        doc.text("Reporte de Auditoría de Sistema", 20, 20);
-
-        doc.setFontSize(10);
-        doc.setTextColor(100);
-        doc.text(`Generado el: ${new Date().toLocaleString()}`, 20, 28);
-        doc.text("Sistema de Gestión Broncopulmonar", 20, 33);
-
-        doc.setDrawColor(200);
-        doc.line(20, 38, 190, 38);
-
-        // Content
-        doc.setTextColor(0);
-        doc.setFontSize(12);
-
-        let y = 50;
-        const lineHeight = 10;
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Fecha:", 20, y);
-        doc.setFont("helvetica", "normal");
-        doc.text(new Date(selectedLog.createdAt).toLocaleString(), 60, y);
-        y += lineHeight;
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Acción:", 20, y);
-        doc.setFont("helvetica", "normal");
-        doc.text(selectedLog.action, 60, y);
-        y += lineHeight;
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Usuario:", 20, y);
-        doc.setFont("helvetica", "normal");
-        doc.text(selectedLog.userEmail || 'System', 60, y);
-        y += lineHeight;
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Dirección IP:", 20, y);
-        doc.setFont("helvetica", "normal");
-        doc.text(selectedLog.ipAddress || 'Unknown', 60, y);
-        y += lineHeight * 1.5;
-
-        doc.setFont("helvetica", "bold");
-        doc.text("Detalles Técnicos:", 20, y);
-        y += lineHeight;
-
-        doc.setFont("courier", "normal");
-        doc.setFontSize(10);
-
-        // Split text to fit page
-        const detailsText = selectedLog.details || 'Sin detalles adicionales.';
-        // Simplify details for PDF if it's too complex, or just dump it.
-        // If it's the comma separated list, maybe we prefer newlines.
-        const formattedDetails = detailsText.replace(/, /g, '\n');
-
-        const splitText = doc.splitTextToSize(formattedDetails, 170);
-        doc.text(splitText, 20, y);
-
-        // Footer
-        doc.setFont("helvetica", "italic");
-        doc.setFontSize(8);
-        doc.setTextColor(150);
-        doc.text("Este documento es confidencial y para uso exclusivo de auditoría interna.", 105, 280, { align: "center" });
-
-        doc.save(`audit-log-${selectedLog.id.substring(0, 8)}.pdf`);
-    };
 
     return (
-        <div className="space-y-8 relative">
-            {/* User Modal */}
-            {/* Log Detail Modal */}
-            {selectedLog && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
-                            <h3 className="font-bold text-zinc-800 flex items-center gap-2">
-                                <FileText className="w-5 h-5 text-indigo-600" />
-                                Detalle de Auditoría
-                            </h3>
-                            <button
-                                onClick={() => setSelectedLog(null)}
-                                className="text-zinc-400 hover:text-zinc-600 transition-colors"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        <div className="p-6 space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1">Fecha</label>
-                                    <p className="text-sm font-medium text-zinc-900 border border-zinc-200 rounded px-3 py-2 bg-zinc-50">
-                                        {new Date(selectedLog.createdAt).toLocaleString()}
-                                    </p>
-                                </div>
-                                <div>
-                                    <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1">IP</label>
-                                    <p className="text-sm font-mono text-zinc-900 border border-zinc-200 rounded px-3 py-2 bg-zinc-50">
-                                        {selectedLog.ipAddress || 'N/A'}
-                                    </p>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1">Acción</label>
-                                <p className="text-sm font-medium text-zinc-900 border border-zinc-200 rounded px-3 py-2 bg-zinc-50 flex items-center gap-2">
-                                    <span className={`w-2 h-2 rounded-full ${selectedLog.action.includes('FAILURE') || selectedLog.action.includes('DELETE') ? 'bg-red-500' : 'bg-emerald-500'}`}></span>
-                                    {selectedLog.action}
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1">Usuario</label>
-                                <p className="text-sm text-zinc-900 border border-zinc-200 rounded px-3 py-2 bg-zinc-50">
-                                    {selectedLog.userEmail || 'System'}
-                                </p>
-                            </div>
-
-                            <div>
-                                <label className="text-xs font-bold text-zinc-500 uppercase tracking-wider block mb-1">Detalles Técnicos</label>
-                                <div className="text-xs font-mono text-zinc-700 border border-zinc-200 rounded px-3 py-2 bg-zinc-50 max-h-48 overflow-y-auto">
-                                    {selectedLog.details ? (
-                                        <ul className="list-disc pl-4 space-y-1">
-                                            {selectedLog.details.split(',').map((detail: string, i: number) => (
-                                                <li key={i} className="break-words">
-                                                    {detail.trim()}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    ) : (
-                                        <span className="italic text-zinc-400">Sin detalles adicionales.</span>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="px-6 py-4 bg-zinc-50 border-t border-zinc-100 flex justify-end gap-3">
-                            <button
-                                onClick={handleDownloadLogPDF}
-                                className="bg-indigo-600 text-white font-medium px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors shadow-sm flex items-center gap-2"
-                            >
-                                <FileDown className="w-4 h-4" />
-                                Descargar PDF
-                            </button>
-                            <button
-                                onClick={() => setSelectedLog(null)}
-                                className="bg-white border border-zinc-300 text-zinc-700 font-medium px-4 py-2 rounded-lg hover:bg-zinc-50 transition-colors shadow-sm"
-                            >
-                                Cerrar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* User Modal */}
+        <div className="space-y-8">
             <UserModal
                 isOpen={isUserModalOpen}
                 onClose={() => setIsUserModalOpen(false)}
-                onSuccess={handleUserSaved}
+                onSuccess={() => router.refresh()}
                 userToEdit={editingUser}
+                roles={initialRoles}
             />
 
-            {/* Top Bar with Tabs */}
             <div className="border-b border-zinc-200">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4">
-                    <h1 className="text-3xl font-bold text-sky-900">Administración Central</h1>
-
-                    <nav className="flex space-x-6 overflow-x-auto">
+                <div className="flex justify-between items-center pb-4">
+                    <h1 className="text-2xl font-bold text-sky-900">Administración Central</h1>
+                    <nav className="flex space-x-6">
                         {visibleTabs.map((tab) => (
                             <button
                                 key={tab.name}
                                 onClick={() => setActiveTab(tab.name)}
-                                className={`text-sm font-medium whitespace-nowrap pb-2 border-b-2 transition-colors ${activeTab === tab.name
-                                    ? 'border-sky-600 text-sky-700'
-                                    : 'border-transparent text-zinc-500 hover:text-zinc-700'
+                                className={`text-sm font-medium pb-2 border-b-2 transition-colors ${activeTab === tab.name ? 'border-sky-600 text-sky-700' : 'border-transparent text-zinc-500'
                                     }`}
                             >
                                 {tab.name}
@@ -461,326 +626,142 @@ export default function DashboardContent({ initialUsers, logs, initialPermission
                 </div>
             </div>
 
-            {/* Content Area based on Active Tab */}
             <div className="animate-in fade-in duration-300">
-
-                {activeTab === 'Agendamiento' && (
-                    can('Ver Agendamiento') ? (
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                            <div className="lg:col-span-2">
-                                <AppointmentCalendar appointments={appointments} />
-                            </div>
-                            <div>
-                                <PendingExamsWidget exams={pendingExams} />
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-red-800">
-                            <Shield className="w-12 h-12 mx-auto mb-4 text-red-300" />
-                            <h3 className="text-lg font-bold mb-2">Acceso Denegado</h3>
-                            <p className="text-sm">No tienes permisos para ver el módulo de agendamiento.</p>
-                        </div>
-                    )
-                )}
-
-
-
-
                 {activeTab === 'Usuarios y Roles' && (
-                    can('Ver Usuarios') ? (
-                        <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
-                                <h3 className="font-bold text-zinc-700">Gestión de Usuarios</h3>
-                                {can('Crear Usuarios') && (
-                                    <button
-                                        onClick={handleCreateUser}
-                                        className="text-xs bg-indigo-600 text-white px-3 py-2 rounded-lg font-medium hover:bg-indigo-700 transition-colors flex items-center gap-1"
-                                    >
-                                        <span>+</span> Nuevo Usuario
-                                    </button>
-                                )}
-                            </div>
-                            <div className="p-0">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="text-xs text-zinc-500 uppercase bg-zinc-50 border-b border-zinc-100">
-                                        <tr>
-                                            <th className="px-6 py-3">Usuario</th>
-                                            <th className="px-6 py-3">Email</th>
-                                            <th className="px-6 py-3">Role</th>
-                                            <th className="px-6 py-3">Estado</th>
-                                            <th className="px-6 py-3 text-right">Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-zinc-100">
-                                        {users?.map(user => (
-                                            <tr key={user.id} className="hover:bg-zinc-50/50">
-                                                <td className="px-6 py-4 font-medium text-zinc-900">{user.name}</td>
-                                                <td className="px-6 py-4 text-zinc-500">{user.email}</td>
-                                                <td className="px-6 py-4">
-                                                    <span className={`px-2 py-1 rounded-full text-xs font-bold ${user.role === 'ADMIN' ? 'bg-purple-100 text-purple-700' :
-                                                        user.role === 'KINESIOLOGIST' ? 'bg-blue-100 text-blue-700' :
-                                                            'bg-orange-100 text-orange-700'
-                                                        }`}>
-                                                        {user.role === 'ADMIN' ? 'ADMINISTRADOR' :
-                                                            user.role === 'KINESIOLOGIST' ? 'KINESIÓLOGO' :
-                                                                user.role === 'RECEPTIONIST' ? 'RECEPCIONISTA' : user.role}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    {user.active ? (
-                                                        <span className="text-green-600 font-medium flex items-center gap-1"><Check className="w-3 h-3" /> Activo</span>
-                                                    ) : (
-                                                        <span className="text-zinc-400 font-medium">Inactivo</span>
-                                                    )}
-                                                </td>
-
-                                                <td className="px-6 py-4 text-right flex justify-end gap-2">
-                                                    {can('Editar Usuarios') && (
-                                                        <button
-                                                            onClick={() => handleEditUser(user)}
-                                                            className="text-indigo-600 font-bold hover:text-indigo-800 transition-colors"
-                                                        >
-                                                            Editar
-                                                        </button>
-                                                    )}
-                                                    {user.role !== 'ADMIN' && can('Eliminar Usuarios') ? (
-                                                        <button
-                                                            onClick={() => handleDeleteUser(user)}
-                                                            className="text-red-500 font-bold hover:text-red-700 transition-colors"
-                                                        >
-                                                            Eliminar
-                                                        </button>
-                                                    ) : user.role === 'ADMIN' ? (
-                                                        <span className="text-zinc-400 text-xs italic">No se puede eliminar</span>
-                                                    ) : null}
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                    <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
+                        <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
+                            <h3 className="font-bold text-zinc-700">Gestión de Usuarios</h3>
+                            <button onClick={handleCreateUser} className="text-xs bg-indigo-600 text-white px-3 py-2 rounded-lg font-medium">+ Nuevo Usuario</button>
                         </div>
-                    ) : (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-red-800">
-                            <Shield className="w-12 h-12 mx-auto mb-4 text-red-300" />
-                            <h3 className="text-lg font-bold mb-2">Acceso Denegado</h3>
-                            <p className="text-sm">No tienes permisos para ver el módulo de usuarios.</p>
-                        </div>
-                    )
-                )}
-
-                {activeTab === 'Tablas Maestras' && (
-                    can('Configuración Global') ? (
-                        <>
-                            {!activeMasterTable ? (
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                                    {[
-                                        { key: 'comunas', title: 'Comunas', desc: 'Gestionar catálogo de comunas' },
-                                        { key: 'previsiones', title: 'Previsiones', desc: 'Gestionar catálogo de previsiones' },
-                                        { key: 'diagnosticos', title: 'Diagnósticos CIE-10', desc: 'Gestionar catálogo de diagnósticos cie-10' },
-                                        { key: 'medicamentos', title: 'Medicamentos', desc: 'Gestionar catálogo de medicamentos' },
-                                        { key: 'insumos', title: 'Insumos', desc: 'Gestionar catálogo de insumos' },
-                                        { key: 'feriados', title: 'Feriados', desc: 'Gestionar catálogo de feriados' },
-                                    ].map((item) => (
-                                        <div
-                                            key={item.key}
-                                            onClick={() => setActiveMasterTable(item.key)}
-                                            className="bg-white p-6 rounded-xl shadow-sm border border-zinc-200 hover:border-indigo-300 transition-colors cursor-pointer group"
-                                        >
-                                            <div className="flex items-center justify-between mb-4">
-                                                <div className="w-10 h-10 rounded-lg bg-indigo-50 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors">
-                                                    <FileText className="w-5 h-5" />
-                                                </div>
-                                            </div>
-                                            <h3 className="font-bold text-zinc-800 group-hover:text-indigo-700">{item.title}</h3>
-                                            <p className="text-xs text-zinc-500 mt-2">{item.desc}</p>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div>
-                                    <button
-                                        onClick={() => setActiveMasterTable(null)}
-                                        className="mb-4 px-4 py-2 text-sm bg-zinc-100 hover:bg-zinc-200 rounded-lg"
-                                    >
-                                        ← Volver a Tablas Maestras
-                                    </button>
-                                    {activeMasterTable === 'comunas' && <ComunasManager />}
-                                    {activeMasterTable === 'previsiones' && <PrevisionesManager />}
-                                    {activeMasterTable === 'diagnosticos' && <DiagnosticosManager />}
-                                    {activeMasterTable === 'medicamentos' && <MedicamentosManager />}
-                                    {activeMasterTable === 'insumos' && <InsumosManager />}
-                                    {activeMasterTable === 'feriados' && <FeriadosManager />}
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-red-800">
-                            <Shield className="w-12 h-12 mx-auto mb-4 text-red-300" />
-                            <h3 className="text-lg font-bold mb-2">Acceso Denegado</h3>
-                            <p className="text-sm">No tienes permisos para configurar tablas maestras.</p>
-                        </div>
-                    )
+                        <table className="w-full text-sm text-left">
+                            <thead className="text-xs text-zinc-500 uppercase bg-zinc-50">
+                                <tr>
+                                    <th className="px-6 py-3">Usuario</th>
+                                    <th className="px-6 py-3">Email</th>
+                                    <th className="px-6 py-3">Rol</th>
+                                    <th className="px-6 py-3">Estado</th>
+                                    <th className="px-6 py-3 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-100">
+                                {users.map(user => (
+                                    <tr key={user.id} className="hover:bg-zinc-50">
+                                        <td className="px-6 py-4 font-medium">{user.name}</td>
+                                        <td className="px-6 py-4 text-zinc-500">{user.email}</td>
+                                        <td className="px-6 py-4">
+                                            <span className="px-2 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700">
+                                                {user.roleName}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4">
+                                            {user.active ? <span className="text-green-600">Activo</span> : <span className="text-zinc-400">Inactivo</span>}
+                                        </td>
+                                        <td className="px-6 py-4 text-right">
+                                            <button onClick={() => handleEditUser(user)} className="text-indigo-600 mr-3">Editar</button>
+                                            {user.role !== 'ADMIN' && <button onClick={() => handleDeleteUser(user)} className="text-red-500">Eliminar</button>}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
 
                 {activeTab === 'Seguridad - Control de acceso' && (
-                    can('Configuración Global') ? (
-                        <div className="space-y-6">
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-zinc-200">
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-lg font-bold text-zinc-800">Matriz de Permisos</h3>
-                                    <button
-                                        onClick={async () => {
-                                            if (confirm('¿Reiniciar matriz de permisos por defecto?')) {
-                                                setPermissionFeedback('Inicializando...');
-                                                const res = await seedPermissions();
-                                                if (res.message === 'Success') {
-                                                    setPermissionFeedback('✓ Permisos inicializados correctamente');
-                                                    router.refresh();
-                                                    setTimeout(() => setPermissionFeedback(null), 3000);
-                                                } else {
-                                                    setPermissionFeedback('✗ Error al inicializar permisos');
-                                                    setTimeout(() => setPermissionFeedback(null), 3000);
-                                                }
-                                            }
-                                        }}
-                                        className="text-xs bg-zinc-800 text-white px-3 py-2 rounded-lg hover:bg-black transition-colors"
-                                    >
-                                        Inicializar Permisos
-                                    </button>
-                                </div>
-                                {permissionFeedback && (
-                                    <div className={`mb-4 p-3 rounded-lg text-sm font-medium ${permissionFeedback.includes('✓')
-                                        ? 'bg-green-100 text-green-800'
-                                        : permissionFeedback.includes('✗')
-                                            ? 'bg-red-100 text-red-800'
-                                            : 'bg-blue-100 text-blue-800'
-                                        }`}>
-                                        {permissionFeedback}
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-zinc-200 space-y-8">
+                        <div>
+                            <h3 className="text-lg font-bold text-zinc-800 mb-4">Portal Interno (Staff)</h3>
+                            <PermissionMatrix initialData={initialPermissions} roles={initialRoles} />
+                        </div>
+
+                        <div className="border-t pt-8">
+                            <h3 className="text-lg font-bold text-zinc-800 mb-4">Portal Pacientes</h3>
+                            <PatientPortalPermissions permissions={patientPermissions || []} roleId={patientRole?.id} />
+                        </div>
+                        <div className="border-t pt-8">
+                            <RoleManagement initialRoles={initialRoles} />
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'Tablas Maestras' && (
+                    <div className="bg-white p-6 rounded-xl shadow-sm border border-zinc-200">
+                        {!activeMasterTable ? (
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                {[
+                                    { key: 'comunas', title: 'Comunas' },
+                                    { key: 'previsiones', title: 'Previsiones' },
+                                    { key: 'diagnosticos', title: 'Diagnósticos' },
+                                    { key: 'medicamentos', title: 'Medicamentos' },
+                                    { key: 'insumos', title: 'Insumos' },
+                                    { key: 'feriados', title: 'Feriados' },
+                                ].map((item) => (
+                                    <div key={item.key} onClick={() => setActiveMasterTable(item.key)} className="p-6 border rounded-xl hover:border-indigo-500 cursor-pointer">
+                                        <h4 className="font-bold">{item.title}</h4>
                                     </div>
-                                )}
-                                <div className="overflow-x-auto">
-                                    <PermissionMatrix initialData={initialPermissions} />
-                                </div>
+                                ))}
                             </div>
-                        </div>
-                    ) : (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-red-800">
-                            <Shield className="w-12 h-12 mx-auto mb-4 text-red-300" />
-                            <h3 className="text-lg font-bold mb-2">Acceso Denegado</h3>
-                            <p className="text-sm">No tienes permisos para acceder a la configuración de seguridad.</p>
-                        </div>
-                    )
+                        ) : (
+                            <div>
+                                <button onClick={() => setActiveMasterTable(null)} className="mb-4 text-sm text-indigo-600">← Volver</button>
+                                {activeMasterTable === 'comunas' && <ComunasManager />}
+                                {activeMasterTable === 'previsiones' && <PrevisionesManager />}
+                                {activeMasterTable === 'diagnosticos' && <DiagnosticosManager />}
+                                {activeMasterTable === 'medicamentos' && <MedicamentosManager />}
+                                {activeMasterTable === 'insumos' && <InsumosManager />}
+                                {activeMasterTable === 'feriados' && <FeriadosManager />}
+                            </div>
+                        )}
+                    </div>
                 )}
 
                 {activeTab === 'Auditoría' && (
-                    can('Configuración Global') ? (
-                        <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
-                            <div className="px-6 py-4 border-b border-zinc-100 bg-zinc-50 flex flex-col md:flex-row justify-between items-center gap-4">
-                                <h3 className="font-bold text-zinc-700">Logs de Sistema (Últimas 24h o Filtrados)</h3>
-                                <div className="flex gap-2 items-center">
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-zinc-500">Desde:</span>
-                                        <input
-                                            type="date"
-                                            className="text-sm border border-zinc-200 rounded px-2 py-1"
-                                            onChange={(e) => {
-                                                const params = new URLSearchParams(searchParams);
-                                                if (e.target.value) params.set('auditFrom', e.target.value);
-                                                else params.delete('auditFrom');
-                                                router.push(`?${params.toString()}`);
-                                            }}
-                                            defaultValue={searchParams.get('auditFrom') || ''}
-                                        />
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                        <span className="text-xs text-zinc-500">Hasta:</span>
-                                        <input
-                                            type="date"
-                                            className="text-sm border border-zinc-200 rounded px-2 py-1"
-                                            onChange={(e) => {
-                                                const params = new URLSearchParams(searchParams);
-                                                if (e.target.value) params.set('auditTo', e.target.value);
-                                                else params.delete('auditTo');
-                                                router.push(`?${params.toString()}`);
-                                            }}
-                                            defaultValue={searchParams.get('auditTo') || ''}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-sm text-left">
-                                    <thead className="bg-zinc-50 text-zinc-500 font-medium border-b border-zinc-100">
-                                        <tr>
-                                            <th className="px-6 py-3">Fecha</th>
-                                            <th className="px-6 py-3">Acción</th>
-                                            <th className="px-6 py-3">Usuario</th>
-                                            <th className="px-6 py-3">IP</th>
-                                            <th className="px-6 py-3">Detalles</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody className="divide-y divide-zinc-100">
-                                        {logs?.map((log) => {
-                                            const actionMap: { [key: string]: string } = {
-                                                'CREATE_PULMONARY_TEST': 'Creación Examen Pulmonar',
-                                                'UPDATE_PULMONARY_TEST': 'Edición Examen Pulmonar',
-                                                'DELETE_PULMONARY_TEST': 'Eliminación Examen Pulmonar',
-                                                'LOGIN_SUCCESS': 'Inicio de Sesión Exitoso',
-                                                'LOGIN_FAILURE': 'Fallo de Inicio de Sesión',
-                                                // Add more mappings as needed
-                                            };
-                                            const label = actionMap[log.action] || log.action;
-
-                                            return (
-                                                <tr key={log.id} className="hover:bg-zinc-50 transition-colors">
-                                                    <td className="px-6 py-3 whitespace-nowrap text-zinc-500">
-                                                        {new Date(log.createdAt).toLocaleString()}
-                                                    </td>
-                                                    <td className="px-6 py-3 font-medium text-zinc-900">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className={`w-2 h-2 rounded-full ${log.action.includes('FAILURE') || log.action.includes('DELETE') ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
-                                                            {label}
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-6 py-3 text-zinc-600">
-                                                        {log.userEmail || 'System'}
-                                                    </td>
-                                                    <td className="px-6 py-3 font-mono text-xs text-zinc-500">
-                                                        {log.ipAddress === '::1' ? 'Localhost' : log.ipAddress}
-                                                    </td>
-                                                    <td className="px-6 py-3">
-                                                        <button
-                                                            onClick={() => setSelectedLog(log)}
-                                                            className="text-zinc-400 hover:text-indigo-600 transition-colors p-1 rounded-full hover:bg-indigo-50"
-                                                            title="Ver Detalle"
-                                                        >
-                                                            <Eye className="w-5 h-5" />
-                                                        </button>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                        {logs?.length === 0 && (
-                                            <tr>
-                                                <td colSpan={5} className="px-6 py-8 text-center text-zinc-500">
-                                                    No se encontraron registros para el periodo seleccionado.
-                                                </td>
-                                            </tr>
-                                        )}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center text-red-800">
-                            <Shield className="w-12 h-12 mx-auto mb-4 text-red-300" />
-                            <h3 className="text-lg font-bold mb-2">Acceso Denegado</h3>
-                            <p className="text-sm">No tienes permisos para ver los registros de auditoría.</p>
-                        </div>
-                    )
+                    <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
+                        <table className="w-full text-sm text-left">
+                            <thead className="bg-zinc-50 text-xs uppercase text-zinc-500">
+                                <tr>
+                                    <th className="px-6 py-3">Fecha</th>
+                                    <th className="px-6 py-3">Acción</th>
+                                    <th className="px-6 py-3">Usuario</th>
+                                    <th className="px-6 py-3">Detalles</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-zinc-100">
+                                {logs.map((log: any) => (
+                                    <tr
+                                        key={log.id}
+                                        className="hover:bg-indigo-50 transition-colors cursor-pointer group"
+                                        onClick={() => setSelectedLog(log)}
+                                    >
+                                        <td className="px-6 py-3 text-zinc-600 group-hover:text-indigo-700 font-medium">
+                                            {new Date(log.createdAt).toLocaleString()}
+                                        </td>
+                                        <td className="px-6 py-3 font-bold text-zinc-800">
+                                            {log.action}
+                                        </td>
+                                        <td className="px-6 py-3 text-zinc-600">{log.userEmail}</td>
+                                        <td className="px-6 py-3 text-xs font-mono text-zinc-500 truncate max-w-xs">
+                                            {log.details.substring(0, 50)}
+                                            {log.details.length > 50 && '...'}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 )}
             </div>
+
+            <ConfirmationModal
+                isOpen={false} onClose={() => { }} onConfirm={() => { }}
+                title="Confirmar" message="¿Estás seguro?"
+            />
+
+            <LogDetailsModal
+                isOpen={!!selectedLog}
+                onClose={() => setSelectedLog(null)}
+                log={selectedLog}
+            />
         </div>
     )
 }

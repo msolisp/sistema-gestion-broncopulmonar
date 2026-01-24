@@ -12,47 +12,61 @@ export async function getPatientDashboardData() {
             return { error: "No autorizado" };
         }
 
-        const patient = await prisma.patient.findUnique({
-            where: { id: session.user.id },
-            select: {
-                id: true,
-                name: true,
-                commune: true
+        // Find Persona and FichaClinica
+        const persona = await prisma.persona.findUnique({
+            where: { email: session.user.email },
+            include: {
+                fichaClinica: true
             }
         });
 
-        if (!patient) {
+        if (!persona) {
             return { error: "Perfil de paciente no encontrado" };
         }
 
+        const commune = persona.comuna || 'SANTIAGO';
+
         // Parallel Fetching for performance
-        const [nextAppointment, stations] = await Promise.all([
-            prisma.appointment.findFirst({
+        const [nextCita, stations] = await Promise.all([
+            persona.fichaClinica ? prisma.cita.findFirst({
                 where: {
-                    patientId: patient.id,
-                    date: { gte: new Date() },
-                    status: { not: 'CANCELLED' }
+                    fichaClinicaId: persona.fichaClinica.id,
+                    fecha: { gte: new Date() },
+                    estado: { not: 'CANCELADA' }
                 },
-                orderBy: { date: 'asc' },
+                orderBy: { fecha: 'asc' },
                 select: {
-                    date: true,
-                    status: true
+                    fecha: true,
+                    estado: true
                 }
-            }),
+            }) : null,
             getRealtimeGlobalAQI()
         ]);
 
         // Process AQI Data logic server-side
-        const normalizedCommune = patient.commune.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const normalizedCommune = commune.toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
         const stationMatch = stations.find(s =>
             s.commune.includes(normalizedCommune) || normalizedCommune.includes(s.commune)
         ) || stations.find(s => s.commune === 'SANTIAGO');
 
+        // Fetch Patient Permissions
+        const patientRole = await prisma.rol.findFirst({
+            where: { nombre: 'PACIENTE' },
+            include: { permisos: true }
+        });
+
+        const activePermissions = patientRole?.permisos.filter(p => p.activo).map(p => p.accion) || [];
+
         return {
-            patient,
-            nextAppointment,
+            patient: {
+                id: persona.id,
+                name: `${persona.nombre} ${persona.apellidoPaterno}`,
+                commune: commune
+            },
+            nextAppointment: nextCita ? { date: nextCita.fecha, status: nextCita.estado } : null,
             userName: session.user.name,
-            aqiData: stationMatch || null
+            aqiData: stationMatch || null,
+            permissions: activePermissions
         };
 
     } catch (error) {

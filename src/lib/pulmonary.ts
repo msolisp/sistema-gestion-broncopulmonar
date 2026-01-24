@@ -10,11 +10,11 @@ export async function addPulmonaryRecord(formData: FormData) {
         return { message: 'No autenticado' };
     }
 
-    // RBAC: Only ADMIN or KINESIOLOGIST can add records
+    // RBAC: Only ADMIN or KINESIOLOGO can add records
     const userRole = (session.user as any).role;
     console.log("DEBUG: User Role requesting add:", userRole);
 
-    if (userRole !== 'ADMIN' && userRole !== 'KINESIOLOGIST') {
+    if (userRole !== 'ADMIN' && userRole !== 'KINESIOLOGO') {
         return { message: 'No autorizado: Se requieren privilegios de administrador o kinesiólogo.' };
     }
 
@@ -69,15 +69,19 @@ export async function addPulmonaryRecord(formData: FormData) {
         });
 
         // Audit Log
-        await prisma.systemLog.create({
-            data: {
-                action: 'CREATE_PULMONARY_TEST',
-                details: `Patient: ${patientId}, Date: ${date}`,
-                userId: session.user.id || 'system',
-                userEmail: session.user.email || 'system',
-                ipAddress: '::1' // Default IP, would need headers to get real IP
-            }
-        });
+        const userStaff = await prisma.usuarioSistema.findFirst({ where: { persona: { email: session.user.email as string } } });
+        if (userStaff) {
+            await prisma.logAccesoSistema.create({
+                data: {
+                    accion: 'CREATE_PULMONARY_TEST',
+                    accionDetalle: `Patient: ${patientId}, Date: ${date}`,
+                    usuarioId: userStaff.id,
+                    recurso: 'PRUEBA_FUNCION_PULMONAR',
+                    recursoId: 'NEW',
+                    ipAddress: '::1'
+                }
+            });
+        }
 
         revalidatePath(`/patients/${patientId}/history`);
         return { message: 'Registro guardado exitosamente' };
@@ -94,7 +98,7 @@ export async function updatePulmonaryRecord(formData: FormData) {
     }
 
     const userRole = (session.user as any).role;
-    if (userRole !== 'ADMIN' && userRole !== 'KINESIOLOGIST') {
+    if (userRole !== 'ADMIN' && userRole !== 'KINESIOLOGO') {
         return { message: 'No autorizado' };
     }
 
@@ -172,15 +176,19 @@ export async function updatePulmonaryRecord(formData: FormData) {
 
         const diffString = changes.length > 0 ? changes.join(', ') : 'Sin cambios detectados';
 
-        await prisma.systemLog.create({
-            data: {
-                action: 'UPDATE_PULMONARY_TEST',
-                details: `Record: ${recordId}, Patient: ${patientId}, Changes: [${diffString}]`,
-                userId: session.user.id || 'system',
-                userEmail: session.user.email || 'system',
-                ipAddress: '::1'
-            }
-        });
+        const userStaff = await prisma.usuarioSistema.findFirst({ where: { persona: { email: session.user.email as string } } });
+        if (userStaff) {
+            await prisma.logAccesoSistema.create({
+                data: {
+                    accion: 'UPDATE_PULMONARY_TEST',
+                    accionDetalle: `Record: ${recordId}, Patient: ${patientId}, Changes: [${diffString}]`,
+                    usuarioId: userStaff.id,
+                    recurso: 'PRUEBA_FUNCION_PULMONAR',
+                    recursoId: recordId,
+                    ipAddress: '::1'
+                }
+            });
+        }
 
         revalidatePath(`/patients/${patientId}/history`);
         return { message: 'Registro actualizado exitosamente' };
@@ -197,7 +205,7 @@ export async function getPulmonaryHistory(patientId: string) {
     const userRole = (session.user as any).role;
 
     // RBAC: Admin/Kin can see all. Patient can only see their own.
-    if (userRole === 'PATIENT') {
+    if (userRole === 'PACIENTE') {
         const persona = await prisma.persona.findUnique({
             where: { email: session.user.email as string }
         });
@@ -242,7 +250,7 @@ export async function deletePulmonaryRecord(recordId: string, patientId: string)
     }
 
     const userRole = (session.user as any).role;
-    if (userRole !== 'ADMIN' && userRole !== 'KINESIOLOGIST') {
+    if (userRole !== 'ADMIN' && userRole !== 'KINESIOLOGO') {
         return { message: 'No autorizado' };
     }
 
@@ -251,15 +259,19 @@ export async function deletePulmonaryRecord(recordId: string, patientId: string)
             where: { id: recordId }
         });
 
-        await prisma.systemLog.create({
-            data: {
-                action: 'DELETE_PULMONARY_TEST',
-                details: `Record: ${recordId}, Patient: ${patientId}`,
-                userId: session.user.id || 'system',
-                userEmail: session.user.email || 'system',
-                ipAddress: '::1'
-            }
-        });
+        const userStaff = await prisma.usuarioSistema.findFirst({ where: { persona: { email: session.user.email as string } } });
+        if (userStaff) {
+            await prisma.logAccesoSistema.create({
+                data: {
+                    accion: 'DELETE_PULMONARY_TEST',
+                    accionDetalle: `Record: ${recordId}, Patient: ${patientId}`,
+                    usuarioId: userStaff.id,
+                    recurso: 'PRUEBA_FUNCION_PULMONAR',
+                    recursoId: recordId,
+                    ipAddress: '::1'
+                }
+            });
+        }
 
         revalidatePath(`/patients/${patientId}/history`);
         return { message: 'Registro eliminado exitosamente' };

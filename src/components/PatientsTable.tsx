@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import * as XLSX from 'xlsx'
 import { Search, Download, FileSpreadsheet, Plus, Edit, Trash2, X, UserCheck, History, ChevronLeft, ChevronRight, Eye, EyeOff } from 'lucide-react'
-import { adminCreatePatient, adminUpdatePatient, deletePatient } from "@/lib/actions"
+import { adminCreatePatient, adminUpdatePatient, deletePatient } from "@/lib/actions.patients"
 
 interface Patient {
     id: string

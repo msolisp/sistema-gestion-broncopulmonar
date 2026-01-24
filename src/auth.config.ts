@@ -29,7 +29,7 @@ export const authConfig = {
 
             if (isOnInternal) {
                 if (isLoggedIn) {
-                    if (auth.user.role === 'PATIENT') return Response.redirect(new URL('/portal', nextUrl));
+                    if (auth.user.role === 'PACIENTE') return Response.redirect(new URL('/portal', nextUrl));
                     return true;
                 }
                 // Prevent infinite redirect loop
@@ -42,7 +42,7 @@ export const authConfig = {
             if (isOnPortal) {
                 if (isLoggedIn) {
                     // Non-patients go to /patients (not /dashboard)
-                    if (auth.user.role !== 'PATIENT') {
+                    if (auth.user.role !== 'PACIENTE') {
                         // Admin goes to dashboard, others to patients
                         const defaultRoute = auth.user.role === 'ADMIN' ? '/dashboard' : '/patients';
                         return Response.redirect(new URL(defaultRoute, nextUrl));
@@ -58,6 +58,7 @@ export const authConfig = {
                 token.role = user.role
                 token.id = user.id
                 token.mustChangePassword = (user as any).mustChangePassword
+                token.usuarioSistemaId = (user as any).usuarioSistemaId
             }
             return token
         },
@@ -66,6 +67,7 @@ export const authConfig = {
                 session.user.role = token.role as string
                 session.user.id = token.id as string
                 (session.user as any).mustChangePassword = token.mustChangePassword as boolean
+                (session.user as any).usuarioSistemaId = token.usuarioSistemaId as string
             }
             return session
         }

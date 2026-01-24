@@ -2,7 +2,7 @@ import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 
-export type UserRole = 'ADMIN' | 'KINESIOLOGIST' | 'RECEPTIONIST' | 'PATIENT';
+import { UserRole } from '@/components/admin/users/types';
 
 interface ProtectionConfig {
     requiredPermission?: string;
@@ -30,8 +30,8 @@ export async function protectRoute(config: ProtectionConfig = {}) {
         return { session, userRole, hasAccess: true };
     }
 
-    // Check if PATIENT trying to access internal routes
-    if (userRole === 'PATIENT') {
+    // Check if PACIENTE trying to access internal routes
+    if (userRole === 'PACIENTE') {
         redirect(config.redirectTo || '/portal');
     }
 
@@ -42,17 +42,9 @@ export async function protectRoute(config: ProtectionConfig = {}) {
 
     // Check permission-based access if specified
     if (config.requiredPermission) {
-        const permissions = await prisma.rolePermission.findMany({
-            where: {
-                role: userRole,
-                enabled: true
-            },
-            select: { action: true }
-        });
-
-        const hasPermission = permissions.some((p: { action: string }) => p.action === config.requiredPermission);
-
-        if (!hasPermission) {
+        // Granular permissions using PermisoUsuario to be implemented.
+        // For now, only ADMIN has full access.
+        if ((userRole as any) !== 'ADMIN') {
             redirect(config.redirectTo || '/dashboard');
         }
     }

@@ -13,7 +13,7 @@ export async function GET() {
         }
 
         const userRole = (session.user as any).role
-        const allowedRoles = ['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST']
+        const allowedRoles = ['ADMIN', 'KINESIOLOGO', 'RECEPCIONISTA']
 
         if (!allowedRoles.includes(userRole)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
         }
 
         const userRole = (session.user as any).role
-        const allowedRoles = ['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST']
+        const allowedRoles = ['ADMIN', 'KINESIOLOGO', 'RECEPCIONISTA']
 
         if (!allowedRoles.includes(userRole)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 })

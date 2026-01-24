@@ -1,14 +1,20 @@
 
 export enum Role {
     ADMIN = 'ADMIN',
-    KINESIOLOGIST = 'KINESIOLOGIST',
-    RECEPTIONIST = 'RECEPTIONIST',
-    PATIENT = 'PATIENT'
+    KINESIOLOGO = 'KINESIOLOGO',
+    RECEPCIONISTA = 'RECEPCIONISTA',
+    MEDICO = 'MEDICO',
+    ENFERMERA = 'ENFERMERA',
+    TECNICO_PARVULARIO = 'TECNICO_PARVULARIO',
+    PACIENTE = 'PACIENTE'
 }
 
 export const ROLE_LABELS = {
     [Role.ADMIN]: 'Administrador',
-    [Role.KINESIOLOGIST]: 'Kinesiólogo',
-    [Role.RECEPTIONIST]: 'Recepcionista',
-    [Role.PATIENT]: 'Paciente'
+    [Role.KINESIOLOGO]: 'Kinesiólogo',
+    [Role.RECEPCIONISTA]: 'Recepcionista',
+    [Role.MEDICO]: 'Médico',
+    [Role.ENFERMERA]: 'Enfermera',
+    [Role.TECNICO_PARVULARIO]: 'Técnico Parvulario',
+    [Role.PACIENTE]: 'Paciente'
 }

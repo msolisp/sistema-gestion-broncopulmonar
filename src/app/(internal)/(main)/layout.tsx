@@ -13,16 +13,8 @@ export default async function InternalLayout({
     const session = await auth();
     let permissions: string[] = [];
 
-    if (session?.user?.role) {
-        const rolePermissions = await prisma.rolePermission.findMany({
-            where: {
-                role: session.user.role,
-                enabled: true
-            },
-            select: { action: true }
-        });
-        permissions = rolePermissions.map((p: { action: string }) => p.action);
-    }
+    // Note: Granular permissions using PermisoUsuario to be implemented.
+    // Sidebar currently handles ADMIN super-access.
 
     return (
         <div className="flex h-screen bg-zinc-50">

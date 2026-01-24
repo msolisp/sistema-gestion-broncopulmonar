@@ -4,7 +4,7 @@ import { uploadMedicalExam } from '@/lib/actions'
 import { useRouter } from 'next/navigation'
 
 // Mock the server action
-jest.mock('@/lib/actions', () => ({
+jest.mock('@/lib/actions.patients', () => ({
     uploadMedicalExam: jest.fn()
 }))
 

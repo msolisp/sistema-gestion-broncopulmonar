@@ -1,23 +1,30 @@
 // Permission check utility for RBAC
-export function hasPermission(
-    userRole: string,
-    action: string,
-    permissions: Array<{ role: string; action: string; enabled: boolean }>
-): boolean {
-    // Admin always has all permissions
-    if (userRole === 'ADMIN') return true;
 
-    const permission = permissions.find(
-        p => p.role === userRole && p.action === action
-    );
+export type UserRole = 'ADMIN' | 'KINESIOLOGO' | 'RECEPCIONISTA' | 'MEDICO' | 'ENFERMERA' | 'TECNICO_PARVULARIO' | 'PACIENTE';
 
-    return permission?.enabled ?? false;
+export interface Permission {
+    recurso: string;
+    accion: string;
+    activo: boolean;
 }
 
-export type UserRole = 'ADMIN' | 'KINESIOLOGIST' | 'RECEPTIONIST' | 'PATIENT';
+export function hasPermission(
+    userPermissions: Permission[] | undefined,
+    resource: string,
+    action: string
+): boolean {
+    // Fail safe
+    if (!userPermissions || !Array.isArray(userPermissions)) return false;
 
-export interface RolePermission {
-    role: string;
-    action: string;
-    enabled: boolean;
+    // Check for specific permission
+    const permission = userPermissions.find(
+        p => p.recurso === resource && p.accion === action
+    );
+
+    return permission?.activo ?? false;
+}
+
+// Helper to check if user IS admin (bypass for now, but good to have)
+export function isAdmin(role: string): boolean {
+    return role === 'ADMIN';
 }

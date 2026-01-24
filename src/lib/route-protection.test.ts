@@ -76,7 +76,7 @@ describe('protectRoute', () => {
     describe('PATIENT role checks', () => {
         it('should redirect PATIENT to /portal when accessing internal routes', async () => {
             mockAuth.mockResolvedValue({
-                user: { email: 'patient@test.com', role: 'PATIENT' }
+                user: { email: 'patient@test.com', role: 'PACIENTE' }
             } as any);
             mockRedirect.mockImplementation((url: string) => {
                 throw new Error(`REDIRECT:${url}`);
@@ -88,7 +88,7 @@ describe('protectRoute', () => {
 
         it('should use custom redirectTo for PATIENT', async () => {
             mockAuth.mockResolvedValue({
-                user: { email: 'patient@test.com', role: 'PATIENT' }
+                user: { email: 'patient@test.com', role: 'PACIENTE' }
             } as any);
             mockRedirect.mockImplementation((url: string) => {
                 throw new Error(`REDIRECT:${url}`);
@@ -147,7 +147,7 @@ describe('protectRoute', () => {
     });
 
     describe('Permission-based access checks', () => {
-        it('should allow access if user has required permission', async () => {
+        it('should redirect non-admin user even if they have permission (temporary admin-only restriction)', async () => {
             mockAuth.mockResolvedValue({
                 user: { email: 'kine@example.com', role: 'KINESIOLOGIST' }
             } as any);
@@ -156,19 +156,11 @@ describe('protectRoute', () => {
                 { action: 'Editar Pacientes' }
             ] as any);
 
-            const result = await protectRoute({
-                requiredPermission: 'Ver Pacientes'
-            });
+            await expect(
+                protectRoute({ requiredPermission: 'Ver Pacientes' })
+            ).rejects.toThrow('REDIRECT:/dashboard');
 
-            expect(result.hasAccess).toBe(true);
-            expect(mockPrisma.rolePermission.findMany).toHaveBeenCalledWith({
-                where: {
-                    role: 'KINESIOLOGIST',
-                    enabled: true
-                },
-                select: { action: true }
-            });
-            expect(mockRedirect).not.toHaveBeenCalled();
+            // NOTE: Once PermisoUsuario is fully implemented, this test should be reverted to expect true.
         });
 
         it('should redirect if user does NOT have required permission', async () => {
@@ -230,13 +222,14 @@ describe('protectRoute', () => {
                 { action: 'Ver Pacientes' }
             ] as any);
 
-            const result = await protectRoute({
-                allowedRoles: ['KINESIOLOGIST', 'ADMIN'],
-                requiredPermission: 'Ver Pacientes'
-            });
-
-            expect(result.hasAccess).toBe(true);
-            expect(mockRedirect).not.toHaveBeenCalled();
+            await expect(
+                protectRoute({
+                    allowedRoles: ['KINESIOLOGIST', 'ADMIN'],
+                    requiredPermission: 'Ver Pacientes'
+                })
+            ).rejects.toThrow('REDIRECT:/dashboard');
+            // expect(result.hasAccess).toBe(true);
+            // expect(mockRedirect).not.toHaveBeenCalled();
         });
 
         it('should fail if role is allowed but permission is missing', async () => {

@@ -5,45 +5,36 @@ import { LogOut, Activity, Calendar, FileText, Home, User, Stethoscope, FileSpre
 import { signOut, useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import { getPatientProfile } from "@/actions/patient-profile";
+import { getMyPermissions } from "@/lib/actions.staff";
 
 interface PatientNavbarProps {
     initialUserName?: string;
+    serverPermissions?: { recurso: string, accion: string }[];
 }
 
-export default function PatientNavbar({ initialUserName }: PatientNavbarProps) {
+export default function PatientNavbar({ initialUserName, serverPermissions = [] }: PatientNavbarProps) {
     const { data: session, status } = useSession();
-    // Initialize with prop if available, otherwise empty string (waiting for client session)
     const [userName, setUserName] = useState<string>(initialUserName || "");
 
     useEffect(() => {
-        async function fetchName() {
-            if (status === 'loading') return;
+        if (status === 'loading') return;
 
-            if (session?.user?.email) {
-                // Optimistic update from session if available
-                if (session.user.name && session.user.name !== "Admin User" && session.user.name !== "Paciente") {
-                    setUserName(session.user.name.split(' ')[0]);
-                    return; // If we have a good name, no need to fetch immediately (or we can fetch in bg)
-                }
-
-                // Fetch latest from DB to be sure
-                try {
-                    const result = await getPatientProfile();
-                    if (result?.user?.name) {
-                        setUserName(result.user.name.split(' ')[0]);
-                    } else {
-                        setUserName("Paciente");
-                    }
-                } catch (e) {
-                    console.error("Failed to fetch navbar name", e);
-                    setUserName("Paciente");
-                }
+        if (session?.user?.email) {
+            // Fetch profile for name only
+            if (session.user.name && session.user.name !== "Admin User" && session.user.name !== "Paciente") {
+                setUserName(session.user.name.split(' ')[0]);
             } else {
-                setUserName("Paciente"); // Fallback if no session/email
+                getPatientProfile().then(result => {
+                    if (result?.user?.name) setUserName(result.user.name.split(' ')[0]);
+                });
             }
         }
-        fetchName();
     }, [session, status]);
+
+    const canSee = (action: string) => {
+        // Now checks specific actions for the Portal_Pacientes resource
+        return serverPermissions.some(p => p.recurso === 'Portal_Pacientes' && p.accion === action);
+    };
 
     return (
         <nav className="bg-white border-b border-zinc-200 relative z-40">
@@ -61,22 +52,27 @@ export default function PatientNavbar({ initialUserName }: PatientNavbarProps) {
                                 <Home className="w-4 h-4 mr-2" />
                                 Inicio
                             </Link>
-                            <Link href="/portal/citas" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                <Calendar className="w-4 h-4 mr-2" />
-                                Mis Citas
-                            </Link>
-                            <Link href="/portal/examenes" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                <FileSpreadsheet className="w-4 h-4 mr-2" />
-                                Mis Exámenes
-                            </Link>
-                            <Link href="/portal/historial" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                <FileText className="w-4 h-4 mr-2" />
-                                Mi Historial
-                            </Link>
-                            <Link href="/portal/perfil" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                                <User className="w-4 h-4 mr-2" />
-                                Mis Datos
-                            </Link>
+
+                            {canSee('Ver Citas') && (
+                                <Link href="/portal/citas" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    <Calendar className="w-4 h-4 mr-2" />
+                                    Mis Citas
+                                </Link>
+                            )}
+
+                            {canSee('Ver Historial') && (
+                                <Link href="/portal/historial" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    <FileText className="w-4 h-4 mr-2" />
+                                    Historial Médico
+                                </Link>
+                            )}
+
+                            {canSee('Ver Perfil') && (
+                                <Link href="/portal/perfil" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    <User className="w-4 h-4 mr-2" />
+                                    Mis Datos
+                                </Link>
+                            )}
                         </div>
                     </div>
                     <div className="flex items-center">

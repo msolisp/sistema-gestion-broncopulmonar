@@ -44,7 +44,14 @@ describe('getPatientProfile', () => {
             rut: '12345678-9',
             comuna: 'SANTIAGO',
             direccion: 'Calle Falsa 123',
-            region: 'METROPOLITANA'
+            region: 'METROPOLITANA',
+            sexo: 'M',
+            telefono: '+56912345678',
+            fechaNacimiento: new Date('1990-01-01'),
+            fichaClinica: {
+                prevision: 'FONASA',
+                cota: 100
+            }
         };
 
         const expectedUser = {
@@ -54,7 +61,12 @@ describe('getPatientProfile', () => {
             rut: '12345678-9',
             commune: 'SANTIAGO',
             address: 'Calle Falsa 123',
-            region: 'METROPOLITANA'
+            region: 'METROPOLITANA',
+            gender: 'Masculino',
+            phone: '+56912345678',
+            birthDate: new Date('1990-01-01'),
+            healthSystem: 'FONASA',
+            cota: 100
         };
 
         (prisma.persona.findUnique as jest.Mock).mockResolvedValue(mockPersona);

@@ -130,7 +130,7 @@ export async function createStaffUser(data: {
     apellidoMaterno?: string;
     email: string;
     password: string;
-    rol: 'KINESIOLOGO' | 'MEDICO' | 'ENFERMERA' | 'TECNICO_PARVULARIO' | 'ADMIN' | 'RECEPCIONISTA';
+    rol: string;
     registroProfesional?: string;
     direccion?: string;
     comuna?: string;
@@ -169,7 +169,7 @@ export async function createStaffUser(data: {
         await tx.usuarioSistema.create({
             data: {
                 personaId: persona.id,
-                rol: data.rol,
+                rolId: data.rol,
                 registroProfesional: data.registroProfesional,
                 creadoPor: data.creadoPor
             }
@@ -183,6 +183,7 @@ export async function createStaffUser(data: {
  * Update patient data
  */
 export async function updatePatient(personaId: string, data: {
+    rut?: string;
     email?: string;
     nombre?: string;
     apellidoPaterno?: string;
@@ -204,6 +205,7 @@ export async function updatePatient(personaId: string, data: {
         await tx.persona.update({
             where: { id: personaId },
             data: {
+                rut: data.rut,
                 email: data.email,
                 nombre: data.nombre,
                 apellidoPaterno: data.apellidoPaterno,
@@ -239,6 +241,81 @@ export async function updatePatient(personaId: string, data: {
                 data: { passwordHash }
             });
         }
+
+        return { success: true };
+    });
+}
+
+/**
+ * Update staff data
+ */
+export async function updateStaffUser(usuarioSistemaId: string, data: {
+    rut?: string;
+    email?: string;
+    nombre?: string;
+    apellidoPaterno?: string;
+    apellidoMaterno?: string | null;
+    direccion?: string | null;
+    comuna?: string | null;
+    region?: string | null;
+    rol?: string;
+    active?: boolean;
+    registroProfesional?: string;
+    password?: string;
+    modificadoPor: string;
+}) {
+    return prisma.$transaction(async (tx) => {
+        // 1. Find UsuarioSistema to get personaId
+        const staff = await tx.usuarioSistema.findUnique({
+            where: { id: usuarioSistemaId },
+            include: { persona: true }
+        });
+
+        if (!staff) throw new Error('Staff user not found');
+
+        const personaId = staff.personaId;
+
+        // 2. Update Persona
+        await tx.persona.update({
+            where: { id: personaId },
+            data: {
+                rut: data.rut,
+                email: data.email,
+                nombre: data.nombre,
+                apellidoPaterno: data.apellidoPaterno,
+                apellidoMaterno: data.apellidoMaterno,
+                direccion: data.direccion,
+                comuna: data.comuna,
+                region: data.region,
+                activo: data.active !== undefined ? data.active : undefined, // Global active
+                modificadoPor: data.modificadoPor
+            }
+        });
+
+        // 3. Update UsuarioSistema
+        await tx.usuarioSistema.update({
+            where: { id: usuarioSistemaId },
+            data: {
+                rolId: data.rol,
+                activo: data.active !== undefined ? data.active : undefined, // Staff active
+                registroProfesional: data.registroProfesional,
+                modificadoPor: data.modificadoPor
+            }
+        });
+
+        // 4. Update password if provided
+        if (data.password) {
+            const passwordHash = await bcrypt.hash(data.password, 10);
+            await tx.credencial.update({
+                where: { personaId },
+                data: {
+                    passwordHash,
+                    debeCambiarPassword: false // Reset flag if changed by admin
+                }
+            });
+        }
+
+        return { success: true };
     });
 }
 
@@ -264,4 +341,72 @@ export async function checkPersonaExists(rut?: string, email?: string, excludePe
     }
 
     return prisma.persona.findFirst(query);
+}
+
+/**
+ * Adapt Pulmonary Function Test to FHIR Observations
+ * "Flattens" the single database row into multiple Observation resources.
+ */
+export function adaptPulmonaryToFHIRObservations(
+    record: {
+        id: string;
+        fecha: Date;
+        cvfValue?: number | null;
+        cvfPercent?: number | null;
+        vef1Value?: number | null;
+        vef1Percent?: number | null;
+        walkDistance?: number | null;
+        spo2Rest?: number | null;
+        personaId?: string; // Optional context
+    }
+) {
+    const observations = [];
+    const timestamp = record.fecha.toISOString();
+
+    // Helper to create basic observation structure
+    const createObservation = (code: string, display: string, value: number, unit: string) => ({
+        resourceType: "Observation",
+        status: "final",
+        code: {
+            coding: [
+                {
+                    system: "http://loinc.org",
+                    code: code,
+                    display: display
+                }
+            ]
+        },
+        subject: {
+            reference: `Patient/${record.personaId || 'Unknown'}`
+        },
+        effectiveDateTime: timestamp,
+        valueQuantity: {
+            value: value,
+            unit: unit,
+            system: "http://unitsofmeasure.org",
+            code: unit
+        }
+    });
+
+    if (record.cvfValue) {
+        observations.push(createObservation('19868-9', 'Forced vital capacity [Volume] Respiratory system by Spirometry', record.cvfValue, 'L'));
+    }
+    if (record.cvfPercent) {
+        observations.push(createObservation('19870-5', 'Forced vital capacity [Volume] Respiratory system by Spirometry / Predicted', record.cvfPercent, '%'));
+    }
+    if (record.vef1Value) {
+        observations.push(createObservation('20150-1', 'FEV1 [Volume]', record.vef1Value, 'L'));
+    }
+    if (record.walkDistance) {
+        observations.push(createObservation('62816-5', '6 minute walk distance', record.walkDistance, 'm'));
+    }
+    if (record.spo2Rest) {
+        observations.push(createObservation('20590-4', 'Oxygen saturation in Arterial blood', record.spo2Rest, '%'));
+    }
+
+    return {
+        resourceType: "Bundle",
+        type: "collection",
+        entry: observations.map(obs => ({ resource: obs }))
+    };
 }

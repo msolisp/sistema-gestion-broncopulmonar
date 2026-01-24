@@ -16,7 +16,8 @@ export default async function PatientsPage() {
     // Query from new Persona table with related data
     const personas = await prisma.persona.findMany({
         where: {
-            activo: true  // Only active patients
+            activo: true,  // Only active patients
+            fichaClinica: { isNot: null } // Only actual patients (with clinical record)
         },
         include: {
             fichaClinica: {

@@ -3,9 +3,12 @@ import prisma from '@/lib/prisma';
 
 // Mock Prisma
 jest.mock('@/lib/prisma', () => ({
-    systemLog: {
-        create: jest.fn(),
-    },
+    __esModule: true,
+    default: {
+        logAccesoSistema: {
+            create: jest.fn(),
+        }
+    }
 }));
 
 describe('logger', () => {
@@ -15,25 +18,26 @@ describe('logger', () => {
     });
 
     it('logs action successfully', async () => {
-        (prisma.systemLog.create as jest.Mock).mockResolvedValue({});
+        (prisma.logAccesoSistema.create as jest.Mock).mockResolvedValue({});
 
         await logAction('TEST_ACTION', 'Details', 'user-id', 'user@test.com');
 
-        expect(prisma.systemLog.create).toHaveBeenCalledWith({
+        expect(prisma.logAccesoSistema.create).toHaveBeenCalledWith({
             data: {
-                action: 'TEST_ACTION',
-                details: 'Details',
-                userId: 'user-id',
-                userEmail: 'user@test.com',
-                ipAddress: null
+                accion: 'TEST_ACTION',
+                accionDetalle: 'Details',
+                usuarioId: 'user-id',
+                recurso: 'SYSTEM',
+                recursoId: 'GENERAL',
+                ipAddress: '::1'
             }
         });
     });
 
     it('handles logging error gracefully', async () => {
-        (prisma.systemLog.create as jest.Mock).mockRejectedValue(new Error('DB Error'));
+        (prisma.logAccesoSistema.create as jest.Mock).mockRejectedValue(new Error('DB Error'));
 
-        await expect(logAction('TEST_ACTION')).resolves.not.toThrow();
+        await expect(logAction('TEST_ACTION', 'Details', 'u1', 'test@test.com')).resolves.not.toThrow();
         expect(console.error).toHaveBeenCalled();
     });
 });

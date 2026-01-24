@@ -62,10 +62,13 @@ const mockProps = {
 }
 
 // Mock Server Actions
-jest.mock('../lib/actions', () => ({
+jest.mock('../lib/actions.staff', () => ({
     adminCreateSystemUser: jest.fn().mockResolvedValue({ message: 'Success' }),
     adminUpdateSystemUser: jest.fn().mockResolvedValue({ message: 'Success' }),
-    toggleRolePermission: jest.fn().mockResolvedValue({ message: 'Success' })
+    toggleRolePermission: jest.fn().mockResolvedValue({ message: 'Success' }),
+    seedPermissions: jest.fn().mockResolvedValue({ message: 'Success' }),
+    adminDeleteSystemUser: jest.fn().mockResolvedValue({ message: 'Success' }),
+    updateRolePermissions: jest.fn().mockResolvedValue({ message: 'Success' }),
 }))
 
 // Mock useRouter

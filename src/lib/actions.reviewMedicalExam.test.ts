@@ -5,7 +5,7 @@ import { auth } from '@/auth';
 
 // Mocks
 jest.mock('./prisma', () => ({
-    medicalExam: {
+    examenMedico: {
         update: jest.fn(),
     },
 }));
@@ -31,7 +31,7 @@ describe('reviewMedicalExam server action', () => {
 
     it('should return Unauthorized if user is not ADMIN or KINESIOLOGIST', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { email: 'patient@test.com', role: 'PATIENT' }
+            user: { email: 'patient@test.com', role: 'PACIENTE' }
         });
         const result = await reviewMedicalExam('exam-123');
         expect(result).toEqual({ message: 'Unauthorized' });
@@ -39,15 +39,15 @@ describe('reviewMedicalExam server action', () => {
 
     it('should mark exam as reviewed successfully for KINESIOLOGIST', async () => {
         (auth as jest.Mock).mockResolvedValue({
-            user: { email: 'kine@test.com', role: 'KINESIOLOGIST' }
+            user: { email: 'kine@test.com', role: 'KINESIOLOGO' }
         });
-        (prisma.medicalExam.update as jest.Mock).mockResolvedValue({});
+        (prisma.examenMedico.update as jest.Mock).mockResolvedValue({});
 
         const result = await reviewMedicalExam('exam-123');
 
-        expect(prisma.medicalExam.update).toHaveBeenCalledWith({
+        expect(prisma.examenMedico.update).toHaveBeenCalledWith({
             where: { id: 'exam-123' },
-            data: { reviewed: true }
+            data: { revisado: true }
         });
         expect(result).toEqual({ message: 'Success' });
     });
@@ -56,7 +56,7 @@ describe('reviewMedicalExam server action', () => {
         (auth as jest.Mock).mockResolvedValue({
             user: { email: 'admin@test.com', role: 'ADMIN' }
         });
-        (prisma.medicalExam.update as jest.Mock).mockRejectedValue(new Error('DB Error'));
+        (prisma.examenMedico.update as jest.Mock).mockRejectedValue(new Error('DB Error'));
 
         const result = await reviewMedicalExam('exam-123');
         expect(result).toEqual({ message: 'Error marking exam as reviewed' });

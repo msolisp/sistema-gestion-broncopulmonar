@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useActionState, useEffect } from 'react'
 import { useFormStatus } from 'react-dom'
-import { authenticate } from '@/lib/actions'
+import { authenticate } from '@/lib/actions.auth'
 import { Monitor } from 'lucide-react'
 import TurnstileCaptcha from '@/components/TurnstileCaptcha'
 import VisualCaptcha from '@/components/VisualCaptcha'

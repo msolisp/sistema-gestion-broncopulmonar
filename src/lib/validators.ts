@@ -63,39 +63,49 @@ function calcularDigitoVerificador(cuerpo: string): string {
  * @returns true si el RUT es válido, false en caso contrario
  */
 export function validarRutChileno(rut: string): boolean {
-    if (!rut || typeof rut !== 'string') {
+    if (!rut || typeof rut !== 'string' || rut.trim() === '') {
         return false;
     }
 
+    // 1. Limpiar RUT
     const rutLimpio = limpiarRut(rut);
 
-    // Validar longitud mínima (ej: 1.000.000-K = 8 caracteres sin formato)
-    if (rutLimpio.length < 2) {
+    // 2. Validar longitud total (cuerpo 7-8 dígitos + 1 DV = 8-9 caracteres)
+    if (rutLimpio.length < 8 || rutLimpio.length > 9) {
         return false;
     }
 
-    // Validar que tenga al menos 1 dígito en el cuerpo y 1 DV
+    // 3. Validar consistencia con el guión si existe
+    // Si hay un guión, debe haber exactamente un carácter después de él
+    if (rut.includes('-')) {
+        const parts = rut.split('-');
+        const afterHyphen = parts[parts.length - 1].trim();
+        if (afterHyphen.length !== 1) {
+            return false; // El guión no está en la posición del DV
+        }
+    }
+
+    // 4. Separar cuerpo y DV
     const cuerpo = rutLimpio.slice(0, -1);
     const dv = rutLimpio.slice(-1);
 
-    // Validar que el cuerpo sea numérico
+    // 5. Validar que el cuerpo sea numérico
     if (!/^\d+$/.test(cuerpo)) {
         return false;
     }
 
-    // Validar que el DV sea válido (0-9 o K)
+    // 6. Validar que el DV sea válido (0-9 o K)
     if (!/^[0-9K]$/.test(dv)) {
         return false;
     }
 
-    // Calcular DV esperado
-    const dvCalculado = calcularDigitoVerificador(cuerpo);
-
-    // Bypass for E2E Testing
+    // Bypass for E2E Testing ONLY - Be careful with this
     if (process.env.E2E_TESTING === 'true') {
         return true;
     }
 
+    // 7. Calcular DV esperado y comparar
+    const dvCalculado = calcularDigitoVerificador(cuerpo);
     return dv === dvCalculado;
 }
 

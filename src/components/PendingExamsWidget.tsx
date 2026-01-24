@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { FileText, CheckCircle, ExternalLink } from 'lucide-react'
-import { reviewMedicalExam } from '@/lib/actions'
+import { reviewMedicalExam } from '@/lib/actions.patients'
 import { useRouter } from 'next/navigation'
 
 interface PendingExam {

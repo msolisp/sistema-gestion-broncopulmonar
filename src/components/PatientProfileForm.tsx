@@ -2,7 +2,7 @@
 'use client';
 
 import { useActionState, useEffect, useState } from 'react';
-import { updatePatientProfile } from '@/lib/actions';
+import { updatePatientProfile } from '@/lib/actions.patients';
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
@@ -212,6 +212,7 @@ export default function PatientProfileForm({ user }: { user: any }) {
                                 <Label htmlFor="region">Región</Label>
                                 <select
                                     id="region"
+                                    name="region"
                                     value={selectedRegion}
                                     onChange={handleRegionChange}
                                     className="flex h-10 w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 transition-all hover:border-zinc-300 text-zinc-900"

@@ -101,6 +101,23 @@ async function main() {
     console.log('🌱 Starting Seed...');
 
     // 0. Clean Master tables if needed (optional, upsert handles duplicates)
+    // Clean up previous SEED data to avoid duplicates/invalid data
+    const seedPersonas = await prisma.persona.findMany({
+        where: { creadoPor: 'SEED' },
+        select: { id: true }
+    });
+    const seedIds = seedPersonas.map(p => p.id);
+
+    if (seedIds.length > 0) {
+        console.log(`🗑️ Cleaning up ${seedIds.length} seeded personas and dependencies...`);
+        // Delete dependents in correct order
+        await prisma.cita.deleteMany({ where: { fichaClinica: { personaId: { in: seedIds } } } });
+        await prisma.examenMedico.deleteMany({ where: { fichaClinica: { personaId: { in: seedIds } } } });
+        await prisma.fichaClinica.deleteMany({ where: { personaId: { in: seedIds } } });
+        await prisma.usuarioSistema.deleteMany({ where: { personaId: { in: seedIds } } });
+        await prisma.credencial.deleteMany({ where: { personaId: { in: seedIds } } });
+        await prisma.persona.deleteMany({ where: { id: { in: seedIds } } });
+    }
 
     // 1. Seed Communes & Regions
     console.log('📍 Seeding Regions & Communes...');
@@ -137,46 +154,12 @@ async function main() {
         });
     }
 
-    // 4. Create Admin (Legacy User Table & New UsuarioSistema Schema)
+    // 4. Create Admin (New UsuarioSistema Schema)
     console.log('👤 Seeding Users...');
     const password = await bcrypt.hash('Password123!', 10)
     const adminPassword = await bcrypt.hash('Admin123!', 10)
-
     const adminEmail = 'admin@hospital.cl'
 
-    // Clean up potential legacy admin with same RUT but different email
-    await prisma.user.deleteMany({
-        where: {
-            OR: [
-                { email: 'admin@example.com' }, // Previous seed email
-                { rut: '1-9' } // Conflict RUT
-            ]
-        }
-    });
-
-    // Clean up potential legacy admin with same RUT but different email
-    await prisma.user.deleteMany({
-        where: {
-            OR: [
-                { email: 'admin@example.com' }, // Previous seed email
-                { rut: '1-9' } // Conflict RUT
-            ]
-        }
-    });
-
-    // Legacy Admin
-    await prisma.user.upsert({
-        where: { email: adminEmail },
-        update: { password: adminPassword, active: true, role: 'ADMIN' },
-        create: {
-            email: adminEmail,
-            name: 'Administrador Sistema',
-            rut: '1-9',
-            password: adminPassword,
-            role: 'ADMIN',
-            active: true
-        },
-    });
 
     // New Persona/UsuarioSistema Admin
     const adminPersona = await prisma.persona.upsert({
@@ -233,23 +216,6 @@ async function main() {
         return res.toString();
     };
 
-    // Clean up previous SEED data to avoid duplicates/invalid data
-    const seedPersonas = await prisma.persona.findMany({
-        where: { creadoPor: 'SEED' },
-        select: { id: true }
-    });
-    const seedIds = seedPersonas.map(p => p.id);
-
-    if (seedIds.length > 0) {
-        console.log(`🗑️ Cleaning up ${seedIds.length} seeded personas and dependencies...`);
-        // Delete dependents in correct order
-        await prisma.cita.deleteMany({ where: { fichaClinica: { personaId: { in: seedIds } } } });
-        await prisma.examenMedico.deleteMany({ where: { fichaClinica: { personaId: { in: seedIds } } } });
-        await prisma.fichaClinica.deleteMany({ where: { personaId: { in: seedIds } } });
-        await prisma.usuarioSistema.deleteMany({ where: { personaId: { in: seedIds } } });
-        await prisma.credencial.deleteMany({ where: { personaId: { in: seedIds } } });
-        await prisma.persona.deleteMany({ where: { id: { in: seedIds } } });
-    }
 
     const firstNames = ['Juan', 'Maria', 'Pedro', 'Ana', 'Luis', 'Carmen', 'Jose', 'Francisca', 'Diego', 'Camila'];
     const lastNames = ['Gonzalez', 'Munoz', 'Rojas', 'Diaz', 'Perez', 'Soto', 'Contreras', 'Silva'];
@@ -344,21 +310,7 @@ async function main() {
         });
     }
 
-    // 6. Seed Permissions for Legacy Role model (if still used by app)
-    console.log('🔒 Seeding Legacy Permissions...');
-    const permissions = [
-        { role: 'ADMIN', action: 'view_dashboard' },
-        { role: 'KINESIOLOGIST', action: 'view_dashboard' },
-        { role: 'RECEPTIONIST', action: 'view_dashboard' },
-    ];
 
-    for (const p of permissions) {
-        await prisma.rolePermission.upsert({
-            where: { role_action: { role: p.role, action: p.action } },
-            update: { enabled: true },
-            create: { ...p, enabled: true }
-        });
-    }
 
     console.log('✅ Seeding completed.');
 }

@@ -3,7 +3,7 @@
 
 import { useActionState, useState } from 'react'
 import { useFormStatus } from 'react-dom'
-import { registerPatient } from '@/lib/actions'
+import { registerPatient } from '@/lib/actions.patients'
 import { REGIONS } from '@/lib/chile-data'
 import { Eye, EyeOff } from 'lucide-react'
 

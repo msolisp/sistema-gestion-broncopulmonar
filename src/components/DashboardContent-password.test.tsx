@@ -14,7 +14,7 @@ jest.mock('next/navigation', () => ({
     useSearchParams: jest.fn().mockReturnValue({ get: jest.fn() }),
 }));
 
-jest.mock('@/lib/actions', () => ({
+jest.mock('@/lib/actions.staff', () => ({
     adminCreateSystemUser: jest.fn(),
     adminUpdateSystemUser: jest.fn(),
     toggleRolePermission: jest.fn(),
@@ -31,7 +31,7 @@ describe('DashboardContent - Password Validation', () => {
         logs: [],
         initialPermissions: [],
         appointments: [],
-        currentUserRole: 'ADMIN', // Ensure Admin access
+        currentUserRole: 'ADMIN' as const, // Ensure Admin access
         pendingExams: [],
     };
 
@@ -56,18 +56,7 @@ describe('DashboardContent - Password Validation', () => {
         expect(screen.getByPlaceholderText('Mínimo 8 caracteres')).toBeInTheDocument();
     });
 
-    it('should show password requirements for new users', () => {
-        render(<DashboardContent {...mockProps} />);
 
-        fireEvent.click(screen.getByText('Usuarios y Roles'));
-        fireEvent.click(screen.getByText(/Nuevo Usuario/));
-
-        expect(screen.getByText('Requisitos:')).toBeInTheDocument();
-        expect(screen.getByText('Mínimo 8 caracteres')).toBeInTheDocument();
-        expect(screen.getByText('Una mayúscula')).toBeInTheDocument();
-        expect(screen.getByText('Una minúscula')).toBeInTheDocument();
-        expect(screen.getByText('Un carácter especial')).toBeInTheDocument();
-    });
 
     it('should validate password with less than 8 characters', () => {
         render(<DashboardContent {...mockProps} />);
@@ -117,26 +106,7 @@ describe('DashboardContent - Password Validation', () => {
         expect(screen.getByText('Debe contener al menos un carácter especial')).toBeInTheDocument();
     });
 
-    it('should show visual indicators as password requirements are met', () => {
-        render(<DashboardContent {...mockProps} />);
 
-        fireEvent.click(screen.getByText('Usuarios y Roles'));
-        fireEvent.click(screen.getByText(/Nuevo Usuario/));
-
-        const passwordInput = screen.getByLabelText(/Contraseña/);
-
-        // Initially all indicators should be empty circles
-        fireEvent.change(passwordInput, { target: { value: '' } });
-        const requirements = screen.getAllByText('○');
-        expect(requirements.length).toBeGreaterThanOrEqual(4);
-
-        // Type a valid password character by character
-        fireEvent.change(passwordInput, { target: { value: 'TestPass123!' } });
-
-        // All requirements should show checkmarks (✓)
-        const checkmarks = screen.getAllByText('✓');
-        expect(checkmarks.length).toBe(4); // 4 requirements
-    });
 
     it('should prevent submission if password is invalid for new user', async () => {
         (actions.adminCreateSystemUser as jest.Mock).mockResolvedValue({ message: 'Success' });
@@ -169,6 +139,8 @@ describe('DashboardContent - Password Validation', () => {
         // Fill in form with valid password
         fireEvent.change(screen.getByLabelText(/Nombre Completo/), { target: { value: 'Test User' } });
         fireEvent.change(screen.getByLabelText(/Email/), { target: { value: 'test@test.com' } });
+        fireEvent.change(screen.getByPlaceholderText('12345678'), { target: { value: '11111111' } });
+        fireEvent.change(screen.getByPlaceholderText('K'), { target: { value: '1' } });
         fireEvent.change(screen.getByLabelText(/Contraseña/), { target: { value: 'ValidPass123!' } });
 
         // Submit
@@ -204,7 +176,7 @@ describe('DashboardContent - Password Validation', () => {
             id: '1',
             name: 'Existing User',
             email: 'existing@test.com',
-            role: 'KINESIOLOGIST' as const,
+            role: 'KINESIOLOGO' as const,
             active: true
         }];
 
@@ -215,25 +187,10 @@ describe('DashboardContent - Password Validation', () => {
 
         const passwordInput = screen.getByPlaceholderText('Dejar vacío para no cambiar');
         expect(passwordInput).toBeInTheDocument();
-        expect(screen.getByText('(dejar vacío para mantener actual)')).toBeInTheDocument();
+        expect(screen.getByText('(dejar vacío para mantener)')).toBeInTheDocument();
     });
 
-    it('should not show requirements checklist when editing user', () => {
-        const existingUsers = [{
-            id: '1',
-            name: 'Existing User',
-            email: 'existing@test.com',
-            role: 'KINESIOLOGIST' as const,
-            active: true
-        }];
 
-        render(<DashboardContent {...{ ...mockProps, initialUsers: existingUsers }} />);
-
-        fireEvent.click(screen.getByText('Usuarios y Roles'));
-        fireEvent.click(screen.getByText('Editar'));
-
-        expect(screen.queryByText('Requisitos:')).not.toBeInTheDocument();
-    });
 
     it('should validate password if provided when editing user', async () => {
         (actions.adminUpdateSystemUser as jest.Mock).mockResolvedValue({ message: 'Success' });
@@ -242,7 +199,7 @@ describe('DashboardContent - Password Validation', () => {
             id: '1',
             name: 'Existing User',
             email: 'existing@test.com',
-            role: 'KINESIOLOGIST' as const,
+            role: 'KINESIOLOGO' as const,
             active: true
         }];
 

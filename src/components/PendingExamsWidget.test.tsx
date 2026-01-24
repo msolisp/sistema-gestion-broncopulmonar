@@ -1,11 +1,11 @@
 
 import { render, screen, fireEvent } from '@testing-library/react';
 import PendingExamsWidget from './PendingExamsWidget';
-import { reviewMedicalExam } from '@/lib/actions';
+import { reviewMedicalExam } from '@/lib/actions.patients';
 import { useRouter } from 'next/navigation';
 
 // Mocks
-jest.mock('@/lib/actions', () => ({
+jest.mock('@/lib/actions.patients', () => ({
     reviewMedicalExam: jest.fn(),
 }));
 

@@ -5,30 +5,62 @@ import { protectRoute } from "@/lib/route-protection";
 import { UserRole } from "@/components/admin/users/types";
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
+    console.log('--- DASHBOARD PAGE LOADING ---');
     const searchParams = await props.searchParams;
     // Protect route - only internal staff allowed
     await protectRoute({
-        allowedRoles: ['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST'],
+        allowedRoles: ['ADMIN', 'KINESIOLOGO', 'RECEPCIONISTA'],
         redirectTo: '/portal'
     });
 
     // protectRoute already validated session
     const session = await auth();
 
-    const systemUsers = await prisma.user.findMany({
+    const systemUsersRaw = await prisma.usuarioSistema.findMany({
         where: {
-            role: {
-                in: ['ADMIN', 'KINESIOLOGIST', 'RECEPTIONIST']
-            },
+            rol_rel: {
+                nombre: {
+                    not: 'PACIENTE'
+                }
+            }
         },
-        select: {
-            id: true,
-            name: true,
-            email: true,
-            role: true,
-            active: true
+        include: {
+            rol_rel: true,
+            persona: {
+                select: {
+                    id: true,
+                    nombre: true,
+                    apellidoPaterno: true,
+                    apellidoMaterno: true,
+                    rut: true,
+                    email: true,
+                    direccion: true,
+                    comuna: true,
+                    region: true,
+                }
+            }
         }
     });
+
+    const roles = await prisma.rol.findMany({
+        where: {
+            activo: true,
+            nombre: { not: 'PACIENTE' }
+        }
+    });
+
+    const systemUsers = systemUsersRaw.map((u: any) => ({
+        id: u.id,
+        name: `${u.persona.nombre} ${u.persona.apellidoPaterno} ${u.persona.apellidoMaterno || ''}`.trim(),
+        email: u.persona.email,
+        role: u.rol_rel.id,
+        roleName: u.rol_rel.nombre,
+        active: u.activo,
+        rut: u.persona.rut,
+        region: u.persona.region,
+        commune: u.persona.comuna,
+        address: u.persona.direccion
+    }));
 
     // Date Filters for Audit Logs
     const fromDate = typeof searchParams?.auditFrom === 'string' ? new Date(searchParams.auditFrom) : undefined;
@@ -39,23 +71,33 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         toDate.setHours(23, 59, 59, 999);
     }
 
-    const logsRaw = await prisma.systemLog.findMany({
+    const logsRaw = await prisma.logAccesoSistema.findMany({
         where: {
-            createdAt: {
+            fecha: {
                 gte: fromDate,
                 lte: toDate
             }
         },
-        orderBy: { createdAt: 'desc' },
-        take: 100 // Increased limit for filtered views
+        include: {
+            usuario: {
+                include: { persona: true }
+            }
+        },
+        orderBy: { fecha: 'desc' },
+        take: 100
     });
 
     const logs = logsRaw.map((log: any) => ({
-        ...log,
-        createdAt: log.createdAt.toISOString()
+        id: log.id,
+        action: log.accion,
+        userEmail: log.usuario?.persona?.email || 'System',
+        createdAt: log.fecha.toISOString(),
+        details: log.accionDetalle,
+        ipAddress: log.ipAddress
     }));
 
     // Fetch Pending Exams (Uploaded by Patient & Not Reviewed)
+    // ... existing exams logic is fine since it uses ExamenMedico ...
     const pendingExamsRaw = await prisma.examenMedico.findMany({
         where: {
             origen: 'PORTAL_PACIENTE',
@@ -75,8 +117,8 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
     const pendingExams = pendingExamsRaw.map((exam: any) => ({
         id: exam.id,
-        fileName: exam.nombreArchivo,
-        fileUrl: exam.urlArchivo,
+        fileName: exam.archivoNombre || 'documento.pdf',
+        fileUrl: exam.archivoUrl,
         examDate: exam.fechaExamen.toISOString(),
         patient: {
             id: exam.fichaClinica.persona.id,
@@ -85,7 +127,71 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         }
     }));
 
-    const permissions = await prisma.rolePermission.findMany();
+    // Fetch permissions matrix from database
+    const allPermissions = await prisma.permisoUsuario.findMany({
+        where: { activo: true },
+        include: {
+            usuario: {
+                include: { rol_rel: true }
+            }
+        }
+    });
+
+    const modules = [
+        { action: 'Ver Agendamiento', recurso: 'Agendamiento', label: 'Ver' },
+        { action: 'Ver Pacientes', recurso: 'Pacientes', label: 'Ver' },
+        { action: 'Ver Reportes BI', recurso: 'Reportes BI', label: 'Ver' },
+        { action: 'Ver Asistente', recurso: 'Asistente Clínico', label: 'Ver' },
+        { action: 'Ver HL7', recurso: 'Estándar HL7', label: 'Ver' },
+        { action: 'Configuración Global', recurso: 'Configuración Global', label: 'Ver' },
+        { action: 'Ver Usuarios', recurso: 'Seguridad (RBAC)', label: 'Ver' }
+    ];
+
+    const permissionMatrix = modules.map(m => {
+        const rolePerms: Record<string, boolean> = {};
+
+        roles.forEach((role: any) => {
+            const hasPerm = allPermissions.some((p: any) =>
+                p.usuario.rol_rel.nombre === role.nombre &&
+                p.recurso === m.recurso &&
+                (p.accion === 'Ver' || p.accion === m.action)
+            );
+            // We use the role name as key, lowercase it for the component if needed or just use names
+            rolePerms[role.nombre.toLowerCase()] = hasPerm;
+        });
+
+        return {
+            action: m.action,
+            ...rolePerms
+        };
+    });
+
+    // Fetch Patient Role separately
+    const patientRole = await prisma.rol.findFirst({
+        where: { nombre: 'PACIENTE' },
+        include: { permisos: true }
+    });
+
+    const patientModules = [
+        { action: 'Mis Citas', recurso: 'Portal_Pacientes', dbAction: 'Ver Citas' },
+        { action: 'Historial Médico', recurso: 'Portal_Pacientes', dbAction: 'Ver Historial' },
+        { action: 'Mis Datos', recurso: 'Portal_Pacientes', dbAction: 'Ver Perfil' }
+    ];
+
+    const patientPermissions = patientModules.map(m => {
+        const hasPerm = patientRole ? patientRole.permisos.some(p =>
+            p.recurso === m.recurso &&
+            p.accion === m.dbAction &&
+            p.activo
+        ) : false;
+        return {
+            action: m.action,
+            label: 'Ver',
+            enabled: hasPerm,
+            recurso: m.recurso,
+            dbAction: m.dbAction
+        };
+    });
 
     const appointmentsRaw = await prisma.cita.findMany({
         include: {
@@ -98,7 +204,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
             }
         },
         orderBy: { fecha: 'desc' },
-        take: 100 // Limit for performance
+        take: 100
     });
     const appointments = appointmentsRaw.map((apt: any) => ({
         id: apt.id,
@@ -112,24 +218,15 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         }
     }));
 
-    // Transform permissions for Matrix [Action][Role] = boolean
-    const actions: string[] = Array.from(new Set(permissions.map((p: any) => p.action)));
-    const permissionMatrix = actions.map(action => {
-        const kinePerm = permissions.find((p: any) => p.action === action && p.role === 'KINESIOLOGIST');
-        const recepPerm = permissions.find((p: any) => p.action === action && p.role === 'RECEPTIONIST');
-        return {
-            action,
-            kine: kinePerm?.enabled ?? false,
-            recep: recepPerm?.enabled ?? false
-        };
-    });
-
     return <DashboardContent
         initialUsers={systemUsers}
         logs={logs}
         initialPermissions={permissionMatrix}
         appointments={appointments}
         pendingExams={pendingExams}
-        currentUserRole={(session?.user?.role as UserRole) || 'KINESIOLOGIST'}
+        currentUserRole={(session?.user?.role as any) || 'KINESIOLOGO'}
+        initialRoles={roles}
+        patientRole={patientRole}
+        patientPermissions={patientPermissions}
     />;
 }

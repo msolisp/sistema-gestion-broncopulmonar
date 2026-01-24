@@ -1,12 +1,29 @@
 'use client'
 
+import { Eye, Pencil, Trash2 } from 'lucide-react'
+
 import { useState } from 'react'
-import { MedicalExam } from '@prisma/client'
+// import { MedicalExam } from '@prisma/client' // FHIR uses ExamenMedico
 import { deletePatientExam, updatePatientExam } from '@/lib/patient-actions'
 import { useRouter } from 'next/navigation'
 
+// Define local interface if Prisma type is not exported or uses different name
+interface MedicalExam {
+    id: string
+    patientId?: string
+    centerName: string
+    doctorName: string
+    examDate: Date | string
+    fileUrl: string
+    fileName?: string | null
+    createdAt: Date | string
+    source?: string
+    uploadedByUserId?: string | null
+    reviewed: boolean
+}
+
 interface PatientExamsListProps {
-    exams: MedicalExam[]
+    exams: any[] // Relax type for compatibility with mapped objects
     onDelete?: () => void
 }
 
@@ -138,31 +155,36 @@ export default function PatientExamsList({ exams, onDelete }: PatientExamsListPr
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                     {formatDate(exam.createdAt)}
                                 </td>
-                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
                                     <a
                                         href={exam.fileUrl}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="text-indigo-600 hover:text-indigo-900"
+                                        className="inline-flex items-center text-indigo-600 hover:text-indigo-900 transition-colors"
+                                        title="Ver PDF"
                                     >
-                                        Ver
+                                        <Eye className="h-5 w-5" />
                                     </a>
-                                    {exam.source === 'portal pacientes' && exam.uploadedByUserId && (
+                                    {(exam.source === 'PORTAL_PACIENTE' || exam.source === 'portal pacientes') && exam.uploadedByUserId && (
                                         <>
-                                            <span className="text-gray-300">|</span>
                                             <button
                                                 onClick={() => setEditingExam(exam)}
-                                                className="text-blue-600 hover:text-blue-900"
+                                                className="inline-flex items-center text-blue-600 hover:text-blue-900 transition-colors"
+                                                title="Editar"
                                             >
-                                                Editar
+                                                <Pencil className="h-5 w-5" />
                                             </button>
-                                            <span className="text-gray-300">|</span>
                                             <button
                                                 onClick={() => setShowDeleteConfirm(exam.id)}
-                                                className="text-red-600 hover:text-red-900"
+                                                className="inline-flex items-center text-red-600 hover:text-red-900 transition-colors"
                                                 disabled={deletingId === exam.id}
+                                                title="Eliminar PDF"
                                             >
-                                                {deletingId === exam.id ? '...' : 'Eliminar'}
+                                                {deletingId === exam.id ? (
+                                                    <span className="text-xs">...</span>
+                                                ) : (
+                                                    <Trash2 className="h-5 w-5" />
+                                                )}
                                             </button>
                                         </>
                                     )}
@@ -175,24 +197,24 @@ export default function PatientExamsList({ exams, onDelete }: PatientExamsListPr
 
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-md rounded-xl bg-white shadow-lg animate-in zoom-in-95 duration-200 p-6">
                         <h3 className="text-lg font-semibold text-gray-900 mb-2">
                             ¿Eliminar examen?
                         </h3>
                         <p className="text-gray-600 mb-6">
-                            Esta acción no se puede deshacer. El examen será eliminado permanentemente.
+                            Esta acción eliminará permanentemente el archivo PDF y sus datos asociados. ¿Está seguro de continuar?
                         </p>
                         <div className="flex gap-3 justify-end">
                             <button
                                 onClick={() => setShowDeleteConfirm(null)}
-                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors"
                             >
                                 Cancelar
                             </button>
                             <button
                                 onClick={() => handleDelete(showDeleteConfirm)}
-                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+                                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm"
                                 disabled={deletingId !== null}
                             >
                                 {deletingId ? 'Eliminando...' : 'Eliminar'}
@@ -204,8 +226,8 @@ export default function PatientExamsList({ exams, onDelete }: PatientExamsListPr
 
             {/* Edit Modal */}
             {editingExam && (
-                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-                    <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-md rounded-xl bg-white shadow-lg animate-in zoom-in-95 duration-200 p-6">
                         <h3 className="text-lg font-semibold text-gray-900 mb-4">
                             Editar Examen
                         </h3>

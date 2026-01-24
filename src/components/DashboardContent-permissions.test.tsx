@@ -1,7 +1,7 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import DashboardContent from './DashboardContent';
 import { useRouter } from 'next/navigation';
-import * as actions from '@/lib/actions';
+import * as actions from '@/lib/actions.staff';
 
 // Mock next/navigation
 jest.mock('next/navigation', () => ({
@@ -10,12 +10,13 @@ jest.mock('next/navigation', () => ({
 }));
 
 // Mock actions
-jest.mock('@/lib/actions', () => ({
+jest.mock('@/lib/actions.staff', () => ({
     adminCreateSystemUser: jest.fn(),
     adminUpdateSystemUser: jest.fn(),
     toggleRolePermission: jest.fn(),
     seedPermissions: jest.fn(),
     adminDeleteSystemUser: jest.fn(),
+    updateRolePermissions: jest.fn(),
 }));
 
 describe('DashboardContent - Permission Initialization', () => {
