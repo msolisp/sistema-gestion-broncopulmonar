@@ -42,10 +42,62 @@ export async function protectRoute(config: ProtectionConfig = {}) {
 
     // Check permission-based access if specified
     if (config.requiredPermission) {
-        // Granular permissions using PermisoUsuario to be implemented.
-        // For now, only ADMIN has full access.
-        if ((userRole as any) !== 'ADMIN') {
-            redirect(config.redirectTo || '/dashboard');
+        // Map UI string to DB Resource/Action
+        const UI_TO_DB: Record<string, { recurso: string, accion: string }> = {
+            'Ver Agendamiento': { recurso: 'Agendamiento', accion: 'Ver' },
+            'Ver Pacientes': { recurso: 'Pacientes', accion: 'Ver' },
+            'Ver Reportes BI': { recurso: 'Reportes BI', accion: 'Ver' },
+            'Ver Asistente': { recurso: 'Asistente Clínico', accion: 'Ver' },
+            'Ver HL7': { recurso: 'Estándar HL7', accion: 'Ver' },
+            'Ver Exámenes Cargados': { recurso: 'Notificaciones', accion: 'Ver' },
+            'Ver Usuarios': { recurso: 'Seguridad (RBAC)', accion: 'Ver' },
+            'Configuración Global': { recurso: 'Configuración Global', accion: 'Ver' }
+        };
+
+        const target = UI_TO_DB[config.requiredPermission];
+
+        if (target) {
+            // Find user record
+            const user = await prisma.usuarioSistema.findFirst({
+                where: {
+                    persona: { email: session.user.email },
+                    activo: true
+                }
+            });
+
+            if (!user) redirect('/login');
+
+            // Check if user has explicit permission
+            const userPerm = await prisma.permisoUsuario.findUnique({
+                where: {
+                    usuarioId_recurso_accion: {
+                        usuarioId: user.id,
+                        recurso: target.recurso,
+                        accion: target.accion
+                    }
+                }
+            });
+
+            // Fallback: If no explicit user permission, check role permissions
+            if (!userPerm || !userPerm.activo) {
+                const rolePerm = await prisma.permisoRol.findFirst({
+                    where: {
+                        rol: { nombre: userRole },
+                        recurso: target.recurso,
+                        accion: target.accion,
+                        activo: true
+                    }
+                });
+
+                if (!rolePerm) {
+                    redirect(config.redirectTo || '/dashboard');
+                }
+            }
+        } else {
+            // Fallback for unknown permission strings
+            if ((userRole as any) !== 'ADMIN') {
+                redirect(config.redirectTo || '/dashboard');
+            }
         }
     }
 

@@ -77,9 +77,11 @@ export default function InternalSidebar({ user, permissions = [] }: InternalSide
                     </Link>
                 )}
 
-                <div className="pt-1">
-                    <NotificationBell />
-                </div>
+                {can('Ver Exámenes Cargados') && (
+                    <div className="pt-1">
+                        <NotificationBell />
+                    </div>
+                )}
 
                 {userRole === 'ADMIN' && (
                     <div className="mt-auto pt-4">

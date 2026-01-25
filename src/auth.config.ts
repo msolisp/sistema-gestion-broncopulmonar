@@ -14,13 +14,7 @@ export const authConfig = {
             const isLoggedIn = !!auth?.user;
             const isOnInternal = nextUrl.pathname.startsWith('/dashboard') || nextUrl.pathname.startsWith('/intranet');
 
-            // Password Change Enforcement
-            if (isLoggedIn && (auth.user as any).mustChangePassword) {
-                if (nextUrl.pathname !== '/change-password') {
-                    return Response.redirect(new URL('/change-password', nextUrl));
-                }
-                return true;
-            }
+
 
             if (nextUrl.pathname === '/change-password') {
                 if (!isLoggedIn) return Response.redirect(new URL('/login', nextUrl));

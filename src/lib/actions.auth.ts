@@ -174,9 +174,7 @@ export async function authenticate(
             }
         }
 
-        if (mustChangePassword) {
-            redirectTo = '/change-password';
-        } else if (role === 'ADMIN') {
+        if (role === 'ADMIN') {
             redirectTo = '/dashboard';
         } else if (['KINESIOLOGO', 'RECEPCIONISTA'].includes(role)) {
             redirectTo = '/patients';

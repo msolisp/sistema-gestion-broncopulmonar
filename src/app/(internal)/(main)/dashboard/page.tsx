@@ -145,6 +145,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         { action: 'Ver Reportes BI', recurso: 'Reportes BI', label: 'Ver' },
         { action: 'Ver Asistente', recurso: 'Asistente Clínico', label: 'Ver' },
         { action: 'Ver HL7', recurso: 'Estándar HL7', label: 'Ver' },
+        { action: 'Ver Exámenes Cargados', recurso: 'Notificaciones', label: 'Ver' },
         { action: 'Configuración Global', recurso: 'Configuración Global', label: 'Ver' },
         { action: 'Ver Usuarios', recurso: 'Seguridad (RBAC)', label: 'Ver' }
     ];

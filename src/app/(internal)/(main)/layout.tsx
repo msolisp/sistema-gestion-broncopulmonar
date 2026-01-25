@@ -33,7 +33,8 @@ export default async function InternalLayout({
             'Pacientes': 'Ver Pacientes',
             'Reportes BI': 'Ver Reportes BI',
             'Asistente Clínico': 'Ver Asistente',
-            'Estándar HL7': 'Ver HL7'
+            'Estándar HL7': 'Ver HL7',
+            'Notificaciones': 'Ver Exámenes Cargados'
         };
 
         permissions = rolePermissions
@@ -46,7 +47,8 @@ export default async function InternalLayout({
             'Pacientes': 'Ver Pacientes',
             'Reportes BI': 'Ver Reportes BI',
             'Asistente Clínico': 'Ver Asistente',
-            'Estándar HL7': 'Ver HL7'
+            'Estándar HL7': 'Ver HL7',
+            'Notificaciones': 'Ver Exámenes Cargados'
         };
         permissions = Object.values(MAPPING);
     }

@@ -47,6 +47,21 @@ export async function adminCreateSystemUser(prevState: any, formData: FormData) 
         return { message: 'RUT inválido' };
     }
 
+    // Check for existing user (RUT or Email)
+    const existing = await prisma.persona.findFirst({
+        where: {
+            OR: [
+                { rut: vRut },
+                { email: vEmail }
+            ]
+        }
+    });
+
+    if (existing) {
+        if (existing.rut === vRut) return { message: 'El RUT ya está en uso' };
+        if (existing.email === vEmail) return { message: 'El correo electrónico ya está en uso' };
+    }
+
     try {
         const newPersona = await createStaffUser({
             rut: vRut,
@@ -170,7 +185,7 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
         // where old maternal last names persisted and appended recursively.
         const nameParts = vName.trim().split(/\s+/);
         const firstName = nameParts[0];
-        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'SIN_APELLIDO';
+        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
         // Check if role is changing
         const curUser = await prisma.usuarioSistema.findUnique({ where: { id: vId } });
@@ -201,7 +216,10 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
 
             // Seed new permissions
             const rolePermissions = await prisma.permisoRol.findMany({
-                where: { rolId: newRoleId as string, activo: true }
+                where: {
+                    rolId: newRoleId as string,
+                    activo: true
+                }
             });
 
             for (const perm of rolePermissions) {
@@ -287,6 +305,7 @@ export async function updateRolePermissions(changes: Array<{ role: string, actio
             'Ver Reportes BI': 'Reportes BI',
             'Ver Asistente': 'Asistente Clínico',
             'Ver HL7': 'Estándar HL7',
+            'Ver Exámenes Cargados': 'Notificaciones',
             'Configuración Global': 'Configuración Global',
             'Ver Usuarios': 'Seguridad (RBAC)'
         };
@@ -295,6 +314,31 @@ export async function updateRolePermissions(changes: Array<{ role: string, actio
             const recurso = actionToRecurso[change.action] || 'General';
             const accion = 'Ver';
 
+            // 1. Update the Role definition (so new users get this)
+            const role = await prisma.rol.findFirst({
+                where: { nombre: change.role.toUpperCase() }
+            });
+
+            if (role) {
+                await prisma.permisoRol.upsert({
+                    where: {
+                        rolId_recurso_accion: {
+                            rolId: role.id,
+                            recurso: recurso,
+                            accion: accion
+                        }
+                    },
+                    update: { activo: change.enabled },
+                    create: {
+                        rolId: role.id,
+                        recurso: recurso,
+                        accion: accion,
+                        activo: change.enabled
+                    }
+                });
+            }
+
+            // 2. Propagate to ALL active users of this role
             const users = await prisma.usuarioSistema.findMany({
                 where: {
                     rol_rel: {

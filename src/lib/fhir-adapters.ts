@@ -161,7 +161,7 @@ export async function createStaffUser(data: {
                 personaId: persona.id,
                 passwordHash,
                 tipoAcceso: 'STAFF',
-                debeCambiarPassword: true // Force password change on first login
+                debeCambiarPassword: false // Do not force password change on first login
             }
         });
 
