@@ -168,3 +168,6 @@ export function FeriadosManager() {
         onDelete={deleteFeriado}
     />
 }
+
+
+export { default as SystemConfigManager } from './SystemConfigManager';

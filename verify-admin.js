@@ -8,7 +8,11 @@ async function main() {
         const p = await prisma.persona.findUnique({
             where: { email: 'admin@hospital.cl' },
             include: {
-                usuarioSistema: true,
+                usuarioSistema: {
+                    include: {
+                        rol_rel: true
+                    }
+                },
                 credencial: true
             }
         });
@@ -18,7 +22,12 @@ async function main() {
         } else {
             console.log('Admin Persona FOUND:', p.id, p.nombre);
             console.log('Active:', p.activo);
-            console.log('UsuarioSistema:', p.usuarioSistema ? { id: p.usuarioSistema.id, rol: p.usuarioSistema.rol, active: p.usuarioSistema.activo } : 'NULL');
+            console.log('UsuarioSistema:', p.usuarioSistema ? {
+                id: p.usuarioSistema.id,
+                rolId: p.usuarioSistema.rolId,
+                roleName: p.usuarioSistema.rol_rel ? p.usuarioSistema.rol_rel.nombre : 'NO_ROLE_REL',
+                active: p.usuarioSistema.activo
+            } : 'NULL');
             console.log('Credencial:', p.credencial ? { id: p.credencial.id, type: p.credencial.tipoAcceso } : 'NULL');
             if (p.credencial) {
                 console.log('MFA Enabled:', p.credencial.mfaHabilitado);

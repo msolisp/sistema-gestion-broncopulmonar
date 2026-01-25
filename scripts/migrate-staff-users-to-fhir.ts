@@ -18,11 +18,27 @@ const isDryRun = process.argv.includes('--dry-run');
 async function migrateStaffUsers() {
     console.log(`\n🔄 Migrating staff users ${isDryRun ? '(DRY RUN)' : ''}...\n`);
 
-    const users = await prisma.user.findMany({
-        where: {
-            rut: { not: null }
-        }
-    });
+    // Check if legacy table exists
+    const tableExists = await prisma.$queryRaw<any[]>`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'User'
+    `;
+
+    if (tableExists.length === 0) {
+        console.log('⚠️  Legacy "User" table not found.');
+        console.log('   This likely means the migration has already been completed and the table was dropped.');
+        console.log('   No action needed.');
+        await prisma.$disconnect();
+        return;
+    }
+
+    // Use raw query since User model is removed from schema.prisma
+    const users = await prisma.$queryRaw<any[]>`
+        SELECT * FROM "User" 
+        WHERE "rut" IS NOT NULL
+    `;
 
     let migrated = 0;
     let errors: string[] = [];

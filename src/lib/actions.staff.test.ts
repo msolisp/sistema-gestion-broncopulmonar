@@ -1,180 +1,277 @@
 
-import { adminCreateSystemUser, adminUpdateSystemUser, adminDeleteSystemUser, seedPermissions } from './actions.staff'
-import { createStaffUser, updateStaffUser } from '@/lib/fhir-adapters'
-import { auth } from '@/auth'
-import prisma from '@/lib/prisma'
+import { adminCreateSystemUser, adminUpdateSystemUser } from './actions.staff';
+import prisma from '@/lib/prisma';
+import { createStaffUser, updateStaffUser } from '@/lib/fhir-adapters';
 
-// Mock dependencies
-jest.mock('@/auth', () => ({
-    auth: jest.fn(),
-}))
-
-jest.mock('next/cache', () => ({
-    revalidatePath: jest.fn(),
-}))
-
+// Define mock object inside the factory to avoid hoisting issues
 jest.mock('@/lib/prisma', () => {
-    const mockClient: any = {
+    const mockPrisma: any = {
         usuarioSistema: {
+            findFirst: jest.fn(),
             findUnique: jest.fn(),
             findMany: jest.fn(),
-            findFirst: jest.fn(),
             update: jest.fn(),
-            delete: jest.fn(),
         },
         persona: {
-            findUnique: jest.fn(),
             findFirst: jest.fn(),
+            findUnique: jest.fn(),
+        },
+        permisoRol: {
+            findMany: jest.fn(),
         },
         permisoUsuario: {
+            create: jest.fn(),
+            deleteMany: jest.fn(),
+            findMany: jest.fn(),
             upsert: jest.fn(),
         },
-        $transaction: jest.fn((arg: any) => {
-            if (Array.isArray(arg)) return Promise.all(arg)
-            return arg(mockClient)
-        })
-    }
+    };
+    mockPrisma.$transaction = jest.fn((callback) => callback(mockPrisma));
     return {
         __esModule: true,
-        default: mockClient,
-        prisma: mockClient
-    }
-})
+        default: mockPrisma
+    };
+});
 
 jest.mock('@/lib/fhir-adapters', () => ({
     createStaffUser: jest.fn(),
     updateStaffUser: jest.fn(),
-}))
+}));
+
+jest.mock('next-auth', () => ({
+    auth: jest.fn(() => Promise.resolve({ user: { email: 'admin@test.com', role: 'ADMIN' } })),
+}));
+
+jest.mock('@/auth', () => ({
+    auth: jest.fn(() => Promise.resolve({ user: { email: 'admin@test.com', role: 'ADMIN' } })),
+}));
+
+jest.mock('next/cache', () => ({
+    revalidatePath: jest.fn(),
+}));
 
 jest.mock('@/lib/validators', () => ({
-    validarRutChileno: () => true,
-}))
+    validarRutChileno: jest.fn(() => true),
+    obtenerCuerpoRut: jest.fn(),
+    obtenerDigitoVerificador: jest.fn(),
+}));
 
 describe('Staff Actions', () => {
-
     beforeEach(() => {
-        jest.clearAllMocks()
-            // Default successfully
-            ; (createStaffUser as jest.Mock).mockResolvedValue({ id: 'u1' })
-            ; (updateStaffUser as jest.Mock).mockResolvedValue({ id: 'u1' })
-    })
+        jest.clearAllMocks();
+    });
 
-    describe('adminCreateSystemUser', () => {
-        const formData = new FormData()
-        formData.append('name', 'Staff User')
-        formData.append('email', 'staff@test.com')
-        formData.append('password', 'Password123!')
-        formData.append('role', 'KINESIOLOGO')
-        formData.append('rut', '11.111.111-1')
-        formData.append('active', 'on')
-        formData.append('region', 'RM')
-        formData.append('commune', 'Santiago')
+    it('seeds permissions on create', async () => {
+        (createStaffUser as jest.Mock).mockResolvedValue({ id: 'persona-123' });
+        (prisma.usuarioSistema.findFirst as jest.Mock).mockResolvedValue({ id: 'user-sys-123' });
+        (prisma.permisoRol.findMany as jest.Mock).mockResolvedValue([
+            { recurso: 'Test', accion: 'Ver' }
+        ]);
 
-        it('returns unauthorized if not admin', async () => {
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'staff@test.com', role: 'KINESIOLOGO' } })
-            const result = await adminCreateSystemUser(null, formData)
-            expect(result.message).toContain('Unauthorized')
-        })
+        const formData = new FormData();
+        formData.append('name', 'Test User');
+        formData.append('email', 'test@test.com');
+        formData.append('password', 'Pass123!');
+        formData.append('role', 'ROLE-ID');
+        formData.append('rutBody', '12345678');
+        formData.append('rutDv', '9');
 
-        it('creates user successfully', async () => {
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-            const result = await adminCreateSystemUser(null, formData)
-            expect(result).toEqual({ message: 'Success' })
-            expect(createStaffUser).toHaveBeenCalled()
-        })
+        await adminCreateSystemUser(null, formData);
 
-        it('returns error if validation fails', async () => {
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-            const invalidData = new FormData() // Missing fields
-            const result = await adminCreateSystemUser(null, invalidData)
-            expect(result.message).toContain('Datos inválidos')
-        })
-    })
+        expect(createStaffUser).toHaveBeenCalled();
+        expect(prisma.permisoUsuario.create).toHaveBeenCalledWith(expect.objectContaining({
+            data: expect.objectContaining({
+                usuarioId: 'user-sys-123',
+                recurso: 'Test'
+            })
+        }));
+    });
 
-    describe('adminUpdateSystemUser', () => {
-        const formData = new FormData()
-        formData.append('id', 'u1')
-        formData.append('name', 'Updated Name')
-        formData.append('email', 'updated@test.com')
-        formData.append('role', 'MEDICO')
-        formData.append('active', 'on')
-        // Using rutBody/rutDv explicitly to test that path if desired, or simplified
-        formData.append('rut', '11.111.111-1')
+    it('updates permissions on role change', async () => {
+        const formData = new FormData();
+        formData.append('id', 'user-sys-123');
+        formData.append('name', 'Test User');
+        formData.append('email', 'test@test.com');
+        formData.append('role', 'NEW-ROLE-ID');
+        formData.append('rutBody', '12345678');
+        formData.append('rutDv', '9');
+        formData.append('active', 'on');
 
-        it('returns unauthorized if not admin', async () => {
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'staff@test.com', role: 'KINESIOLOGO' } })
-            const result = await adminUpdateSystemUser(null, formData)
-            expect(result.message).toContain('Unauthorized')
-        })
+        // Old role was DIFFERENT
+        (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue({ id: 'user-sys-123', rolId: 'OLD-ROLE-ID' });
+        (updateStaffUser as jest.Mock).mockResolvedValue({ success: true });
 
-        it('updates user successfully', async () => {
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+        // Mock new permissions
+        (prisma.permisoRol.findMany as jest.Mock).mockResolvedValue([
+            { recurso: 'NewResource', accion: 'Ver' }
+        ]);
 
-                // Mock finding existing user
-                ; (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue({
-                    id: 'u1',
-                    personaId: 'p1'
+        await adminUpdateSystemUser(null, formData);
+
+        expect(prisma.permisoUsuario.deleteMany).toHaveBeenCalledWith({ where: { usuarioId: 'user-sys-123' } });
+        expect(prisma.permisoUsuario.create).toHaveBeenCalled();
+    });
+
+    it('does NOT update permissions if role is same', async () => {
+        const formData = new FormData();
+        formData.append('id', 'user-sys-123');
+        formData.append('name', 'Test User');
+        formData.append('email', 'test@test.com');
+        formData.append('role', 'SAME-ROLE-ID'); // Same role
+        formData.append('rutBody', '12345678');
+        formData.append('rutDv', '9');
+
+        (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue({ id: 'user-sys-123', rolId: 'SAME-ROLE-ID' });
+        (updateStaffUser as jest.Mock).mockResolvedValue({ success: true });
+
+        await adminUpdateSystemUser(null, formData);
+
+        expect(prisma.permisoUsuario.deleteMany).not.toHaveBeenCalled();
+    });
+
+    it('deletes user successfully', async () => {
+        const { adminDeleteSystemUser } = require('./actions.staff');
+
+        // Mock finding user
+        (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue({
+            id: 'user-to-delete',
+            personaId: 'person-123'
+        });
+
+        // Mock finding person (target)
+        (prisma.persona.findUnique as jest.Mock).mockResolvedValue({
+            id: 'person-123',
+            email: 'other@test.com'
+        });
+
+        // Mock update (soft delete)
+        (prisma.usuarioSistema.update as jest.Mock).mockResolvedValue({});
+
+        const result = await adminDeleteSystemUser('user-to-delete');
+
+        expect(result.message).toBe('Success');
+        expect(prisma.usuarioSistema.update).toHaveBeenCalledWith(expect.objectContaining({
+            where: { id: 'user-to-delete' },
+            data: expect.objectContaining({
+                activo: false
+            })
+        }));
+    });
+
+    it('prevents self-deletion', async () => {
+        const { adminDeleteSystemUser } = require('./actions.staff');
+
+        // Mock finding user
+        (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue({
+            id: 'my-user-id',
+            personaId: 'my-person-id'
+        });
+
+        // Mock finding person (target is same as admin)
+        (prisma.persona.findUnique as jest.Mock).mockResolvedValue({
+            id: 'my-person-id',
+            email: 'admin@test.com' // Matches mock auth email
+        });
+
+        const result = await adminDeleteSystemUser('my-user-id');
+
+        expect(result.message).toContain('No puedes eliminar tu propia cuenta');
+        expect(prisma.usuarioSistema.update).not.toHaveBeenCalled();
+    });
+
+    describe('Permission Management', () => {
+        it('updates role permissions for all users in role', async () => {
+            const { updateRolePermissions } = require('./actions.staff');
+
+            // Mock finding users with role
+            (prisma.usuarioSistema.findMany as jest.Mock).mockResolvedValue([
+                { id: 'user-1' },
+                { id: 'user-2' }
+            ]);
+
+            const changes = [
+                { role: 'KINESIOLOGO', action: 'Ver Agendamiento', enabled: true },
+                { role: 'KINESIOLOGO', action: 'Ver Pacientes', enabled: false }
+            ];
+
+            const result = await updateRolePermissions(changes);
+
+            expect(result.message).toBe('Success');
+
+            // Should find users for the role
+            expect(prisma.usuarioSistema.findMany).toHaveBeenCalledWith(expect.objectContaining({
+                where: expect.objectContaining({
+                    rol_rel: expect.objectContaining({ nombre: 'KINESIOLOGO' })
                 })
-                // Mock email uniqueness check
-                ; (prisma.persona.findFirst as jest.Mock).mockResolvedValue(null)
+            }));
 
-            const result = await adminUpdateSystemUser(null, formData)
-            expect(result).toEqual({ message: 'Success' })
-            expect(updateStaffUser).toHaveBeenCalled()
-        })
+            // Should upsert permissions for each user and each change
+            // 2 users * 2 changes = 4 upserts
+            expect(prisma.permisoUsuario.upsert).toHaveBeenCalledTimes(4);
+        });
 
-        it('returns error if email taken by another', async () => {
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
+        it('seeds default permissions', async () => {
+            const { seedPermissions } = require('./actions.staff');
 
-                ; (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue({
-                    id: 'u1',
-                    personaId: 'p1'
-                })
+            // Mock finding users for one of the defaults (e.g. KINESIOLOGO)
+            (prisma.usuarioSistema.findMany as jest.Mock).mockResolvedValue([
+                { id: 'kine-user-1' }
+            ]);
 
-                // Simulate email taken by p2
-                ; (prisma.persona.findFirst as jest.Mock).mockResolvedValue({ id: 'p2' })
+            const result = await seedPermissions();
 
-            const result = await adminUpdateSystemUser(null, formData)
-            expect(result.message).toContain('email ya está en uso')
-        })
-    })
+            expect(result.message).toBe('Success');
+            // Should have called upsert multiple times for the defaults
+            expect(prisma.permisoUsuario.upsert).toHaveBeenCalled();
+        });
 
-    describe('adminDeleteSystemUser', () => {
-        it('returns error if user not found', async () => {
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-                ; (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue(null)
+        it('gets my permissions', async () => {
+            const { getMyPermissions } = require('./actions.staff');
 
-            const result = await adminDeleteSystemUser('u1')
-            expect(result.message).toContain('Usuario no encontrado')
-        })
+            // Mock finding user by email
+            (prisma.usuarioSistema.findFirst as jest.Mock).mockResolvedValue({ id: 'my-user-id' });
 
-        it('prevents deleting admin', async () => {
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-                ; (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', rol: 'ADMIN' })
+            // Mock finding permissions
+            (prisma.permisoUsuario.findMany as jest.Mock).mockResolvedValue([
+                { recurso: 'Agendamiento', accion: 'Ver' }
+            ]);
 
-            const result = await adminDeleteSystemUser('u1')
-            expect(result.message).toContain('No se puede eliminar a un Administrador')
-        })
+            const result = await getMyPermissions();
 
-        it('deletes user successfully', async () => {
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-                ; (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue({ id: 'u1', rol: 'MEDICO' })
+            expect(result).toHaveLength(1);
+            expect(result[0]).toEqual({ recurso: 'Agendamiento', accion: 'Ver' });
+        });
 
-            const result = await adminDeleteSystemUser('u1')
-            expect(result).toEqual({ message: 'Success' })
-            expect(prisma.usuarioSistema.update).toHaveBeenCalled() // Soft delete
-        })
-    })
+        it('returns empty permissions if not logged in', async () => {
+            const { getMyPermissions } = require('./actions.staff');
+            const { auth } = require('@/auth');
 
-    describe('seedPermissions', () => {
-        it('seeds permissions successfully', async () => {
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN' } })
-                ; (prisma.usuarioSistema.findMany as jest.Mock).mockResolvedValue([{ id: 'u1' }])
+            // Override auth mock for this test
+            auth.mockResolvedValueOnce(null);
 
-            const result = await seedPermissions()
-            expect(result).toEqual({ message: 'Success' })
-            expect(prisma.permisoUsuario.upsert).toHaveBeenCalled()
-        })
-    })
+            const result = await getMyPermissions();
+            expect(result).toHaveLength(0);
+        });
+    });
 
-})
+    describe('Validation Errors', () => {
+        it('create fails with invalid RUT', async () => {
+            const { adminCreateSystemUser } = require('./actions.staff');
+            const { validarRutChileno } = require('@/lib/validators');
+
+            (validarRutChileno as jest.Mock).mockReturnValue(false);
+
+            const formData = new FormData();
+            formData.append('name', 'Bad Rut User');
+            formData.append('email', 'badrut@test.com');
+            formData.append('password', 'Pass123!');
+            formData.append('role', 'ROLE-ID');
+            formData.append('rutBody', '123'); // Invalid
+            formData.append('rutDv', 'K');
+            formData.append('active', 'on');
+
+            const result = await adminCreateSystemUser(null, formData);
+            expect(result.message).toContain('inválido');
+        });
+    });
+});

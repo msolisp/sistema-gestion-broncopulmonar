@@ -400,3 +400,13 @@ enum TipoAcceso {
   PACIENTE
   STAFF
 }
+
+model Configuracion {
+  key         String   @id
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@map("configuracion")
+}

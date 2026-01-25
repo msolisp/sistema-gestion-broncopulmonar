@@ -14,6 +14,9 @@ jest.mock('@/lib/prisma', () => ({
     cita: {
         findFirst: jest.fn(),
     },
+    rol: {
+        findFirst: jest.fn(),
+    },
 }));
 
 jest.mock('@/auth', () => ({

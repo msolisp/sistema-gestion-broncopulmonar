@@ -3,13 +3,13 @@ import DashboardContent from "@/components/DashboardContent";
 import { auth } from "@/auth";
 import { protectRoute } from "@/lib/route-protection";
 import { UserRole } from "@/components/admin/users/types";
+import { Suspense } from "react";
 
 export default async function DashboardPage(props: { searchParams: Promise<{ [key: string]: string | string[] | undefined }> }) {
     console.log('--- DASHBOARD PAGE LOADING ---');
     const searchParams = await props.searchParams;
-    // Protect route - only internal staff allowed
+    // Protect route - only internal staff allowed (Patients redirected in middleware)
     await protectRoute({
-        allowedRoles: ['ADMIN', 'KINESIOLOGO', 'RECEPCIONISTA'],
         redirectTo: '/portal'
     });
 
@@ -18,6 +18,7 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
 
     const systemUsersRaw = await prisma.usuarioSistema.findMany({
         where: {
+            eliminadoEn: null,
             rol_rel: {
                 nombre: {
                     not: 'PACIENTE'
@@ -40,6 +41,11 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
                 }
             }
         }
+    });
+
+    console.log('[DASHBOARD_DEBUG] Fetched Users Count:', systemUsersRaw.length);
+    systemUsersRaw.forEach((u: any) => {
+        console.log(`[DASHBOARD_DEBUG] User: ${u.persona.nombre}, Role: ${u.rol_rel.nombre}, EliminadoEn: ${u.eliminadoEn}`);
     });
 
     const roles = await prisma.rol.findMany({
@@ -127,14 +133,10 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         }
     }));
 
-    // Fetch permissions matrix from database
-    const allPermissions = await prisma.permisoUsuario.findMany({
+    // Fetch permissions matrix from database (Use PermisoRol for Role Definitions)
+    const allRolePermissions = await prisma.permisoRol.findMany({
         where: { activo: true },
-        include: {
-            usuario: {
-                include: { rol_rel: true }
-            }
-        }
+        include: { rol: true }
     });
 
     const modules = [
@@ -151,17 +153,17 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         const rolePerms: Record<string, boolean> = {};
 
         roles.forEach((role: any) => {
-            const hasPerm = allPermissions.some((p: any) =>
-                p.usuario.rol_rel.nombre === role.nombre &&
+            const hasPerm = allRolePermissions.some((p: any) =>
+                p.rol.nombre === role.nombre &&
                 p.recurso === m.recurso &&
                 (p.accion === 'Ver' || p.accion === m.action)
             );
-            // We use the role name as key, lowercase it for the component if needed or just use names
             rolePerms[role.nombre.toLowerCase()] = hasPerm;
         });
 
         return {
             action: m.action,
+            recurso: m.recurso, // Add strict resource name
             ...rolePerms
         };
     });
@@ -175,11 +177,12 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
     const patientModules = [
         { action: 'Mis Citas', recurso: 'Portal_Pacientes', dbAction: 'Ver Citas' },
         { action: 'Historial Médico', recurso: 'Portal_Pacientes', dbAction: 'Ver Historial' },
-        { action: 'Mis Datos', recurso: 'Portal_Pacientes', dbAction: 'Ver Perfil' }
+        { action: 'Mis Datos', recurso: 'Portal_Pacientes', dbAction: 'Ver Perfil' },
+        { action: 'Subir Exámenes', recurso: 'Portal_Pacientes', dbAction: 'Subir Examenes' }
     ];
 
     const patientPermissions = patientModules.map(m => {
-        const hasPerm = patientRole ? patientRole.permisos.some(p =>
+        const hasPerm = patientRole ? patientRole.permisos.some((p: any) =>
             p.recurso === m.recurso &&
             p.accion === m.dbAction &&
             p.activo
@@ -218,15 +221,20 @@ export default async function DashboardPage(props: { searchParams: Promise<{ [ke
         }
     }));
 
-    return <DashboardContent
-        initialUsers={systemUsers}
-        logs={logs}
-        initialPermissions={permissionMatrix}
-        appointments={appointments}
-        pendingExams={pendingExams}
-        currentUserRole={(session?.user?.role as any) || 'KINESIOLOGO'}
-        initialRoles={roles}
-        patientRole={patientRole}
-        patientPermissions={patientPermissions}
-    />;
+    return (
+        <Suspense fallback={<div className="p-8 text-center text-zinc-500">Cargando panel...</div>}>
+            <DashboardContent
+                initialUsers={systemUsers}
+                logs={logs}
+                initialPermissions={permissionMatrix}
+                appointments={appointments}
+                pendingExams={pendingExams}
+                currentUserRole={(session?.user?.role as any) || 'KINESIOLOGO'}
+                currentUserEmail={session?.user?.email || ''}
+                initialRoles={roles}
+                patientRole={patientRole}
+                patientPermissions={patientPermissions}
+            />
+        </Suspense>
+    );
 }

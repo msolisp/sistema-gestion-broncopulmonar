@@ -44,7 +44,9 @@ export default function AppointmentCalendar({ appointments }: AppointmentCalenda
                             appointments.map((app) => (
                                 <tr key={app.id} className="bg-white hover:bg-zinc-50 transition-colors">
                                     <td className="px-6 py-4 font-medium text-zinc-900 whitespace-nowrap">
-                                        {new Date(app.date).toLocaleString('es-CL')}
+                                        <span suppressHydrationWarning>
+                                            {new Date(app.date).toLocaleString('es-CL')}
+                                        </span>
                                     </td>
                                     <td className="px-6 py-4">
                                         <div className="font-medium text-zinc-900">{app.patient.name || 'Sin Nombre'}</div>
@@ -52,8 +54,8 @@ export default function AppointmentCalendar({ appointments }: AppointmentCalenda
                                     </td>
                                     <td className="px-6 py-4">
                                         <span className={`px-2.5 py-1 rounded-full text-xs font-medium border ${app.status === 'CONFIRMED' ? 'bg-green-100 text-green-700 border-green-200' :
-                                                app.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
-                                                    'bg-red-100 text-red-700 border-red-200'
+                                            app.status === 'PENDING' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                                                'bg-red-100 text-red-700 border-red-200'
                                             }`}>
                                             {app.status === 'CONFIRMED' ? 'Confirmada' :
                                                 app.status === 'PENDING' ? 'Pendiente' :

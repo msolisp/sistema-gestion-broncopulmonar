@@ -33,6 +33,7 @@ describe('DashboardContent - Password Validation', () => {
         appointments: [],
         currentUserRole: 'ADMIN' as const, // Ensure Admin access
         pendingExams: [],
+        initialRoles: [{ id: '1', nombre: 'KINESIOLOGO' }, { id: '2', nombre: 'ADMIN' }],
     };
 
     beforeEach(() => {

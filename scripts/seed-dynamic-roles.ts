@@ -14,6 +14,7 @@ async function main() {
         { nombre: 'TECNICO_PARVULARIO', descripcion: 'Técnico parvulario.' },
         { nombre: 'RECEPCIONISTA', descripcion: 'Personal administrativo de recepción.' },
         { nombre: 'PACIENTE', descripcion: 'Usuarios finales (pacientes).' },
+        { nombre: 'ASISTENTE_IA', descripcion: 'Asistente Virtual con capacidades de IA' },
     ];
 
     const rolesMap: { [key: string]: string } = {};

@@ -21,7 +21,7 @@ import {
 import PatientsManagementTable from './PatientsManagementTable'
 import AppointmentCalendar from './AppointmentCalendar'
 import PendingExamsWidget from './PendingExamsWidget'
-import { ComunasManager, PrevisionesManager, DiagnosticosManager, MedicamentosManager, InsumosManager, FeriadosManager } from './master-tables';
+import { ComunasManager, PrevisionesManager, DiagnosticosManager, MedicamentosManager, InsumosManager, FeriadosManager, SystemConfigManager } from './master-tables';
 import { REGIONS } from '@/lib/chile-data';
 import { UserModal } from './admin/users/UserModal';
 import { SystemUser, UserRole } from './admin/users/types';
@@ -361,7 +361,7 @@ function RoleManagement({ initialRoles }: { initialRoles: any[] }) {
         if (!currentRoleId || !formData.nombre) return;
         // Optimization: We could add an updateRole action if not exists, but for now we assume create/delete. 
         // Wait, the user asked for EDIT. I need to use updateRole action I saw in dynamic-rbac.ts
-        const res = await updateRole(currentRoleId, { ...formData, active: true });
+        const res = await updateRole(currentRoleId, { ...formData, activo: true });
         if (res.message === 'Success') {
             setIsEditing(false);
             setFormData({ nombre: '', descripcion: '' });
@@ -522,6 +522,7 @@ interface DashboardContentProps {
     appointments: any[]
     pendingExams: any[]
     currentUserRole: string
+    currentUserEmail: string
     initialRoles: any[]
     patientRole?: any
     patientPermissions?: any[]
@@ -534,6 +535,7 @@ export default function DashboardContent({
     appointments,
     pendingExams,
     currentUserRole,
+    currentUserEmail,
     initialRoles,
     patientRole,
     patientPermissions
@@ -553,10 +555,12 @@ export default function DashboardContent({
     const patientModules = [
         { action: 'Mis Citas', recurso: 'Portal_Pacientes', dbAction: 'Ver Citas' },
         { action: 'Historial Médico', recurso: 'Portal_Pacientes', dbAction: 'Ver Historial' },
-        { action: 'Mis Datos', recurso: 'Portal_Pacientes', dbAction: 'Ver Perfil' }
+        { action: 'Mis Datos', recurso: 'Portal_Pacientes', dbAction: 'Ver Perfil' },
+        { action: 'Subir Exámenes', recurso: 'Portal_Pacientes', dbAction: 'Subir Examenes' }
     ];
 
     const availableTabs = [
+        { name: 'Agendamiento', permission: 'Ver Agendamiento' },
         { name: 'Usuarios y Roles', permission: 'Ver Usuarios' },
         { name: 'Tablas Maestras', permission: 'Configuración Global' },
         { name: 'Seguridad - Control de acceso', permission: 'Configuración Global' },
@@ -564,12 +568,65 @@ export default function DashboardContent({
     ];
 
     const visibleTabs = availableTabs.filter(tab => can(tab.permission));
-    const defaultTab = visibleTabs.length > 0 ? visibleTabs[0].name : 'Usuarios y Roles';
+
+    // Redirect logic: If no visible tabs on Dashboard, check other modules
+    useEffect(() => {
+        if (visibleTabs.length === 0) {
+            if (can('Ver Pacientes')) {
+                router.push('/patients');
+            } else if (can('Ver Reportes BI')) {
+                router.push('/reports');
+            } else if (can('Ver Asistente')) {
+                router.push('/asistente');
+            } else if (can('Ver HL7')) {
+                router.push('/hl7');
+            }
+        }
+    }, [visibleTabs, currentUserRole]);
+
+    const defaultTab = visibleTabs.length > 0 ? visibleTabs[0].name : '';
     const [activeTab, setActiveTab] = useState(tabFromUrl || defaultTab)
 
     useEffect(() => {
-        if (tabFromUrl) setActiveTab(tabFromUrl)
-    }, [tabFromUrl])
+        if (tabFromUrl && visibleTabs.some(t => t.name === tabFromUrl)) {
+            setActiveTab(tabFromUrl)
+        } else if (!activeTab && visibleTabs.length > 0) {
+            setActiveTab(visibleTabs[0].name);
+        }
+    }, [tabFromUrl, visibleTabs])
+
+    const handleTabChange = (tabName: string) => {
+        console.log('[Dashboard] Switching to tab:', tabName);
+        setActiveTab(tabName);
+
+        // Update URL without triggering server re-render
+        if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.set('tab', tabName);
+            window.history.pushState({}, '', url.toString());
+        }
+    }
+
+    // If no tabs are visible and user is not admin, show nothing or access denied
+    if (visibleTabs.length === 0 && currentUserRole !== 'ADMIN') {
+        // Debug info relative to why redirects might fail
+        const debugInfo = {
+            role: currentUserRole,
+            canPacientes: can('Ver Pacientes'),
+            canReportes: can('Ver Reportes BI'),
+            permissionsCount: initialPermissions.length
+        };
+        console.log('Dashboard Access Denied Debug:', debugInfo);
+
+        // Allow a grace period for redirect to happen before showing error? 
+        // Or just show error if no permission matches redirects either.
+        const canAccessSomething = can('Ver Pacientes') || can('Ver Reportes BI') || can('Ver Asistente') || can('Ver HL7');
+
+        if (!canAccessSomething) {
+            return <div className="p-8 text-center text-red-600">No tienes permisos para acceder a este panel.</div>;
+        }
+        return <div className="p-8 text-center text-zinc-500">Redirigiendo...</div>;
+    }
 
     const [users, setUsers] = useState<SystemUser[]>(initialUsers as SystemUser[]);
     useEffect(() => {
@@ -591,15 +648,56 @@ export default function DashboardContent({
         setIsUserModalOpen(true)
     }
 
-    const handleDeleteUser = async (user: SystemUser) => {
-        if (!confirm(`¿Estás seguro?`)) return;
-        const res = await adminDeleteSystemUser(user.id);
-        if (res?.message === 'Success') router.refresh();
-        else alert(res?.message);
+    const [userToDelete, setUserToDelete] = useState<SystemUser | null>(null);
+    const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null);
+
+    useEffect(() => {
+        if (notification) {
+            const timer = setTimeout(() => setNotification(null), 5000);
+            return () => clearTimeout(timer);
+        }
+    }, [notification]);
+
+    const confirmDeleteUser = (user: SystemUser) => {
+        setUserToDelete(user);
+    }
+
+    const executeDeleteUser = async () => {
+        if (!userToDelete) return;
+
+        const previousUsers = [...users];
+        setUsers(users.filter(u => u.id !== userToDelete.id));
+        setIsUserModalOpen(false);
+        setUserToDelete(null);
+
+        try {
+            const res = await adminDeleteSystemUser(userToDelete.id);
+            if (res?.message === 'Success') {
+                router.refresh();
+                setNotification({ type: 'success', message: 'Usuario eliminado correctamente' });
+            } else {
+                setUsers(previousUsers);
+                setNotification({ type: 'error', message: res?.message || 'Error al eliminar usuario' });
+            }
+        } catch (e) {
+            setUsers(previousUsers);
+            setNotification({ type: 'error', message: 'Error de conexión' });
+        }
     }
 
     return (
         <div className="space-y-8">
+            {notification && (
+                <div className={`fixed top-4 right-4 z-[110] px-4 py-3 rounded-lg shadow-lg animate-in fade-in slide-in-from-top-2 ${notification.type === 'success' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-red-100 text-red-800 border border-red-200'}`}>
+                    <div className="flex items-center gap-2">
+                        {notification.type === 'success' ? <Check className="w-4 h-4" /> : <Shield className="w-4 h-4" />}
+                        <span className="text-sm font-medium">{notification.message}</span>
+                        <button onClick={() => setNotification(null)} className="ml-2 bg-transparent hover:bg-black/5 rounded p-1">
+                            <X className="w-3 h-3" />
+                        </button>
+                    </div>
+                </div>
+            )}
             <UserModal
                 isOpen={isUserModalOpen}
                 onClose={() => setIsUserModalOpen(false)}
@@ -610,12 +708,14 @@ export default function DashboardContent({
 
             <div className="border-b border-zinc-200">
                 <div className="flex justify-between items-center pb-4">
-                    <h1 className="text-2xl font-bold text-sky-900">Administración Central</h1>
+                    <h1 className="text-2xl font-bold text-sky-900">
+                        {activeTab === 'Agendamiento' ? 'Agendamiento' : 'Administración Central'}
+                    </h1>
                     <nav className="flex space-x-6">
                         {visibleTabs.map((tab) => (
                             <button
                                 key={tab.name}
-                                onClick={() => setActiveTab(tab.name)}
+                                onClick={() => handleTabChange(tab.name)}
                                 className={`text-sm font-medium pb-2 border-b-2 transition-colors ${activeTab === tab.name ? 'border-sky-600 text-sky-700' : 'border-transparent text-zinc-500'
                                     }`}
                             >
@@ -627,6 +727,12 @@ export default function DashboardContent({
             </div>
 
             <div className="animate-in fade-in duration-300">
+                {activeTab === 'Agendamiento' && (
+                    <div className="space-y-8">
+                        <AppointmentCalendar appointments={appointments} />
+                    </div>
+                )}
+
                 {activeTab === 'Usuarios y Roles' && (
                     <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
                         <div className="px-6 py-4 border-b border-zinc-100 flex justify-between items-center bg-zinc-50">
@@ -658,12 +764,22 @@ export default function DashboardContent({
                                         </td>
                                         <td className="px-6 py-4 text-right">
                                             <button onClick={() => handleEditUser(user)} className="text-indigo-600 mr-3">Editar</button>
-                                            {user.role !== 'ADMIN' && <button onClick={() => handleDeleteUser(user)} className="text-red-500">Eliminar</button>}
+                                            {user.email !== currentUserEmail && <button onClick={() => confirmDeleteUser(user)} className="text-red-500">Eliminar</button>}
                                         </td>
                                     </tr>
                                 ))}
                             </tbody>
                         </table>
+
+                        <ConfirmationModal
+                            isOpen={!!userToDelete}
+                            onClose={() => setUserToDelete(null)}
+                            onConfirm={executeDeleteUser}
+                            title="Eliminar Usuario"
+                            message={`¿Estás seguro de que deseas eliminar a ${userToDelete?.name}? Esta acción no se puede deshacer.`}
+                            confirmText="Eliminar"
+                            isDestructive={true}
+                        />
                     </div>
                 )}
 
@@ -695,6 +811,7 @@ export default function DashboardContent({
                                     { key: 'medicamentos', title: 'Medicamentos' },
                                     { key: 'insumos', title: 'Insumos' },
                                     { key: 'feriados', title: 'Feriados' },
+                                    { key: 'configuracion', title: 'Configuración subida de archivos' },
                                 ].map((item) => (
                                     <div key={item.key} onClick={() => setActiveMasterTable(item.key)} className="p-6 border rounded-xl hover:border-indigo-500 cursor-pointer">
                                         <h4 className="font-bold">{item.title}</h4>
@@ -710,6 +827,11 @@ export default function DashboardContent({
                                 {activeMasterTable === 'medicamentos' && <MedicamentosManager />}
                                 {activeMasterTable === 'insumos' && <InsumosManager />}
                                 {activeMasterTable === 'feriados' && <FeriadosManager />}
+                                {activeMasterTable === 'diagnosticos' && <DiagnosticosManager />}
+                                {activeMasterTable === 'medicamentos' && <MedicamentosManager />}
+                                {activeMasterTable === 'insumos' && <InsumosManager />}
+                                {activeMasterTable === 'feriados' && <FeriadosManager />}
+                                {activeMasterTable === 'configuracion' && <SystemConfigManager />}
                             </div>
                         )}
                     </div>
@@ -733,16 +855,24 @@ export default function DashboardContent({
                                         className="hover:bg-indigo-50 transition-colors cursor-pointer group"
                                         onClick={() => setSelectedLog(log)}
                                     >
-                                        <td className="px-6 py-3 text-zinc-600 group-hover:text-indigo-700 font-medium">
+                                        <td className="px-6 py-3 text-zinc-600 group-hover:text-indigo-700 font-medium" suppressHydrationWarning>
                                             {new Date(log.createdAt).toLocaleString()}
                                         </td>
                                         <td className="px-6 py-3 font-bold text-zinc-800">
                                             {log.action}
                                         </td>
                                         <td className="px-6 py-3 text-zinc-600">{log.userEmail}</td>
-                                        <td className="px-6 py-3 text-xs font-mono text-zinc-500 truncate max-w-xs">
-                                            {log.details.substring(0, 50)}
-                                            {log.details.length > 50 && '...'}
+                                        <td className="px-6 py-3">
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    setSelectedLog(log);
+                                                }}
+                                                className="p-1.5 text-zinc-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                                                title="Ver detalles completos"
+                                            >
+                                                <FileText className="w-4 h-4" />
+                                            </button>
                                         </td>
                                     </tr>
                                 ))}
@@ -752,16 +882,13 @@ export default function DashboardContent({
                 )}
             </div>
 
-            <ConfirmationModal
-                isOpen={false} onClose={() => { }} onConfirm={() => { }}
-                title="Confirmar" message="¿Estás seguro?"
-            />
+
 
             <LogDetailsModal
                 isOpen={!!selectedLog}
                 onClose={() => setSelectedLog(null)}
                 log={selectedLog}
             />
-        </div>
+        </div >
     )
 }

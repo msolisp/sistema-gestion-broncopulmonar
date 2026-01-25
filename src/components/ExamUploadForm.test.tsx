@@ -78,7 +78,7 @@ describe('ExamUploadForm', () => {
         fireEvent.submit(screen.getByText('Guardar y Subir').closest('form')!)
 
         await waitFor(() => {
-            expect(window.alert).toHaveBeenCalledWith('Error simulado')
+            expect(screen.getByText('Error simulado')).toBeInTheDocument()
         })
     })
 })

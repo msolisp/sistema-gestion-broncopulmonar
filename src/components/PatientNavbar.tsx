@@ -53,6 +53,13 @@ export default function PatientNavbar({ initialUserName, serverPermissions = [] 
                                 Inicio
                             </Link>
 
+                            {canSee('Subir Examenes') && (
+                                <Link href="/portal/subir-examen" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                                    <FileSpreadsheet className="w-4 h-4 mr-2" />
+                                    Subir Examen
+                                </Link>
+                            )}
+
                             {canSee('Ver Citas') && (
                                 <Link href="/portal/citas" className="border-transparent text-zinc-500 hover:border-indigo-500 hover:text-zinc-900 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
                                     <Calendar className="w-4 h-4 mr-2" />

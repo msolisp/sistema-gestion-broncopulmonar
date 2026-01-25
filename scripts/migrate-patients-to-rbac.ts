@@ -1,10 +1,23 @@
 
-import { PrismaClient, RolUsuario } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 async function main() {
     console.log('🚀 Migrating existing patients to have RBAC support...');
+
+    // Ensure 'PACIENTE' role exists
+    const pacienteRole = await prisma.rol.upsert({
+        where: { nombre: 'PACIENTE' },
+        update: {},
+        create: {
+            nombre: 'PACIENTE',
+            descripcion: 'Rol para pacientes del sistema',
+            activo: true
+        }
+    });
+
+    console.log(`ℹ️  Using Role: ${pacienteRole.nombre} (${pacienteRole.id})`);
 
     // Find all patients (Credencial.tipoAcceso === 'PACIENTE')
     const patients = await prisma.credencial.findMany({
@@ -27,7 +40,7 @@ async function main() {
             await prisma.usuarioSistema.create({
                 data: {
                     personaId: p.personaId,
-                    rol: RolUsuario.PACIENTE as any, // Use any just in case client hasn't fully updated in all environments
+                    rolId: pacienteRole.id,
                     creadoPor: 'SYSTEM_MIGRATION',
                     activo: true
                 }
@@ -35,10 +48,10 @@ async function main() {
             created++;
         } else {
             // Ensure they have the correct role if they already had a system record
-            if (existing.rol !== 'PACIENTE') {
+            if (existing.rolId !== pacienteRole.id) {
                 await prisma.usuarioSistema.update({
                     where: { id: existing.id },
-                    data: { rol: RolUsuario.PACIENTE as any }
+                    data: { rolId: pacienteRole.id }
                 });
             }
             skipped++;

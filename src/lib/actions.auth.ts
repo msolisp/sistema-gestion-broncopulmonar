@@ -220,7 +220,16 @@ export async function authenticate(
             throw error;
         }
 
+        // Capture IP for potential error logging
+        const { headers } = await import('next/headers');
+        const headersList = await headers();
+        const ip = headersList.get("x-forwarded-for") || "Unknown IP";
+
         if (error instanceof AuthError) {
+            // Log failure before returning
+            await logAction('LOGIN_FAILURE', `Failed login attempt for ${email}`, null, email, ip);
+            loggers.auth.loginFailed(email, error.type, ip);
+
             switch (error.type) {
                 case 'CredentialsSignin':
                     return 'Credenciales inválidas.';
@@ -228,9 +237,7 @@ export async function authenticate(
                     return 'Algo salió mal.';
             }
         }
-        const { headers } = await import('next/headers');
-        const headersList = await headers();
-        const ip = headersList.get("x-forwarded-for") || "Unknown IP";
+
         await logAction('LOGIN_FAILURE', `Failed login attempt for ${email}`, null, email, ip);
         loggers.auth.loginFailed(email, error instanceof AuthError ? error.type : 'Unknown', ip);
         loggers.error.api('/authenticate', error as Error, email);

@@ -88,7 +88,7 @@ describe('PatientNavbar', () => {
         });
     });
 
-    it('falls back to "Paciente" if unauthenticated or no email', async () => {
+    it('does not show greeting if unauthenticated', async () => {
         mockUseSession.mockReturnValue({
             data: null,
             status: 'unauthenticated'
@@ -97,7 +97,7 @@ describe('PatientNavbar', () => {
         render(<PatientNavbar />);
 
         await waitFor(() => {
-            expect(screen.getByText('Hola, Paciente')).toBeInTheDocument();
+            expect(screen.queryByText(/Hola,/)).not.toBeInTheDocument();
         });
     });
 });

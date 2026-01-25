@@ -28,15 +28,25 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
         }
     }, [status]);
 
+    const [maxSizeMB, setMaxSizeMB] = useState(1);
+
+    useEffect(() => {
+        import('@/lib/actions.system').then(({ getSystemConfig }) => {
+            getSystemConfig('MAX_FILE_SIZE_MB').then(val => {
+                if (val) setMaxSizeMB(parseInt(val, 10));
+            });
+        });
+    }, []);
+
     async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         const form = e.currentTarget;
         const fileInput = form.querySelector('input[type="file"]') as HTMLInputElement;
         const file = fileInput?.files?.[0];
-        const MAX_SIZE = 5 * 1024 * 1024; // 5MB
+        const MAX_SIZE = maxSizeMB * 1024 * 1024;
 
         if (file && file.size > MAX_SIZE) {
-            alert('El archivo excede el límite de 5MB');
+            alert(`El archivo excede el límite de ${maxSizeMB}MB`);
             return;
         }
 
@@ -82,7 +92,7 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
                         {/* File Input - Takes up 40% */}
                         <div className="w-full md:w-5/12">
                             <label className="block text-xs font-bold text-zinc-500 uppercase tracking-wider mb-1">
-                                Archivo PDF <span className="text-red-500 lowercase font-normal">(Máximo 5MB)</span>
+                                Archivo PDF <span className="text-red-500 lowercase font-normal">(Máximo {maxSizeMB}MB)</span>
                                 <input
                                     type="file"
                                     name="file"

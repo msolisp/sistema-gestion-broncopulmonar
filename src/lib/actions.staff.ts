@@ -48,10 +48,10 @@ export async function adminCreateSystemUser(prevState: any, formData: FormData) 
     }
 
     try {
-        await createStaffUser({
+        const newPersona = await createStaffUser({
             rut: vRut,
-            nombre: vName, // Basic name split will happen inside adapter if needed, simply passing string for now or adapter handles it
-            apellidoPaterno: 'SIN_APELLIDO', // TODO: Improve name parsing in adapter or here
+            nombre: vName,
+            apellidoPaterno: 'SIN_APELLIDO',
             email: vEmail,
             password: vPassword,
             rol: vRole as any,
@@ -60,6 +60,29 @@ export async function adminCreateSystemUser(prevState: any, formData: FormData) 
             comuna: vCommune,
             region: vRegion
         });
+
+        // Seed Permissions based on Role
+        const newUserSystem = await prisma.usuarioSistema.findFirst({
+            where: { personaId: newPersona.id }
+        });
+
+        if (newUserSystem) {
+            const rolePermissions = await prisma.permisoRol.findMany({
+                where: { rolId: vRole as string, activo: true }
+            });
+
+            for (const perm of rolePermissions) {
+                await prisma.permisoUsuario.create({
+                    data: {
+                        usuarioId: newUserSystem.id,
+                        recurso: perm.recurso,
+                        accion: perm.accion,
+                        activo: true,
+                        otorgadoPor: session.user.email || 'ADMIN'
+                    }
+                });
+            }
+        }
 
         revalidatePath('/admin/users');
         return { message: 'Success' };
@@ -149,11 +172,16 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
         const firstName = nameParts[0];
         const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'SIN_APELLIDO';
 
+        // Check if role is changing
+        const curUser = await prisma.usuarioSistema.findUnique({ where: { id: vId } });
+        const oldRoleId = curUser?.rolId;
+        const newRoleId = vRole;
+
         const result = await updateStaffUser(vId, {
             email: vEmail,
             nombre: firstName,
             apellidoPaterno: lastName,
-            apellidoMaterno: null, // Critical fix for name growth
+            apellidoMaterno: null,
             rol: vRole as any,
             active: vActive,
             rut: vRut || undefined,
@@ -163,6 +191,31 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
             password: vPassword || undefined,
             modificadoPor: session.user.email || 'ADMIN'
         });
+
+        // If role changed, reset permissions to match new role
+        if (oldRoleId && newRoleId && oldRoleId !== newRoleId) {
+            // Delete old permissions
+            await prisma.permisoUsuario.deleteMany({
+                where: { usuarioId: vId }
+            });
+
+            // Seed new permissions
+            const rolePermissions = await prisma.permisoRol.findMany({
+                where: { rolId: newRoleId as string, activo: true }
+            });
+
+            for (const perm of rolePermissions) {
+                await prisma.permisoUsuario.create({
+                    data: {
+                        usuarioId: vId,
+                        recurso: perm.recurso,
+                        accion: perm.accion,
+                        activo: true,
+                        otorgadoPor: session.user.email || 'ADMIN'
+                    }
+                });
+            }
+        }
 
         revalidatePath('/admin/users');
         revalidatePath('/dashboard');
@@ -179,12 +232,25 @@ export async function adminDeleteSystemUser(id: string) {
     if ((session.user as any).role !== 'ADMIN') return { message: 'Unauthorized' };
 
     try {
+        console.log(`[DELETE_USER] Attempting to delete user ${id} by ${session.user.email}`);
+
         const targetUser = await prisma.usuarioSistema.findUnique({
             where: { id },
             include: { rol_rel: true }
         });
-        if (!targetUser) return { message: 'Usuario no encontrado' };
-        if (targetUser.rol_rel.nombre === 'ADMIN') return { message: 'No se puede eliminar a un Administrador' };
+        if (!targetUser) {
+            console.log('[DELETE_USER] User not found');
+            return { message: 'Usuario no encontrado' };
+        }
+
+        // Prevent self-deletion
+        const targetPerson = await prisma.persona.findUnique({ where: { id: targetUser.personaId } });
+        console.log(`[DELETE_USER] Target person email: ${targetPerson?.email}, Current user email: ${session.user.email}`);
+
+        if (targetPerson?.email && session.user.email && targetPerson.email.toLowerCase() === session.user.email.toLowerCase()) {
+            console.log('[DELETE_USER] Self-deletion attempt blocked');
+            return { message: 'No puedes eliminar tu propia cuenta' };
+        }
 
         // Soft delete system user
         await prisma.usuarioSistema.update({
@@ -196,15 +262,13 @@ export async function adminDeleteSystemUser(id: string) {
             }
         });
 
-        // Also deactivate base persona? 
-        // We should check if they are also a patient.
-        // For now, just deactivate system access.
-
+        console.log('[DELETE_USER] Success');
         revalidatePath('/admin/users');
+        revalidatePath('/dashboard');
         return { message: 'Success' };
-    } catch (e) {
-        console.error(e);
-        return { message: 'Error al eliminar usuario' };
+    } catch (e: any) {
+        console.error('[DELETE_USER] Error:', e);
+        return { message: 'Error al eliminar usuario: ' + e.message };
     }
 }
 
@@ -280,7 +344,8 @@ export async function seedPermissions() {
     const defaults = [
         { role: 'KINESIOLOGO', actions: ['Ver Agendamiento', 'Ver Pacientes', 'Ver HL7'] },
         { role: 'RECEPCIONISTA', actions: ['Ver Agendamiento', 'Ver Pacientes'] },
-        { role: 'MEDICO', actions: ['Ver Agendamiento', 'Ver Pacientes', 'Ver Reportes BI'] }
+        { role: 'MEDICO', actions: ['Ver Agendamiento', 'Ver Pacientes', 'Ver Reportes BI'] },
+        { role: 'ASISTENTE_IA', actions: ['Ver Agendamiento', 'Ver Pacientes', 'Ver Reportes BI', 'Ver HL7', 'Ver Asistente'] }
     ];
 
     try {

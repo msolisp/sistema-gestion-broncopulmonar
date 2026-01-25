@@ -110,7 +110,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
                     // Determine role (staff or patient)
                     let role = 'PACIENTE';
                     if (persona.usuarioSistema) {
-                        role = (persona.usuarioSistema as any).rol_rel.nombre;
+                        role = (persona.usuarioSistema as any).rol_rel.nombre.toUpperCase();
                     }
 
                     return {

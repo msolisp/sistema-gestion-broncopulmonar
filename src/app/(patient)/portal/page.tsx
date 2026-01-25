@@ -8,6 +8,7 @@ import { getPatientDashboardData } from "@/actions/patient-dashboard";
 import PatientAirQuality from "@/components/PatientAirQuality";
 import { AQIData } from "@/lib/air-quality";
 
+
 interface DashboardData {
     patient: { id: string; name: string; commune: string; region: string };
     nextAppointment: { date: Date; status: string; timeBlock: string } | null;
@@ -130,6 +131,8 @@ export default function PortalPage() {
                     </div>
                 )}
             </div>
+
+
         </div>
     );
 }

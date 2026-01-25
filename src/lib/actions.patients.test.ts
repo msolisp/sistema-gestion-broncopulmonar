@@ -1,142 +1,171 @@
 
-import { registerPatient, updatePatientProfile, adminCreatePatient, adminUpdatePatient, deletePatient } from './actions.patients'
-import { checkPersonaExists, createPatient, updatePatient, getPersonaByEmail } from '@/lib/fhir-adapters'
-import { auth } from '@/auth'
-import prisma from '@/lib/prisma'
-import { AuthError } from 'next-auth'
+import {
+    registerPatient,
+    updatePatientProfile,
+    adminCreatePatient,
+    adminUpdatePatient,
+    deletePatient
+} from './actions.patients';
+import { checkPersonaExists, createPatient, updatePatient } from '@/lib/fhir-adapters';
+import { validarRutChileno } from '@/lib/validators';
+import { auth } from '@/auth';
+import prisma from '@/lib/prisma';
 
-// Mock dependencies (Auth, Prisma, Adapters, Next)
+// Mock dependencies
+jest.mock('@/lib/fhir-adapters', () => ({
+    checkPersonaExists: jest.fn(),
+    createPatient: jest.fn(),
+    updatePatient: jest.fn(),
+}));
+
+jest.mock('@/lib/validators', () => ({
+    validarRutChileno: jest.fn(),
+}));
+
 jest.mock('@/auth', () => ({
     auth: jest.fn(),
-}))
+}));
+
+jest.mock('@/lib/prisma', () => ({
+    fichaClinica: { findUnique: jest.fn(), update: jest.fn() },
+    persona: { update: jest.fn(), findUnique: jest.fn(), findFirst: jest.fn() },
+    usuarioSistema: { findFirst: jest.fn() },
+    logAccesoSistema: { create: jest.fn() },
+}));
 
 jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
-}))
+}));
 
-jest.mock('@/lib/prisma', () => {
-    const mockClient: any = {
-        persona: {
-            findUnique: jest.fn(),
-            findFirst: jest.fn(),
-        },
-        usuarioSistema: {
-            findFirst: jest.fn(),
-        },
-        logAccesoSistema: {
-            create: jest.fn(),
-        },
-        $transaction: jest.fn((arg: any) => {
-            if (Array.isArray(arg)) return Promise.all(arg)
-            return arg(mockClient)
-        })
-    }
-    return {
-        __esModule: true,
-        default: mockClient,
-        prisma: mockClient
-    }
-})
-
-jest.mock('@/lib/fhir-adapters', () => ({
-    createPatient: jest.fn(),
-    updatePatient: jest.fn(),
-    checkPersonaExists: jest.fn(),
-    getPersonaByEmail: jest.fn(),
-}))
-
-// NOTE: adminCreatePatient uses dynamic import for headers
 jest.mock('next/headers', () => ({
-    headers: jest.fn().mockReturnValue({
-        get: jest.fn().mockReturnValue('127.0.0.1')
-    })
-}))
+    headers: jest.fn().mockReturnValue({ get: () => '127.0.0.1' }),
+}));
 
-describe('Patient Actions', () => {
-    const formData = new FormData()
-    formData.append('email', 'new@test.com')
-    formData.append('password', 'Password123!')
-    formData.append('name', 'New User')
-    formData.append('rut', '12.345.678-5')
-    formData.append('commune', 'SANTIAGO')
-
+describe('Actions Patients', () => {
     beforeEach(() => {
-        jest.clearAllMocks()
-            // Default mocks
-            ; (checkPersonaExists as jest.Mock).mockResolvedValue(null)
-            ; (createPatient as jest.Mock).mockResolvedValue({ id: 'p1' })
-            ; (updatePatient as jest.Mock).mockResolvedValue({ id: 'p1' })
-            ; (prisma.persona.findUnique as jest.Mock).mockResolvedValue(null)
-            ; (prisma.persona.findFirst as jest.Mock).mockResolvedValue(null)
-    })
+        jest.clearAllMocks();
+    });
 
     describe('registerPatient', () => {
-        it('returns error if fields missing', async () => {
-            const emptyData = new FormData()
-            const result = await registerPatient(null, emptyData)
-            expect(result.message).toContain('Datos inválidos')
-        })
+        it('fails if invalid format', async () => {
+            const formData = new FormData();
+            formData.append('email', 'invalid');
+            const result = await registerPatient(null, formData);
+            expect(result.message).toContain('Datos inválidos');
+        });
 
-        it('returns error if RUT exists', async () => {
-            // checkPersonaExists returns object if found
-            ; (checkPersonaExists as jest.Mock).mockResolvedValue({ rut: '12.345.678-5' })
-            const result = await registerPatient(null, formData)
-            // Expect to fail on RUT check
-            expect(result.message).toContain('RUT ya está registrado')
-        })
+        it('fails if RUT invalid', async () => {
+            const formData = new FormData();
+            formData.append('email', 'test@test.com');
+            formData.append('password', '123456');
+            formData.append('name', 'John');
+            formData.append('rutBody', '1');
+            formData.append('rutDv', '9');
+            formData.append('commune', 'Stgo');
 
-        it('creates patient on success', async () => {
-            const result = await registerPatient(null, formData)
-            expect(result).toEqual({ message: 'Success' })
-            expect(createPatient).toHaveBeenCalled()
-        })
-    })
+            (validarRutChileno as jest.Mock).mockReturnValue(false);
+
+            const result = await registerPatient(null, formData);
+            expect(result.message).toContain('RUT inválido');
+        });
+
+        it('fails if user exists', async () => {
+            const formData = new FormData();
+            formData.append('email', 'test@test.com');
+            formData.append('password', 'Pass123!@#');
+            formData.append('name', 'John');
+            formData.append('rutBody', '1');
+            formData.append('rutDv', '9');
+            formData.append('commune', 'Stgo');
+
+            (validarRutChileno as jest.Mock).mockReturnValue(true);
+            (checkPersonaExists as jest.Mock).mockResolvedValue({ email: 'test@test.com' });
+
+            const result = await registerPatient(null, formData);
+            expect(result.message).toContain('email ya está registrado');
+        });
+
+        it('creates patient if valid', async () => {
+            const formData = new FormData();
+            formData.append('email', 'new@test.com');
+            formData.append('password', 'Pass123!@#');
+            formData.append('name', 'John Doe');
+            formData.append('rutBody', '1');
+            formData.append('rutDv', '9');
+            formData.append('commune', 'Stgo');
+
+            (validarRutChileno as jest.Mock).mockReturnValue(true);
+            (checkPersonaExists as jest.Mock).mockResolvedValue(null);
+
+            const result = await registerPatient(null, formData);
+            expect(result.message).toBe('Success');
+            expect(createPatient).toHaveBeenCalled();
+        });
+    });
 
     describe('updatePatientProfile', () => {
-        const updateData = new FormData()
-        updateData.append('name', 'Updated Name')
-        updateData.append('commune', 'New Commune')
-        updateData.append('address', 'New Address')
+        it('fails if unauthenticated', async () => {
+            (auth as jest.Mock).mockResolvedValue(null);
+            const formData = new FormData();
+            const result = await updatePatientProfile(null, formData);
+            expect(result.message).toBe('Unauthorized');
+        });
 
-        it('returns unauthorized if no session', async () => {
-            (auth as jest.Mock).mockResolvedValue(null)
-            const result = await updatePatientProfile(null, updateData)
-            expect(result).toEqual({ message: 'Unauthorized' })
-        })
+        it('updates profile successfully', async () => {
+            (auth as jest.Mock).mockResolvedValue({ user: { email: 'test@test.com', id: 'p1' } });
+            const formData = new FormData();
+            formData.append('name', 'Jane Doe');
+            formData.append('rut', '1-9');
 
-        it('updates successfully', async () => {
-            // Need user.id for update
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'test@test.com', id: 'p1' } })
-            const result = await updatePatientProfile(null, updateData)
-            expect(result).toEqual({ message: 'Success' })
-            expect(updatePatient).toHaveBeenCalled()
-        })
-    })
+            const result = await updatePatientProfile(null, formData);
+            expect(result.message).toBe('Success');
+            expect(updatePatient).toHaveBeenCalledWith('p1', expect.anything());
+        });
+    });
 
-    describe('Admin Actions (Patients)', () => {
-        const adminData = new FormData()
-        adminData.append('name', 'Admin Created')
-        adminData.append('email', 'admin@created.com')
-        adminData.append('rut', '12.345.678-5')
-        adminData.append('commune', 'SANTIAGO')
-        adminData.append('password', 'Password123!')
-        adminData.append('region', 'RM')
+    describe('adminCreatePatient', () => {
+        it('fails if not admin', async () => {
+            (auth as jest.Mock).mockResolvedValue({ user: { role: 'PACIENTE' } });
+            const result = await adminCreatePatient(null, new FormData());
+            expect(result.message).toContain('Unauthorized');
+        });
 
-        it('adminCreatePatient succeeds if admin', async () => {
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'admin@test.com', role: 'ADMIN', id: 'admin1' } })
+        it('creates patient if admin', async () => {
+            (auth as jest.Mock).mockResolvedValue({ user: { role: 'ADMIN', email: 'admin@test.com' } });
+            (validarRutChileno as jest.Mock).mockReturnValue(true);
+            (checkPersonaExists as jest.Mock).mockResolvedValue(null);
 
-                // Should also mock internal user lookup for logic audit
-                ; (prisma.usuarioSistema.findFirst as jest.Mock).mockResolvedValue({ id: 'staff1' })
+            const formData = new FormData();
+            formData.append('email', 'new@test.com');
+            formData.append('password', 'Pass123!@#');
+            formData.append('name', 'John Doe');
+            formData.append('rut', '1-9');
+            formData.append('commune', 'Stgo');
+            formData.append('region', 'RM');
+            formData.append('address', 'Calle 1');
+            formData.append('gender', 'Masculino');
+            formData.append('healthSystem', 'FONASA');
 
-            const result = await adminCreatePatient(null, adminData)
-            expect(result).toEqual({ message: 'Success' })
-            expect(createPatient).toHaveBeenCalled()
-        })
+            const result = await adminCreatePatient(null, formData);
+            expect(result.message).toBe('Success');
+            expect(createPatient).toHaveBeenCalled();
+        });
+    });
 
-        it('adminCreatePatient checks role', async () => {
-            (auth as jest.Mock).mockResolvedValue({ user: { email: 'user@test.com', role: 'PACIENTE' } })
-            const result = await adminCreatePatient(null, adminData)
-            expect(result.message).toContain('Unauthorized')
-        })
-    })
-})
+    describe('deletePatient', () => {
+        it('soft deletes patient', async () => {
+            (auth as jest.Mock).mockResolvedValue({ user: { role: 'ADMIN', email: 'admin@test.com' } });
+            (prisma.fichaClinica.findUnique as jest.Mock).mockResolvedValue({ id: 'f1', personaId: 'p1' });
+
+            const formData = new FormData();
+            formData.append('id', 'p1');
+
+            const result = await deletePatient(null, formData);
+            expect(result.message).toBe('Success');
+            expect(prisma.persona.update).toHaveBeenCalledWith(expect.objectContaining({
+                where: { id: 'p1' },
+                data: expect.objectContaining({ activo: false })
+            }));
+        });
+    });
+});

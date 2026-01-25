@@ -32,6 +32,7 @@ describe('DashboardContent - Admin User Editing', () => {
         name: 'Admin User',
         email: 'admin@hospital.cl',
         role: 'ADMIN' as const,
+        roleName: 'ADMIN',
         active: true,
         rut: '11.111.111-1'
     };
@@ -41,6 +42,7 @@ describe('DashboardContent - Admin User Editing', () => {
         name: 'Regular User',
         email: 'user@hospital.cl',
         role: 'KINESIOLOGIST' as const,
+        roleName: 'KINESIOLOGO',
         active: true,
         rut: '22.222.222-2'
     };
@@ -51,7 +53,9 @@ describe('DashboardContent - Admin User Editing', () => {
         initialPermissions: [],
         appointments: [],
         currentUserRole: 'ADMIN' as const,
+        currentUserEmail: 'admin@hospital.cl',
         pendingExams: [],
+        initialRoles: [{ id: '1', nombre: 'KINESIOLOGIST' }, { id: '2', nombre: 'ADMIN' }],
     };
 
     beforeEach(() => {
@@ -77,8 +81,13 @@ describe('DashboardContent - Admin User Editing', () => {
 
         fireEvent.click(screen.getByText('Usuarios y Roles'));
 
-        // Should show "No se puede eliminar" for admin
-        expect(screen.getByText('No se puede eliminar')).toBeInTheDocument();
+        // Find the row containing 'Admin User'
+        const adminRow = screen.getByText('Admin User').closest('tr');
+
+        // Ensure 'Eliminar' button is NOT within that row
+        // queryByText returns null if not found, checking within() the row scoping
+        const { queryByText } = require('@testing-library/dom');
+        expect(queryByText(adminRow as HTMLElement, 'Eliminar')).not.toBeInTheDocument();
     });
 
     it('should open edit modal when clicking Edit on admin user', () => {

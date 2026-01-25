@@ -15,8 +15,13 @@ interface UserModalProps {
     roles: any[];
 }
 
+interface UserFormState extends Partial<SystemUser> {
+    rutBody?: string;
+    rutDv?: string;
+}
+
 export function UserModal({ isOpen, onClose, onSuccess, userToEdit, roles }: UserModalProps) {
-    const [formData, setFormData] = useState<Partial<SystemUser>>({});
+    const [formData, setFormData] = useState<UserFormState>({});
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [passwordError, setPasswordError] = useState<string | null>(null);
@@ -172,6 +177,7 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit, roles }: Use
                             value={formData.name || ''}
                             onChange={e => setFormData({ ...formData, name: e.target.value })}
                             className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                            autoComplete="off"
                         />
                     </div>
 
@@ -183,6 +189,7 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit, roles }: Use
                             value={formData.email || ''}
                             onChange={e => setFormData({ ...formData, email: e.target.value })}
                             className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                            autoComplete="off"
                         />
                     </div>
 
@@ -200,6 +207,7 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit, roles }: Use
                                 maxLength={8}
                                 placeholder="12345678"
                                 className="flex-1 px-3 py-2 border border-zinc-300 rounded-lg text-sm outline-none focus:ring-2 focus:ring-indigo-500"
+                                autoComplete="off"
                             />
                             <span className="flex items-center text-zinc-400">-</span>
                             <input
@@ -213,6 +221,7 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit, roles }: Use
                                 maxLength={1}
                                 placeholder="K"
                                 className="w-12 px-3 py-2 border border-zinc-300 rounded-lg text-sm text-center outline-none focus:ring-2 focus:ring-indigo-500"
+                                autoComplete="off"
                             />
                         </div>
                     </div>
@@ -235,6 +244,7 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit, roles }: Use
                                 placeholder={userToEdit ? 'Dejar vacío para no cambiar' : 'Mínimo 8 caracteres'}
                                 className={`w-full px-3 py-2 pr-10 border rounded-lg text-sm outline-none focus:ring-2 ${passwordError ? 'border-red-500 focus:ring-red-500' : 'border-zinc-300 focus:ring-indigo-500'
                                     }`}
+                                autoComplete="new-password"
                             />
                             <button
                                 type="button"
@@ -297,7 +307,7 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit, roles }: Use
                             id="userRole"
                             value={formData.role || ''}
                             onChange={e => setFormData({ ...formData, role: e.target.value })}
-                            disabled={userToEdit?.role === 'ADMIN'}
+                            disabled={userToEdit?.roleName === 'ADMIN'}
                             className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-zinc-100"
                         >
                             {roles.map(role => (
@@ -306,7 +316,7 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit, roles }: Use
                                 </option>
                             ))}
                         </select>
-                        {userToEdit?.role === 'ADMIN' && <p className="text-xs text-zinc-400 mt-1">El rol de administrador no puede ser modificado</p>}
+                        {userToEdit?.roleName === 'ADMIN' && <p className="text-xs text-zinc-400 mt-1">El rol de administrador no puede ser modificado</p>}
                     </div>
 
                     <div className="flex items-center gap-2">
@@ -315,12 +325,12 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit, roles }: Use
                             id="activeCheck"
                             checked={!!formData.active}
                             onChange={e => setFormData({ ...formData, active: e.target.checked })}
-                            disabled={userToEdit?.role === 'ADMIN'}
+                            disabled={userToEdit?.roleName === 'ADMIN'}
                             className="rounded text-indigo-600 focus:ring-indigo-500"
                         />
                         <label htmlFor="activeCheck" className="text-sm text-zinc-700">
                             Usuario Activo
-                            {userToEdit?.role === 'ADMIN' && <span className="ml-2 text-zinc-400">(No se puede desactivar admin)</span>}
+                            {userToEdit?.roleName === 'ADMIN' && <span className="ml-2 text-zinc-400">(No se puede desactivar admin)</span>}
                         </label>
                     </div>
                 </div>

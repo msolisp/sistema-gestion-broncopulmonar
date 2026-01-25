@@ -54,15 +54,25 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
         }
     }
 
+    const [maxSizeMB, setMaxSizeMB] = useState(1)
+
+    useEffect(() => {
+        import('@/lib/actions.system').then(({ getSystemConfig }) => {
+            getSystemConfig('MAX_FILE_SIZE_MB').then(val => {
+                if (val) setMaxSizeMB(parseInt(val, 10))
+            })
+        })
+    }, [])
+
     const handleFileSelection = (file: File) => {
         setLocalError(null)
         if (file.type !== 'application/pdf') {
             setLocalError('Solo se permiten archivos PDF')
             return
         }
-        const maxSize = 5 * 1024 * 1024 // 5MB
+        const maxSize = maxSizeMB * 1024 * 1024
         if (file.size > maxSize) {
-            setLocalError('El archivo no debe superar los 5MB')
+            setLocalError(`El archivo no debe superar los ${maxSizeMB}MB`)
             return
         }
         setFileName(file.name)
@@ -147,7 +157,7 @@ export default function PatientExamsUpload({ onSuccess }: { onSuccess?: () => vo
                                 </svg>
                                 <span className="text-indigo-600 font-medium">Seleccionar archivo</span>
                                 <span className="text-sm text-gray-500 mt-1">o arrastra y suelta</span>
-                                <span className="text-xs text-gray-400 mt-2">PDF (máx. 5MB)</span>
+                                <span className="text-xs text-gray-400 mt-2">PDF (máx. {maxSizeMB}MB)</span>
                             </div>
                         </label>
                         {fileName && (

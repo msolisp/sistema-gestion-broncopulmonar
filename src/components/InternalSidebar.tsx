@@ -25,7 +25,7 @@ export default function InternalSidebar({ user, permissions = [] }: InternalSide
     // Helper to check permission
     // If role is ADMIN, always return true
     const can = (action: string) => {
-        if (userRole === 'ADMIN') return true;
+        if (userRole?.toUpperCase() === 'ADMIN') return true;
         return permissions.includes(action);
     };
 
