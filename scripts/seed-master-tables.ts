@@ -1,107 +1,138 @@
+
 import { PrismaClient } from '@prisma/client';
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+import { REGIONS } from '../src/lib/chile-data';
 
-const prisma = new PrismaClient();
+// Load production env vars
+const envPath = path.join(process.cwd(), '.env.production.local');
+if (fs.existsSync(envPath)) {
+    console.log('Loading .env.production.local');
+    dotenv.config({ path: envPath });
+} else {
+    dotenv.config();
+}
 
-// Todas las regiones y comunas de Chile (346 comunas)
-const CHILE_DATA = {
-    "Arica y Parinacota": ["Arica", "Camarones", "Putre", "General Lagos"],
-    "Tarapacá": ["Iquique", "Alto Hospicio", "Pozo Almonte", "Camiña", "Colchane", "Huara", "Pica"],
-    "Antofagasta": ["Antofagasta", "Mejillones", "Sierra Gorda", "Taltal", "Calama", "Ollagüe", "San Pedro de Atacama", "Tocopilla", "María Elena"],
-    "Atacama": ["Copiapó", "Caldera", "Tierra Amarilla", "Chañaral", "Diego de Almagro", "Vallenar", "Alto del Carmen", "Freirina", "Huasco"],
-    "Coquimbo": ["La Serena", "Coquimbo", "Andacollo", "La Higuera", "Paiguano", "Vicuña", "Illapel", "Canela", "Los Vilos", "Salamanca", "Ovalle", "Combarbalá", "Monte Patria", "Punitaqui", "Río Hurtado"],
-    "Valparaíso": ["Valparaíso", "Casablanca", "Concón", "Juan Fernández", "Puchuncaví", "Quintero", "Viña del Mar", "Isla de Pascua", "Los Andes", "Calle Larga", "Rinconada", "San Esteban", "La Ligua", "Cabildo", "Papudo", "Petorca", "Zapallar", "Quillota", "Calera", "Hijuelas", "La Cruz", "Nogales", "San Antonio", "Algarrobo", "Cartagena", "El Quisco", "El Tabo", "Santo Domingo", "San Felipe", "Catemu", "Llaillay", "Panquehue", "Putaendo", "Santa María", "Quilpué", "Limache", "Olmué", "Villa Alemana"],
-    "Metropolitana": ["Santiago", "Cerrillos", "Cerro Navia", "Conchalí", "El Bosque", "Estación Central", "Huechuraba", "Independencia", "La Cisterna", "La Florida", "La Granja", "La Pintana", "La Reina", "Las Condes", "Lo Barnechea", "Lo Espejo", "Lo Prado", "Macul", "Maipú", "Ñuñoa", "Pedro Aguirre Cerda", "Peñalolén", "Providencia", "Pudahuel", "Quilicura", "Quinta Normal", "Recoleta", "Renca", "San Joaquín", "San Miguel", "San Ramón", "Vitacura", "Puente Alto", "Pirque", "San José de Maipo", "Colina", "Lampa", "Tiltil", "San Bernardo", "Buin", "Calera de Tango", "Paine", "Melipilla", "Alhué", "Curacaví", "María Pinto", "San Pedro", "Talagante", "El Monte", "Isla de Maipo", "Padre Hurtado", "Peñaflor"],
-    "O'Higgins": ["Rancagua", "Codegua", "Coinco", "Coltauco", "Doñihue", "Graneros", "Las Cabras", "Machalí", "Malloa", "Mostazal", "Olivar", "Peumo", "Pichidegua", "Quinta de Tilcoco", "Rengo", "Requínoa", "San Vicente", "Pichilemu", "La Estrella", "Litueche", "Marchigüe", "Navidad", "Paredones", "San Fernando", "Chépica", "Chimbarongo", "Lolol", "Nancagua", "Palmilla", "Peralillo", "Placilla", "Pumanque", "Santa Cruz"],
-    "Maule": ["Talca", "Constitución", "Curepto", "Empedrado", "Maule", "Pelarco", "Pencahue", "Río Claro", "San Clemente", "San Rafael", "Cauquenes", "Chanco", "Pelluhue", "Curicó", "Hualañé", "Licantén", "Molina", "Rauco", "Romeral", "Sagrada Familia", "Teno", "Vichuquén", "Linares", "Colbún", "Longaví", "Parral", "Retiro", "San Javier", "Villa Alegre", "Yerbas Buenas"],
-    "Ñuble": ["Chillán", "Bulnes", "Chillán Viejo", "El Carmen", "Pemuco", "Pinto", "Quillón", "San Ignacio", "Yungay", "Quirihue", "Cobquecura", "Coelemu", "Ninhue", "Portezuelo", "Ránquil", "Trehuaco", "San Carlos", "Coihueco", "Ñiquén", "San Fabián", "San Nicolás"],
-    "Biobío": ["Concepción", "Coronel", "Chiguayante", "Florida", "Hualqui", "Lota", "Penco", "San Pedro de la Paz", "Santa Juana", "Talcahuano", "Tomé", "Hualpén", "Lebu", "Arauco", "Cañete", "Contulmo", "Curanilahue", "Los Álamos", "Tirúa", "Los Ángeles", "Antuco", "Cabrero", "Laja", "Mulchén", "Nacimiento", "Negrete", "Quilaco", "Quilleco", "San Rosendo", "Santa Bárbara", "Tucapel", "Yumbel", "Alto Biobío"],
-    "Araucanía": ["Temuco", "Carahue", "Cunco", "Curarrehue", "Freire", "Galvarino", "Gorbea", "Lautaro", "Loncoche", "Melipeuco", "Nueva Imperial", "Padre Las Casas", "Perquenco", "Pitrufquén", "Pucón", "Saavedra", "Teodoro Schmidt", "Toltén", "Vilcún", "Villarrica", "Cholchol", "Angol", "Collipulli", "Curacautín", "Ercilla", "Lonquimay", "Los Sauces", "Lumaco", "Purén", "Renaico", "Traiguén", "Victoria"],
-    "Los Ríos": ["Valdivia", "Corral", "Lanco", "Los Lagos", "Máfil", "Mariquina", "Paillaco", "Panguipulli", "La Unión", "Futrono", "Lago Ranco", "Río Bueno"],
-    "Los Lagos": ["Puerto Montt", "Calbuco", "Cochamó", "Fresia", "Frutillar", "Los Muermos", "Llanquihue", "Maullín", "Puerto Varas", "Castro", "Ancud", "Chonchi", "Curaco de Vélez", "Dalcahue", "Puqueldón", "Queilén", "Quellón", "Quemchi", "Quinchao", "Osorno", "Puerto Octay", "Purranque", "Puyehue", "Río Negro", "San Juan de la Costa", "San Pablo", "Chaitén", "Futaleufú", "Hualaihué", "Palena"],
-    "Aysén": ["Coyhaique", "Lago Verde", "Aysén", "Cisnes", "Guaitecas", "Cochrane", "O'Higgins", "Tortel", "Chile Chico", "Río Ibáñez"],
-    "Magallanes": ["Punta Arenas", "Laguna Blanca", "Río Verde", "San Gregorio", "Cabo de Hornos", "Antártica", "Porvenir", "Primavera", "Timaukel", "Natales", "Torres del Paine"]
-};
+const prisma = new PrismaClient({
+    datasources: {
+        db: {
+            url: process.env.POSTGRES_URL || process.env.DATABASE_URL
+        }
+    }
+});
 
-// Previsiones de salud en Chile
+// Basic Seed Data
+const DIAGNOSTICOS_CIE10 = [
+    { codigo: 'J40', descripcion: 'Bronquitis, no especificada como aguda o crónica', categoria: 'Enfermedades del sistema respiratorio' },
+    { codigo: 'J41', descripcion: 'Bronquitis crónica simple y mucopurulenta', categoria: 'Enfermedades del sistema respiratorio' },
+    { codigo: 'J42', descripcion: 'Bronquitis crónica no especificada', categoria: 'Enfermedades del sistema respiratorio' },
+    { codigo: 'J43', descripcion: 'Enfisema', categoria: 'Enfermedades del sistema respiratorio' },
+    { codigo: 'J44', descripcion: 'Otras enfermedades pulmonares obstructivas crónicas', categoria: 'Enfermedades del sistema respiratorio' },
+    { codigo: 'J45', descripcion: 'Asma', categoria: 'Enfermedades del sistema respiratorio' },
+    { codigo: 'J46', descripcion: 'Estado asmático', categoria: 'Enfermedades del sistema respiratorio' },
+    { codigo: 'J47', descripcion: 'Bronquiectasia', categoria: 'Enfermedades del sistema respiratorio' },
+];
+
 const PREVISIONES = [
-    { nombre: "FONASA Tramo A", tipo: "PUBLICA" },
-    { nombre: "FONASA Tramo B", tipo: "PUBLICA" },
-    { nombre: "FONASA Tramo C", tipo: "PUBLICA" },
-    { nombre: "FONASA Tramo D", tipo: "PUBLICA" },
-    { nombre: "Isapre", tipo: "PRIVADA" },
-    { nombre: "Particular", tipo: "PARTICULAR" },
-    { nombre: "Otro sistema", tipo: "OTRO" }
+    { nombre: 'FONASA A', tipo: 'FONASA' },
+    { nombre: 'FONASA B', tipo: 'FONASA' },
+    { nombre: 'FONASA C', tipo: 'FONASA' },
+    { nombre: 'FONASA D', tipo: 'FONASA' },
+    { nombre: 'Banmédica', tipo: 'ISAPRE' },
+    { nombre: 'Colmena', tipo: 'ISAPRE' },
+    { nombre: 'Consalud', tipo: 'ISAPRE' },
+    { nombre: 'Cruz Blanca', tipo: 'ISAPRE' },
+    { nombre: 'Nueva Masvida', tipo: 'ISAPRE' },
+    { nombre: 'Vida Tres', tipo: 'ISAPRE' },
+    { nombre: 'PARTICULAR', tipo: 'PARTICULAR' },
+];
+
+const FERIADOS = [
+    { nombre: 'Año Nuevo', fecha: new Date('2026-01-01'), tipo: 'NACIONAL' },
+    { nombre: 'Viernes Santo', fecha: new Date('2026-04-03'), tipo: 'NACIONAL' },
+    { nombre: 'Sábado Santo', fecha: new Date('2026-04-04'), tipo: 'NACIONAL' },
+    { nombre: 'Día del Trabajo', fecha: new Date('2026-05-01'), tipo: 'NACIONAL' },
+    { nombre: 'Día de las Glorias Navales', fecha: new Date('2026-05-21'), tipo: 'NACIONAL' },
+    { nombre: 'Día de los Pueblos Indígenas', fecha: new Date('2026-06-21'), tipo: 'NACIONAL' },
+    { nombre: 'San Pedro y San Pablo', fecha: new Date('2026-06-29'), tipo: 'NACIONAL' },
+    { nombre: 'Día de la Virgen del Carmen', fecha: new Date('2026-07-16'), tipo: 'NACIONAL' },
+    { nombre: 'Asunción de la Virgen', fecha: new Date('2026-08-15'), tipo: 'NACIONAL' },
+    { nombre: 'Independencia Nacional', fecha: new Date('2026-09-18'), tipo: 'NACIONAL' },
+    { nombre: 'Día de las Glorias del Ejército', fecha: new Date('2026-09-19'), tipo: 'NACIONAL' },
+    { nombre: 'Encuentro de Dos Mundos', fecha: new Date('2026-10-12'), tipo: 'NACIONAL' },
+    { nombre: 'Día de las Iglesias Evangélicas', fecha: new Date('2026-10-31'), tipo: 'NACIONAL' },
+    { nombre: 'Día de Todos los Santos', fecha: new Date('2026-11-01'), tipo: 'NACIONAL' },
+    { nombre: 'Inmaculada Concepción', fecha: new Date('2026-12-08'), tipo: 'NACIONAL' },
+    { nombre: 'Navidad', fecha: new Date('2026-12-25'), tipo: 'NACIONAL' },
 ];
 
 async function main() {
-    console.log('🌎 Poblando tablas maestras de Chile...\n');
+    console.log('🚀 Seeding Master Tables...');
 
-    // 1. Poblar Comunas con sus regiones
-    console.log('📍 Creando comunas y regiones...');
-    let comunasCreated = 0;
+    try {
+        await prisma.$connect();
 
-    for (const [region, comunas] of Object.entries(CHILE_DATA)) {
-        for (const comuna of comunas) {
-            // Use findFirst + create pattern since there's no compound unique index
-            const existing = await prisma.comuna.findFirst({
-                where: {
-                    nombre: comuna,
-                    region: region
-                }
-            });
-
-            if (!existing) {
-                await prisma.comuna.create({
-                    data: {
-                        nombre: comuna,
-                        region: region,
-                        activo: true
-                    }
+        // 1. Seed Comunas
+        console.log('🌱 Seeding Comunas from Chile Data...');
+        let comunaCount = 0;
+        for (const region of REGIONS) {
+            for (const comunaName of region.communes) {
+                // Check if exists to avoid errors on duplicate runs
+                const existing = await prisma.comuna.findFirst({
+                    where: { nombre: comunaName }
                 });
-                comunasCreated++;
+
+                if (!existing) {
+                    await prisma.comuna.create({
+                        data: {
+                            nombre: comunaName,
+                            region: region.name,
+                            activo: true
+                        }
+                    });
+                    comunaCount++;
+                }
             }
         }
-    }
+        console.log(`   ✅ Seeded ${comunaCount} new comunas.`);
 
-    console.log(`✅ ${comunasCreated} comunas nuevas creadas\n`);
-
-    // 2. Poblar Previsiones
-    console.log('🏥 Creando previsiones de salud...');
-    let previsionesCreated = 0;
-
-    for (const prevision of PREVISIONES) {
-        const existing = await prisma.prevision.findFirst({
-            where: { nombre: prevision.nombre }
-        });
-
-        if (!existing) {
-            await prisma.prevision.create({
-                data: {
-                    nombre: prevision.nombre,
-                    tipo: prevision.tipo,
-                    activo: true
-                }
+        // 2. Seed Diagnosticos
+        console.log('🌱 Seeding Diagnosticos CIE-10 (Bronco subset)...');
+        for (const diag of DIAGNOSTICOS_CIE10) {
+            await prisma.diagnosticoCIE10.upsert({
+                where: { codigo: diag.codigo },
+                update: {},
+                create: { ...diag, activo: true }
             });
-            previsionesCreated++;
         }
+        console.log('   ✅ Diagnosticos seeded.');
+
+        // 3. Seed Previsiones
+        console.log('🌱 Seeding Previsiones...');
+        for (const prev of PREVISIONES) {
+            const existing = await prisma.prevision.findFirst({ where: { nombre: prev.nombre } });
+            if (!existing) {
+                await prisma.prevision.create({ data: { ...prev, activo: true } });
+            }
+        }
+        console.log('   ✅ Previsiones seeded.');
+
+        // 4. Seed Feriados
+        console.log('🌱 Seeding Feriados 2026...');
+        for (const feriado of FERIADOS) {
+            const existing = await prisma.feriado.findFirst({ where: { nombre: feriado.nombre, fecha: feriado.fecha } });
+            if (!existing) {
+                await prisma.feriado.create({ data: { ...feriado, activo: true } });
+            }
+        }
+        console.log('   ✅ Feriados seeded.');
+
+    } catch (e: any) {
+        console.error('❌ Error seeding master tables:', e.message);
+    } finally {
+        await prisma.$disconnect();
     }
-
-    console.log(`✅ ${previsionesCreated} previsiones nuevas creadas\n`);
-
-    console.log('🎉 Tablas maestras pobladas exitosamente!');
-    console.log('\n📊 Resumen:');
-    console.log(`   - Regiones: ${Object.keys(CHILE_DATA).length}`);
-    console.log(`   - Comunas totales: ${Object.values(CHILE_DATA).flat().length}`);
-    console.log(`   - Comunas nuevas: ${comunasCreated}`);
-    console.log(`   - Previsiones nuevas: ${previsionesCreated}`);
 }
 
-main()
-    .then(async () => {
-        await prisma.$disconnect();
-    })
-    .catch(async (e) => {
-        console.error(e);
-        await prisma.$disconnect();
-        process.exit(1);
-    });
+main();

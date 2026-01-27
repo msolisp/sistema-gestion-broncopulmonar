@@ -827,10 +827,7 @@ export default function DashboardContent({
                                 {activeMasterTable === 'medicamentos' && <MedicamentosManager />}
                                 {activeMasterTable === 'insumos' && <InsumosManager />}
                                 {activeMasterTable === 'feriados' && <FeriadosManager />}
-                                {activeMasterTable === 'diagnosticos' && <DiagnosticosManager />}
-                                {activeMasterTable === 'medicamentos' && <MedicamentosManager />}
-                                {activeMasterTable === 'insumos' && <InsumosManager />}
-                                {activeMasterTable === 'feriados' && <FeriadosManager />}
+
                                 {activeMasterTable === 'configuracion' && <SystemConfigManager />}
                             </div>
                         )}

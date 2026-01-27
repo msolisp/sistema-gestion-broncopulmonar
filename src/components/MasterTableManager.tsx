@@ -105,7 +105,8 @@ export default function MasterTableManager({
                 <div className="flex gap-3 w-full sm:w-auto">
                     <button
                         onClick={handleExport}
-                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-zinc-200 text-zinc-700 text-sm font-medium rounded-xl hover:bg-zinc-50 hover:border-zinc-300 transition-all shadow-sm"
+                        disabled={filteredData.length === 0}
+                        className="flex items-center gap-2 px-4 py-2.5 bg-white border border-zinc-200 text-zinc-700 text-sm font-medium rounded-xl hover:bg-zinc-50 hover:border-zinc-300 transition-all shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Download className="w-4 h-4" />
                         <span className="hidden sm:inline">Exportar</span>
