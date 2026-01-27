@@ -7,6 +7,8 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import { validarRutChileno } from '@/lib/validators';
 
+import { logAction } from '@/lib/logger';
+
 export async function adminCreateSystemUser(prevState: any, formData: FormData) {
     const session = await auth();
     if (!session?.user?.email) return { message: 'Unauthorized' };
@@ -100,6 +102,7 @@ export async function adminCreateSystemUser(prevState: any, formData: FormData) 
         }
 
         revalidatePath('/admin/users');
+        await logAction('USER_CREATED', `Created user ${vEmail} with role ${vRole}`, null, session.user.email);
         return { message: 'Success' };
     } catch (e) {
         console.error(e);
@@ -143,43 +146,42 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
 
     const { id: vId, name: vName, email: vEmail, role: vRole, active: vActive, rut: vRut, region: vRegion, commune: vCommune, address: vAddress, password: vPassword } = validation.data;
 
-    // Fetch existing user to get Persona ID
-    const existingUser = await prisma.usuarioSistema.findUnique({
-        where: { id: vId },
-        include: { persona: true }
-    });
+    try {
+        const existingUser = await prisma.usuarioSistema.findUnique({
+            where: { id: vId },
+            include: { persona: true }
+        });
 
-    if (!existingUser) {
-        return { message: 'Usuario no encontrado' };
-    }
-
-    const personaId = existingUser.personaId;
-
-    // Check Email Uniqueness
-    const emailExists = await prisma.persona.findFirst({
-        where: {
-            email: vEmail,
-            id: { not: personaId }
+        if (!existingUser) {
+            return { message: 'Usuario no encontrado' };
         }
-    });
-    if (emailExists) {
-        return { message: 'El email ya está en uso' };
-    }
 
-    // Check RUT Uniqueness if properly provided
-    if (vRut && validarRutChileno(vRut)) {
-        const rutExists = await prisma.persona.findFirst({
+        const personaId = existingUser.personaId;
+
+        // Check Email Uniqueness
+        const emailExists = await prisma.persona.findFirst({
             where: {
-                rut: vRut,
+                email: vEmail,
                 id: { not: personaId }
             }
         });
-        if (rutExists) {
-            return { message: 'RUT ya está en uso' };
+        if (emailExists) {
+            return { message: 'El email ya está en uso' };
         }
-    }
 
-    try {
+        // Check RUT Uniqueness if properly provided
+        if (vRut && validarRutChileno(vRut)) {
+            const rutExists = await prisma.persona.findFirst({
+                where: {
+                    rut: vRut,
+                    id: { not: personaId }
+                }
+            });
+            if (rutExists) {
+                return { message: 'RUT ya está en uso' };
+            }
+        }
+
         // Name handling: split into nombre and apellidoPaterno
         // We explicitly set apellidoMaterno to null to prevent "name growth" bug
         // where old maternal last names persisted and appended recursively.
@@ -237,10 +239,11 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
 
         revalidatePath('/admin/users');
         revalidatePath('/dashboard');
+        await logAction('USER_UPDATED', `Updated user ${vEmail} (ID: ${vId})`, null, session.user.email);
         return { message: 'Success' };
-    } catch (e) {
+    } catch (e: any) {
         console.error('[adminUpdateSystemUser] Error:', e);
-        return { message: 'Error al actualizar usuario' };
+        return { message: e.message || 'Error al actualizar usuario' };
     }
 }
 
@@ -283,6 +286,7 @@ export async function adminDeleteSystemUser(id: string) {
         console.log('[DELETE_USER] Success');
         revalidatePath('/admin/users');
         revalidatePath('/dashboard');
+        await logAction('USER_DELETED', `Deleted user ID: ${id}`, null, session.user.email);
         return { message: 'Success' };
     } catch (e: any) {
         console.error('[DELETE_USER] Error:', e);
