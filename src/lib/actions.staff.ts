@@ -190,9 +190,22 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
         const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
         // Check if role is changing
-        const curUser = await prisma.usuarioSistema.findUnique({ where: { id: vId } });
+        const curUser = await prisma.usuarioSistema.findUnique({
+            where: { id: vId },
+            include: { persona: true, rol_rel: true }
+        });
         const oldRoleId = curUser?.rolId;
         const newRoleId = vRole;
+
+        // Calculate Diff
+        const changes: Record<string, { old: any, new: any }> = {};
+        if (curUser) {
+            const oldName = `${curUser.persona.nombre} ${curUser.persona.apellidoPaterno} ${curUser.persona.apellidoMaterno || ''}`.trim();
+            if (oldName !== vName.trim()) changes['Nombre'] = { old: oldName, new: vName.trim() };
+            if (curUser.persona.email !== vEmail) changes['Email'] = { old: curUser.persona.email, new: vEmail };
+            if (curUser.rolId !== vRole) changes['Rol'] = { old: curUser.rol_rel.nombre, new: vRole }; // Note: vRole is ID, ideal would be name lookup but ID is okay or we can fetch name
+            if (curUser.activo !== vActive) changes['Estado'] = { old: curUser.activo ? 'Activo' : 'Inactivo', new: vActive ? 'Activo' : 'Inactivo' };
+        }
 
         const result = await updateStaffUser(vId, {
             email: vEmail,
@@ -239,7 +252,13 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
 
         revalidatePath('/admin/users');
         revalidatePath('/dashboard');
-        await logAction('USER_UPDATED', `Updated user ${vEmail} (ID: ${vId})`, null, session.user.email);
+
+        await logAction(
+            'USER_UPDATED',
+            JSON.stringify(changes), // Pass diff as details
+            null,
+            session.user.email
+        );
         return { message: 'Success' };
     } catch (e: any) {
         console.error('[adminUpdateSystemUser] Error:', e);
