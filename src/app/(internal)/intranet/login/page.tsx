@@ -3,6 +3,7 @@
 import { Suspense, useState, useActionState, useEffect } from 'react'
 import { useFormStatus } from 'react-dom'
 import { authenticate } from '@/lib/actions.auth'
+import { getSystemConfig } from '@/lib/actions.system'
 import { Monitor } from 'lucide-react'
 import TurnstileCaptcha from '@/components/TurnstileCaptcha'
 import VisualCaptcha from '@/components/VisualCaptcha'
@@ -16,8 +17,15 @@ function LoginContent() {
     const [captchaToken, setCaptchaToken] = useState<string>('')
     const [visualCaptchaValue, setVisualCaptchaValue] = useState<string>('')
     const [visualCaptchaToken, setVisualCaptchaToken] = useState<string>('')
+    const [isTurnstileEnabled, setIsTurnstileEnabled] = useState(true)
 
     useEffect(() => {
+        const checkConfig = async () => {
+            const enabled = await getSystemConfig('TURNSTILE_ENABLED');
+            setIsTurnstileEnabled(enabled !== 'false');
+        };
+        checkConfig();
+
         if (searchParams.get('passwordChanged') === 'true') {
             setSuccessMessage('Contraseña cambiada exitosamente. Por favor, inicia sesión nuevamente.')
         }
@@ -73,8 +81,6 @@ function LoginContent() {
 
                         <VisualCaptcha onCaptchaChange={handleVisualCaptchaChange} />
 
-                        <TurnstileCaptcha onVerify={(token) => setCaptchaToken(token)} />
-
                         {successMessage && (
                             <div className="flex items-center space-x-2 text-sm text-green-600 bg-green-50 p-3 rounded border border-green-100">
                                 <p>{successMessage}</p>
@@ -85,7 +91,13 @@ function LoginContent() {
                                 <p>{errorMessage}</p>
                             </div>
                         )}
-                        <LoginButton disabled={!captchaToken && process.env.NODE_ENV === 'production'} />
+                        <LoginButton disabled={((isTurnstileEnabled && !captchaToken) || !visualCaptchaValue) && process.env.NODE_ENV === 'production'} />
+
+                        {isTurnstileEnabled && (
+                            <div className="mt-4">
+                                <TurnstileCaptcha onVerify={(token) => setCaptchaToken(token)} />
+                            </div>
+                        )}
                     </form>
 
                     <div className="mt-8 text-center border-t border-slate-100 pt-4">

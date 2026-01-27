@@ -72,6 +72,12 @@ jest.mock('./logger', () => ({
     logAction: jest.fn(),
 }));
 
+// Mock system config
+jest.mock('./actions.system', () => ({
+    getSystemConfig: jest.fn().mockResolvedValue('true'),
+    updateSystemConfig: jest.fn().mockResolvedValue({ success: true }),
+}));
+
 // Mock rate-limit
 jest.mock('@/lib/rate-limit', () => ({
     rateLimit: jest.fn(),
@@ -128,6 +134,49 @@ describe('Auth Actions', () => {
 
             await authenticate(undefined, fd);
             expect(signIn).toHaveBeenCalled();
+        });
+
+        it('skips turnstile if disabled in config', async () => {
+            const { getSystemConfig } = require('./actions.system');
+            getSystemConfig.mockResolvedValue('false');
+
+            // Setup valid user
+            (prisma.persona.findUnique as jest.Mock).mockResolvedValue({
+                activo: true,
+                usuarioSistema: { rol_rel: { nombre: 'MEDICO' }, activo: true },
+                credencial: {}
+            });
+
+            const fd = new FormData();
+            fd.append('email', 'test@test.com');
+            fd.append('password', 'password');
+            fd.append('portal_type', 'internal');
+            fd.append('visual-captcha-value', 'valid'); // bypass visual check or mock it
+
+            // To bypass visual check easily, we can mock import('jose') logic or just ensure we don't fail there.
+            // Actually, authenticate calls verifyVisualCaptcha.
+
+            await authenticate(undefined, fd);
+            expect(signIn).toHaveBeenCalled();
+        });
+
+        it('requires turnstile if enabled in config and in production', async () => {
+            const { getSystemConfig } = require('./actions.system');
+            getSystemConfig.mockResolvedValue('true');
+            const originalNodeEnv = process.env.NODE_ENV;
+            process.env.NODE_ENV = 'production';
+
+            const fd = new FormData();
+            fd.append('email', 'test@test.com');
+            fd.append('password', 'password');
+            fd.append('portal_type', 'internal');
+            // Missing cf-turnstile-response
+
+            const res = await authenticate(undefined, fd);
+            expect(res).toBe('Captcha inválido. Por favor intenta de nuevo.');
+            expect(signIn).not.toHaveBeenCalled();
+
+            process.env.NODE_ENV = originalNodeEnv;
         });
 
         it('validates visual captcha failure', async () => {

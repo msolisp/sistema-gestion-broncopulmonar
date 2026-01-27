@@ -9,6 +9,7 @@ import { redirect } from 'next/navigation';
 import { logAction } from './logger';
 import { loggers } from './structured-logger';
 import { LoginSchema } from './schemas';
+import { getSystemConfig } from './actions.system';
 
 export async function logout() {
     await signOut({ redirectTo: '/login' });
@@ -61,37 +62,48 @@ export async function authenticate(
         }
 
         // 2. Turnstile Captcha Verification (Second layer)
-        // Skip Turnstile validation in E2E testing mode
+        // Skip Turnstile validation in E2E testing mode or if disabled in config
+        const isTurnstileDisabled = (await getSystemConfig('TURNSTILE_ENABLED')) === 'false';
         const captchaToken = formData.get('cf-turnstile-response');
-        if (process.env.E2E_TESTING !== 'true' && (process.env.NODE_ENV === 'production' || captchaToken)) {
+
+        if (process.env.E2E_TESTING !== 'true' && !isTurnstileDisabled && (process.env.NODE_ENV === 'production' || captchaToken)) {
             if (!captchaToken) {
                 return 'Captcha inválido. Por favor intenta de nuevo.';
             }
 
             const secretKey = process.env.TURNSTILE_SECRET_KEY;
+            console.log('DEBUG: Turnstile Secret Key present:', !!secretKey);
             if (!secretKey) {
                 console.error('TURNSTILE_SECRET_KEY missing in server env');
                 // Fail open or closed depending on security policy. Start with warning but allow if missing config to prevent lockout during setup.
                 // But user requested Strict security.
                 if (process.env.NODE_ENV === 'production') return 'Error interno de configuración de seguridad.';
             } else {
-                const ip = (await (await import('next/headers')).headers()).get("x-forwarded-for") || "127.0.0.1";
+                const headers = await (await import('next/headers')).headers();
+                const ip = headers.get("x-forwarded-for") || headers.get("x-real-ip") || "127.0.0.1";
                 const verifyUrl = 'https://challenges.cloudflare.com/turnstile/v0/siteverify';
 
-                const formData = new URLSearchParams();
-                formData.append('secret', secretKey);
-                formData.append('response', captchaToken as string);
-                formData.append('remoteip', ip);
+                console.log('DEBUG: Verifying Turnstile token with Cloudflare...');
+                const verifyParams = new URLSearchParams();
+                verifyParams.append('secret', secretKey);
+                verifyParams.append('response', captchaToken as string);
+                verifyParams.append('remoteip', ip);
 
                 const result = await fetch(verifyUrl, {
-                    body: formData,
+                    body: verifyParams,
                     method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
                 });
                 const outcome = await result.json();
+                console.log('DEBUG: Turnstile Outcome:', JSON.stringify(outcome));
+
                 if (!outcome.success) {
                     console.warn(`Turnstile validation failed for ${email}:`, outcome);
                     return 'Verificación de seguridad fallida.';
                 }
+                console.log('DEBUG: Turnstile validation successful');
             }
         }
 

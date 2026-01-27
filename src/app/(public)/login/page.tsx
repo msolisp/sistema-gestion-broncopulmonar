@@ -1,9 +1,10 @@
 
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useActionState, useState, useEffect } from 'react'
 import { useFormStatus } from 'react-dom'
 import { authenticate } from '@/lib/actions.auth'
+import { getSystemConfig } from '@/lib/actions.system'
 import TurnstileCaptcha from '@/components/TurnstileCaptcha'
 import VisualCaptcha from '@/components/VisualCaptcha'
 
@@ -12,6 +13,15 @@ export default function LoginPage() {
     const [captchaToken, setCaptchaToken] = useState<string>('')
     const [visualCaptchaValue, setVisualCaptchaValue] = useState<string>('')
     const [visualCaptchaToken, setVisualCaptchaToken] = useState<string>('')
+    const [isTurnstileEnabled, setIsTurnstileEnabled] = useState(true)
+
+    useEffect(() => {
+        const checkConfig = async () => {
+            const enabled = await getSystemConfig('TURNSTILE_ENABLED');
+            setIsTurnstileEnabled(enabled !== 'false');
+        };
+        checkConfig();
+    }, []);
 
     const handleVisualCaptchaChange = (value: string, token: string) => {
         setVisualCaptchaValue(value);
@@ -64,11 +74,13 @@ export default function LoginPage() {
                                 <p>{errorMessage}</p>
                             </div>
                         )}
-                        <LoginButton disabled={(!captchaToken || !visualCaptchaValue) && process.env.NODE_ENV === 'production'} />
+                        <LoginButton disabled={((isTurnstileEnabled && !captchaToken) || !visualCaptchaValue) && process.env.NODE_ENV === 'production'} />
 
-                        <div className="relative z-0">
-                            <TurnstileCaptcha onVerify={(token) => setCaptchaToken(token)} />
-                        </div>
+                        {isTurnstileEnabled && (
+                            <div className="relative z-0">
+                                <TurnstileCaptcha onVerify={(token) => setCaptchaToken(token)} />
+                            </div>
+                        )}
                     </form>
 
                     <div className="mt-6 text-center text-sm text-zinc-500">
