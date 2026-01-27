@@ -3,7 +3,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Send, Bot, User, Loader2, Sparkles } from 'lucide-react';
+import { Send, Bot, User, Loader2, Sparkles, TriangleAlert } from 'lucide-react';
 
 type Message = {
     role: 'user' | 'assistant';
@@ -145,7 +145,19 @@ export default function AssistantPage() {
                             {msg.role === 'user' ? (
                                 <p>{msg.content}</p>
                             ) : (
-                                <ReactMarkdown>{msg.content}</ReactMarkdown>
+                                <div className="space-y-2">
+                                    {msg.content.includes('[[INTERNET_SOURCE]]') && (
+                                        <div className="flex items-start gap-2 p-3 bg-amber-50 text-amber-800 rounded-lg border border-amber-200 text-xs font-medium">
+                                            <TriangleAlert className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                                Advertencia: La información generada se obtuvo desde fuentes de datos de Internet, ya que no se encontró en la base de conocimiento local.
+                                            </div>
+                                        </div>
+                                    )}
+                                    <ReactMarkdown>
+                                        {msg.content.replace('[[INTERNET_SOURCE]]', '')}
+                                    </ReactMarkdown>
+                                </div>
                             )}
                         </div>
 
