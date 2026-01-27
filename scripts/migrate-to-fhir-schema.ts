@@ -30,6 +30,141 @@ interface MigrationStats {
 
 const isDryRun = process.argv.includes('--dry-run');
 
+// Interfaces for Legacy Data
+interface LegacyAppointment {
+    id: string;
+    patientId: string;
+    date: Date;
+    status: string;
+    notes: string;
+}
+
+interface LegacyExam {
+    id: string;
+    patientId: string;
+    centerName: string;
+    doctorName: string;
+    examDate: Date;
+    fileUrl: string;
+    fileName: string;
+    reviewed: boolean;
+    source: string;
+    uploadedByUserId: string;
+}
+
+interface LegacyNotification {
+    id: string;
+    patientId: string;
+    type: string;
+    title: string;
+    message: string;
+    examId: string;
+    read: boolean;
+}
+
+interface LegacyPulmonaryTest {
+    id: string;
+    patientId: string;
+    date: Date;
+    cvfValue: number;
+    cvfPercent: number;
+    vef1Value: number;
+    vef1Percent: number;
+    dlcoPercent: number;
+    walkDistance: number;
+    spo2Rest: number;
+    spo2Final: number;
+    heartRateRest: number;
+    heartRateFinal: number;
+    notes: string;
+}
+
+interface LegacyPatient {
+    id: string;
+    rut: string;
+    name: string;
+    email: string;
+    phone: string;
+    address: string;
+    commune: string;
+    region: string;
+    birthDate: Date;
+    gender: string;
+    healthSystem: string;
+    diagnosisDate: Date;
+    cota: number;
+    password?: string;
+    active: boolean;
+    appointments: LegacyAppointment[];
+    exams: LegacyExam[];
+    notifications: LegacyNotification[];
+    pulmonaryTests: LegacyPulmonaryTest[];
+}
+
+interface LegacyUser {
+    id: string;
+    rut: string;
+    name: string;
+    email: string;
+    password?: string;
+    role: string;
+    address: string;
+    commune: string;
+    region: string;
+    active: boolean;
+    mustChangePassword?: boolean;
+}
+
+async function getLegacyPatients(): Promise<LegacyPatient[]> {
+    console.log('  ⬇️  Fetching legacy patients...');
+    const patientsRaw = await prisma.$queryRaw<any[]>`SELECT * FROM "Patient"`;
+    if (!patientsRaw.length) return [];
+
+    console.log('  ⬇️  Fetching legacy relations...');
+    const appointmentsRaw = await prisma.$queryRaw<LegacyAppointment[]>`SELECT * FROM "Appointment"`;
+    const examsRaw = await prisma.$queryRaw<LegacyExam[]>`SELECT * FROM "MedicalExam"`;
+    const notificationsRaw = await prisma.$queryRaw<LegacyNotification[]>`SELECT * FROM "Notification"`;
+    const testsRaw = await prisma.$queryRaw<LegacyPulmonaryTest[]>`SELECT * FROM "PulmonaryTest"`;
+
+    // Group relations by patientId
+    const appointmentsMap = new Map<string, LegacyAppointment[]>();
+    appointmentsRaw.forEach(a => {
+        if (!appointmentsMap.has(a.patientId)) appointmentsMap.set(a.patientId, []);
+        appointmentsMap.get(a.patientId)!.push(a);
+    });
+
+    const examsMap = new Map<string, LegacyExam[]>();
+    examsRaw.forEach(e => {
+        if (!examsMap.has(e.patientId)) examsMap.set(e.patientId, []);
+        examsMap.get(e.patientId)!.push(e);
+    });
+
+    const notificationsMap = new Map<string, LegacyNotification[]>();
+    notificationsRaw.forEach(n => {
+        if (!notificationsMap.has(n.patientId)) notificationsMap.set(n.patientId, []);
+        notificationsMap.get(n.patientId)!.push(n);
+    });
+
+    const testsMap = new Map<string, LegacyPulmonaryTest[]>();
+    testsRaw.forEach(t => {
+        if (!testsMap.has(t.patientId)) testsMap.set(t.patientId, []);
+        testsMap.get(t.patientId)!.push(t);
+    });
+
+    return patientsRaw.map(p => ({
+        ...p,
+        appointments: appointmentsMap.get(p.id) || [],
+        exams: examsMap.get(p.id) || [],
+        notifications: notificationsMap.get(p.id) || [],
+        pulmonaryTests: testsMap.get(p.id) || []
+    }));
+}
+
+async function getLegacyUsers(): Promise<LegacyUser[]> {
+    const usersRaw = await prisma.$queryRaw<LegacyUser[]>`SELECT * FROM "User"`;
+    return usersRaw;
+}
+
 async function migrateData(): Promise<MigrationStats> {
     const stats: MigrationStats = {
         personasCreated: 0,
@@ -51,14 +186,8 @@ async function migrateData(): Promise<MigrationStats> {
         // ═══════════════════════════════════════════════════════
         console.log('📋 Step 1: Migrating Patients...');
 
-        const patients = await prisma.patient.findMany({
-            include: {
-                appointments: true,
-                exams: true,
-                notifications: true,
-                pulmonaryTests: true
-            }
-        });
+        const patients = await getLegacyPatients();
+        console.log(`  Found ${patients.length} legacy patients.`);
 
         for (const patient of patients) {
             try {
@@ -91,14 +220,20 @@ async function migrateData(): Promise<MigrationStats> {
                     });
 
                     // 2. Create Credencial
-                    await prisma.credencial.create({
-                        data: {
-                            personaId: persona.id,
-                            passwordHash: patient.password,
-                            tipoAcceso: 'PACIENTE'
+                    if (patient.password) {
+                        try {
+                            await prisma.credencial.create({
+                                data: {
+                                    personaId: persona.id,
+                                    passwordHash: patient.password,
+                                    tipoAcceso: 'PACIENTE'
+                                }
+                            });
+                            stats.credencialesCreated++;
+                        } catch (e) {
+                            // Ignore if already exists
                         }
-                    });
-                    stats.credencialesCreated++;
+                    }
 
                     // 3. Create FichaClinica
                     const fichaClinica = await prisma.fichaClinica.create({
@@ -197,7 +332,8 @@ async function migrateData(): Promise<MigrationStats> {
         // ═══════════════════════════════════════════════════════
         console.log('\n👥 Step 2: Migrating Users (Staff)...');
 
-        const users = await prisma.user.findMany();
+        const users = await getLegacyUsers();
+        console.log(`  Found ${users.length} legacy users.`);
 
         for (const user of users) {
             try {
@@ -232,11 +368,11 @@ async function migrateData(): Promise<MigrationStats> {
                     });
 
                     // Check if Credencial already exists (might have been created for patient)
-                    const existingCredencial = await prisma.credencial.findUnique({
+                    let existingCredencial = await prisma.credencial.findUnique({
                         where: { personaId: persona.id }
                     });
 
-                    if (!existingCredencial) {
+                    if (!existingCredencial && user.password) {
                         // 2. Create Credencial
                         await prisma.credencial.create({
                             data: {
@@ -258,14 +394,25 @@ async function migrateData(): Promise<MigrationStats> {
                         'ENFERMERA': 'ENFERMERA'
                     };
 
-                    await prisma.usuarioSistema.create({
-                        data: {
-                            personaId: persona.id,
-                            rol: rolMap[user.role] || 'RECEPCIONISTA',
-                            creadoPor: 'MIGRATION_SCRIPT'
-                        }
-                    });
-                    stats.usuariosSistemaCreated++;
+                    // Need to find Role ID
+                    const rolNombre = rolMap[user.role] || 'RECEPCIONISTA';
+                    let rol = await prisma.rol.findUnique({ where: { nombre: rolNombre } });
+
+                    if (!rol) {
+                        // fallback or create?
+                        console.warn(`Rol ${rolNombre} not found for User ${user.email}. Using default.`);
+                    }
+
+                    if (rol) {
+                        await prisma.usuarioSistema.create({
+                            data: {
+                                personaId: persona.id,
+                                rolId: rol.id,
+                                creadoPor: 'MIGRATION_SCRIPT'
+                            }
+                        });
+                        stats.usuariosSistemaCreated++;
+                    }
                 }
 
                 console.log(`  ✅ Migrated user: ${user.rut} - ${user.email}`);

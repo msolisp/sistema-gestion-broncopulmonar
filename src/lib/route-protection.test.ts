@@ -10,8 +10,14 @@ jest.mock('next/navigation', () => ({
 jest.mock('@/lib/prisma', () => ({
     __esModule: true,
     default: {
-        rolePermission: {
-            findMany: jest.fn()
+        permisoRol: {
+            findFirst: jest.fn()
+        },
+        permisoUsuario: {
+            findUnique: jest.fn()
+        },
+        usuarioSistema: {
+            findFirst: jest.fn()
         }
     }
 }));
@@ -69,7 +75,8 @@ describe('protectRoute', () => {
             expect(result.hasAccess).toBe(true);
             expect(result.userRole).toBe('ADMIN');
             expect(mockRedirect).not.toHaveBeenCalled();
-            expect(mockPrisma.rolePermission.findMany).not.toHaveBeenCalled();
+            expect(mockPrisma.permisoRol.findFirst).not.toHaveBeenCalled();
+            expect(mockPrisma.permisoUsuario.findUnique).not.toHaveBeenCalled();
         });
     });
 
@@ -147,29 +154,26 @@ describe('protectRoute', () => {
     });
 
     describe('Permission-based access checks', () => {
-        it('should redirect non-admin user even if they have permission (temporary admin-only restriction)', async () => {
+        it('should allow non-admin user if they have permission', async () => {
             mockAuth.mockResolvedValue({
                 user: { email: 'kine@example.com', role: 'KINESIOLOGIST' }
             } as any);
-            mockPrisma.rolePermission.findMany.mockResolvedValue([
-                { action: 'Ver Pacientes' },
-                { action: 'Editar Pacientes' }
-            ] as any);
+            mockPrisma.usuarioSistema.findFirst.mockResolvedValue({ id: 'u1' } as any);
+            mockPrisma.permisoUsuario.findUnique.mockResolvedValue({ activo: true } as any);
 
-            await expect(
-                protectRoute({ requiredPermission: 'Ver Pacientes' })
-            ).rejects.toThrow('REDIRECT:/dashboard');
+            const result = await protectRoute({ requiredPermission: 'Ver Pacientes' });
 
-            // NOTE: Once PermisoUsuario is fully implemented, this test should be reverted to expect true.
+            expect(result.hasAccess).toBe(true);
+            expect(mockRedirect).not.toHaveBeenCalled();
         });
 
         it('should redirect if user does NOT have required permission', async () => {
             mockAuth.mockResolvedValue({
                 user: { email: 'recep@example.com', role: 'RECEPTIONIST' }
             } as any);
-            mockPrisma.rolePermission.findMany.mockResolvedValue([
-                { action: 'Ver Pacientes' }
-            ] as any);
+            mockPrisma.usuarioSistema.findFirst.mockResolvedValue({ id: 'u1' } as any);
+            mockPrisma.permisoUsuario.findUnique.mockResolvedValue(null); // No explicit perm
+            mockPrisma.permisoRol.findFirst.mockResolvedValue(null); // No role perm
             mockRedirect.mockImplementation((url: string) => {
                 throw new Error(`REDIRECT:${url}`);
             });
@@ -183,9 +187,9 @@ describe('protectRoute', () => {
             mockAuth.mockResolvedValue({
                 user: { email: 'recep@example.com', role: 'RECEPTIONIST' }
             } as any);
-            mockPrisma.rolePermission.findMany.mockResolvedValue([
-                { action: 'Ver Pacientes' }
-            ] as any);
+            mockPrisma.usuarioSistema.findFirst.mockResolvedValue({ id: 'u1' } as any);
+            mockPrisma.permisoUsuario.findUnique.mockResolvedValue(null);
+            mockPrisma.permisoRol.findFirst.mockResolvedValue(null);
             mockRedirect.mockImplementation((url: string) => {
                 throw new Error(`REDIRECT:${url}`);
             });
@@ -202,7 +206,9 @@ describe('protectRoute', () => {
             mockAuth.mockResolvedValue({
                 user: { email: 'user@example.com', role: 'KINESIOLOGIST' }
             } as any);
-            mockPrisma.rolePermission.findMany.mockResolvedValue([]);
+            mockPrisma.usuarioSistema.findFirst.mockResolvedValue({ id: 'u1' } as any);
+            mockPrisma.permisoUsuario.findUnique.mockResolvedValue(null);
+            mockPrisma.permisoRol.findFirst.mockResolvedValue(null);
             mockRedirect.mockImplementation((url: string) => {
                 throw new Error(`REDIRECT:${url}`);
             });
@@ -218,27 +224,30 @@ describe('protectRoute', () => {
             mockAuth.mockResolvedValue({
                 user: { email: 'kine@example.com', role: 'KINESIOLOGIST' }
             } as any);
-            mockPrisma.rolePermission.findMany.mockResolvedValue([
-                { action: 'Ver Pacientes' }
-            ] as any);
+            mockPrisma.usuarioSistema.findFirst.mockResolvedValue({ id: 'u1' } as any);
+            // Even if user has permission, the current implementation might restrict strict role access if not implemented fully?
+            // Actually, allowedRoles check logic is: if valid role, proceed. Then check permission.
+            // If permission check fails, redirect.
 
-            await expect(
-                protectRoute({
-                    allowedRoles: ['KINESIOLOGIST', 'ADMIN'],
-                    requiredPermission: 'Ver Pacientes'
-                })
-            ).rejects.toThrow('REDIRECT:/dashboard');
-            // expect(result.hasAccess).toBe(true);
-            // expect(mockRedirect).not.toHaveBeenCalled();
+            // To pass check, we need permission
+            mockPrisma.permisoUsuario.findUnique.mockResolvedValue({ activo: true } as any);
+
+            const result = await protectRoute({
+                allowedRoles: ['KINESIOLOGIST', 'ADMIN'],
+                requiredPermission: 'Ver Pacientes'
+            });
+
+            expect(result.hasAccess).toBe(true);
+            expect(mockRedirect).not.toHaveBeenCalled();
         });
 
         it('should fail if role is allowed but permission is missing', async () => {
             mockAuth.mockResolvedValue({
                 user: { email: 'kine@example.com', role: 'KINESIOLOGIST' }
             } as any);
-            mockPrisma.rolePermission.findMany.mockResolvedValue([
-                { action: 'Ver Pacientes' }
-            ] as any);
+            mockPrisma.usuarioSistema.findFirst.mockResolvedValue({ id: 'u1' } as any);
+            mockPrisma.permisoUsuario.findUnique.mockResolvedValue(null);
+            mockPrisma.permisoRol.findFirst.mockResolvedValue(null);
             mockRedirect.mockImplementation((url: string) => {
                 throw new Error(`REDIRECT:${url}`);
             });

@@ -18,6 +18,10 @@ jest.mock('@/lib/prisma', () => {
         },
         permisoRol: {
             findMany: jest.fn(),
+            upsert: jest.fn(),
+        },
+        rol: {
+            findFirst: jest.fn(),
         },
         permisoUsuario: {
             create: jest.fn(),

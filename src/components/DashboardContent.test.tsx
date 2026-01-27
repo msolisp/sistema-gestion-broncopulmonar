@@ -61,10 +61,12 @@ describe('DashboardContent', () => {
     });
 
     it('updates URL when switching tabs', () => {
+        const pushStateSpy = jest.spyOn(window.history, 'pushState');
         render(<DashboardContent {...defaultProps} />);
         const tab = screen.getByText('Usuarios y Roles');
         fireEvent.click(tab);
-        expect(mockRouter.push).toHaveBeenCalledWith(expect.stringContaining('?tab=Usuarios%20y%20Roles'), expect.anything());
+        expect(pushStateSpy).toHaveBeenCalledWith({}, '', expect.stringContaining('tab=Usuarios'));
+        pushStateSpy.mockRestore();
     });
 
     it('renders PermissionMatrix when on Seguridad tab', () => {

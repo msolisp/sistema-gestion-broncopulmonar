@@ -12,10 +12,28 @@ async function seed() {
 
     // Cleanup
     try {
-        await prisma.credencial.deleteMany({ where: { persona: { email } } });
-        await prisma.usuarioSistema.deleteMany({ where: { persona: { email } } });
-        await prisma.persona.delete({ where: { email } });
-    } catch (e) { }
+        const adminPersona = await prisma.persona.findUnique({ where: { email } });
+        if (adminPersona) {
+            await prisma.credencial.deleteMany({ where: { personaId: adminPersona.id } });
+            await prisma.usuarioSistema.deleteMany({ where: { personaId: adminPersona.id } });
+            await prisma.persona.delete({ where: { email } });
+        }
+    } catch (e) {
+        console.warn('Cleanup warning:', e);
+    }
+
+    // Get Admin Role
+    let adminRole = await prisma.rol.findUnique({ where: { nombre: 'ADMIN' } });
+    if (!adminRole) {
+        console.log('Creating ADMIN role...');
+        adminRole = await prisma.rol.create({
+            data: {
+                nombre: 'ADMIN',
+                descripcion: 'Administrador del Sistema',
+                activo: true
+            }
+        });
+    }
 
     // Create Persona
     const persona = await prisma.persona.create({
@@ -47,7 +65,7 @@ async function seed() {
     await prisma.usuarioSistema.create({
         data: {
             personaId: persona.id,
-            rol: 'ADMIN',
+            rolId: adminRole.id,
             registroProfesional: 'ADM-001',
             creadoPor: 'SEED_STAFF',
             especialidad: 'Gestión'

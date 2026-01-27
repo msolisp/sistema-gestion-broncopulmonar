@@ -1,5 +1,5 @@
 
-import fetch from 'node-fetch';
+
 import { wrapper } from 'axios-cookiejar-support';
 import axios from 'axios';
 import { CookieJar } from 'tough-cookie';
@@ -50,7 +50,7 @@ async function testLogin(email: string) {
         }
 
     } catch (e) {
-        console.error('Login Error:', e.message);
+        console.error('Login Error:', (e as Error).message);
         return null;
     }
 }

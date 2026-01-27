@@ -21,6 +21,10 @@ export const authConfig = {
                 return true;
             }
 
+            if (isLoggedIn && (auth?.user as any).mustChangePassword) {
+                return Response.redirect(new URL('/change-password', nextUrl));
+            }
+
             if (isOnInternal) {
                 if (isLoggedIn) {
                     if (auth.user.role === 'PACIENTE') return Response.redirect(new URL('/portal', nextUrl));
