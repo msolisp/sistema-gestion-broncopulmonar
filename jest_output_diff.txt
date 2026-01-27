@@ -1,0 +1,67 @@
+  console.error
+    [DEBUG TEST] session: true true
+
+      114 | export async function adminUpdateSystemUser(prevState: any, formData: FormData) {
+      115 |     const session = await auth();
+    > 116 |     console.error('[DEBUG TEST] session:', !!session, !!session?.user?.email);
+          |             ^
+      117 |     if (!session?.user?.email) return { message: 'Unauthorized' };
+      118 |     const userRole = (session.user as any).role;
+      119 |     if (userRole !== 'ADMIN') {
+
+      at error (src/lib/actions.staff.ts:116:13)
+      at Object.<anonymous> (src/lib/actions.staff.test.ts:328:9)
+
+  console.error
+    [DEBUG TEST] validation failed: {"_errors":["Invalid input: expected string, received null","Invalid input: expected \"\""]}
+
+      141 |     const validation = AdminUpdateSystemUserSchema.safeParse(dataToValidate);
+      142 |     if (!validation.success) {
+    > 143 |         console.error('[DEBUG TEST] validation failed:', JSON.stringify(validation.error.format()));
+          |                 ^
+      144 |         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
+      145 |     }
+      146 |     console.error('[DEBUG TEST] validation passed');
+
+      at error (src/lib/actions.staff.ts:143:17)
+      at Object.<anonymous> (src/lib/actions.staff.test.ts:328:9)
+
+FAIL src/lib/actions.staff.test.ts
+  Staff Actions
+    ✕ logs diff on user update (40 ms)
+    ○ skipped seeds permissions on create
+    ○ skipped updates permissions on role change
+    ○ skipped does NOT update permissions if role is same
+    ○ skipped deletes user successfully
+    ○ skipped prevents self-deletion
+    Permission Management
+      ○ skipped updates role permissions for all users in role
+      ○ skipped seeds default permissions
+      ○ skipped gets my permissions
+      ○ skipped returns empty permissions if not logged in
+    Validation Errors
+      ○ skipped create fails with invalid RUT
+
+  ● Staff Actions › logs diff on user update
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "USER_UPDATED", StringContaining "\"Nombre\"", Anything, "admin@test.com"
+
+    Number of calls: 0
+
+      328 |         await adminUpdateSystemUser(null, formData);
+      329 |
+    > 330 |         expect(logAction).toHaveBeenCalledWith(
+          |                           ^
+      331 |             'USER_UPDATED',
+      332 |             expect.stringContaining('"Nombre"'),
+      333 |             expect.anything(),
+
+      at Object.toHaveBeenCalledWith (src/lib/actions.staff.test.ts:330:27)
+
+Test Suites: 1 failed, 1 total
+Tests:       1 failed, 10 skipped, 11 total
+Snapshots:   0 total
+Time:        0.96 s
+Ran all test suites matching src/lib/actions.staff.test.ts with tests matching "logs diff on user update".

@@ -1,0 +1,1433 @@
+
+> temp_app@0.1.0 test
+> jest src/components/PatientsTable.test.tsx src/lib/actions.staff.test.ts src/app/api/chat/route.test.ts src/lib/patient-actions.test.ts src/components/AssistantContent.test.tsx
+
+PASS src/app/api/chat/route.test.ts
+  ● Console
+
+    console.log
+      API: route.ts loaded
+
+      at Object.log (src/app/api/chat/route.ts:7:9)
+
+    console.log
+      API: POST called
+
+      at log (src/app/api/chat/route.ts:9:13)
+
+    console.log
+      API: POST called
+
+      at log (src/app/api/chat/route.ts:9:13)
+
+    console.log
+      API: POST called
+
+      at log (src/app/api/chat/route.ts:9:13)
+
+    console.log
+      API: POST called
+
+      at log (src/app/api/chat/route.ts:9:13)
+
+    console.log
+      API: POST called
+
+      at log (src/app/api/chat/route.ts:9:13)
+
+    console.log
+      API: POST called
+
+      at log (src/app/api/chat/route.ts:9:13)
+
+    console.log
+      API: POST called
+
+      at log (src/app/api/chat/route.ts:9:13)
+
+FAIL src/lib/patient-actions.test.ts
+  ● Console
+
+    console.error
+      Error uploading patient exam: TypeError: file.arrayBuffer is not a function
+          at arrayBuffer (/Users/max/Documents/Sistemas Hospital/Broncopulmonar/Sistema_Gestion_Broncopulmonar/src/lib/patient-actions.ts:72:40)
+          at processTicksAndRejections (node:internal/process/task_queues:103:5)
+          at Object.<anonymous> (/Users/max/Documents/Sistemas Hospital/Broncopulmonar/Sistema_Gestion_Broncopulmonar/src/lib/patient-actions.test.ts:92:28)
+
+      135 |         }
+      136 |     } catch (error: any) {
+    > 137 |         console.error('Error uploading patient exam:', error)
+          |                 ^
+      138 |         return { message: `Error: ${error.message || 'Error desconocido'}` }
+      139 |     }
+      140 | }
+
+      at error (src/lib/patient-actions.ts:137:17)
+      at Object.<anonymous> (src/lib/patient-actions.test.ts:92:28)
+
+  ● Patient Actions › uploadPatientExam › creates an exam and a notification successfully
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: undefined
+
+      92 |             const result = await uploadPatientExam(null, formData);
+      93 |
+    > 94 |             expect(result.success).toBe(true);
+         |                                    ^
+      95 |             expect(prisma.examenMedico.create).toHaveBeenCalled();
+      96 |             expect(prisma.notification.create).toHaveBeenCalledWith(expect.objectContaining({
+      97 |                 data: expect.objectContaining({
+
+      at Object.toBe (src/lib/patient-actions.test.ts:94:36)
+
+FAIL src/lib/actions.staff.test.ts
+  ● Console
+
+    console.log
+      [DELETE_USER] Attempting to delete user user-to-delete by admin@test.com
+
+      at log (src/lib/actions.staff.ts:269:17)
+
+    console.log
+      [DELETE_USER] Target person email: other@test.com, Current user email: admin@test.com
+
+      at log (src/lib/actions.staff.ts:282:17)
+
+    console.log
+      [DELETE_USER] Success
+
+      at log (src/lib/actions.staff.ts:299:17)
+
+    console.log
+      [DELETE_USER] Attempting to delete user my-user-id by admin@test.com
+
+      at log (src/lib/actions.staff.ts:269:17)
+
+    console.log
+      [DELETE_USER] Target person email: admin@test.com, Current user email: admin@test.com
+
+      at log (src/lib/actions.staff.ts:282:17)
+
+    console.log
+      [DELETE_USER] Self-deletion attempt blocked
+
+      at log (src/lib/actions.staff.ts:285:21)
+
+  ● Staff Actions › logs diff on user update
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "USER_UPDATED", StringContaining "\"Nombre\"", Anything, "admin@test.com"
+
+    Number of calls: 0
+
+      328 |         await adminUpdateSystemUser(null, formData);
+      329 |
+    > 330 |         expect(logAction).toHaveBeenCalledWith(
+          |                           ^
+      331 |             'USER_UPDATED',
+      332 |             expect.stringContaining('"Nombre"'),
+      333 |             expect.anything(),
+
+      at Object.toHaveBeenCalledWith (src/lib/actions.staff.test.ts:330:27)
+
+PASS src/components/AssistantContent.test.tsx
+PASS src/components/PatientsTable.test.tsx
+  ● Console
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      65 |                 if (res.ok) {
+      66 |                     const data = await res.json()
+    > 67 |                     setRegions(data)
+         |                     ^
+      68 |                 }
+      69 |             } catch (error) {
+      70 |                 console.error('Error loading regions:', error)
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setRegions (src/components/PatientsTable.tsx:67:21)
+
+    console.error
+      An update to PatientsTable inside a test was not wrapped in act(...).
+      
+      When testing, code that causes React state updates should be wrapped into act(...):
+      
+      act(() => {
+        /* fire events that update state */
+      });
+      /* assert on the output */
+      
+      This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+      70 |                 console.error('Error loading regions:', error)
+      71 |             } finally {
+    > 72 |                 setLoadingRegions(false)
+         |                 ^
+      73 |             }
+      74 |         }
+      75 |         loadRegions()
+
+      at node_modules/react-dom/cjs/react-dom-client.development.js:18758:19
+      at runWithFiberInDEV (node_modules/react-dom/cjs/react-dom-client.development.js:874:13)
+      at warnIfUpdatesNotWrappedWithActDEV (node_modules/react-dom/cjs/react-dom-client.development.js:18757:9)
+      at scheduleUpdateOnFiber (node_modules/react-dom/cjs/react-dom-client.development.js:16409:11)
+      at dispatchSetStateInternal (node_modules/react-dom/cjs/react-dom-client.development.js:9170:13)
+      at dispatchSetState (node_modules/react-dom/cjs/react-dom-client.development.js:9127:7)
+      at setLoadingRegions (src/components/PatientsTable.tsx:72:17)
+
+
+Test Suites: 2 failed, 3 passed, 5 total
+Tests:       2 failed, 49 passed, 51 total
+Snapshots:   0 total
+Time:        5.242 s, estimated 6 s
+Ran all test suites matching src/components/PatientsTable.test.tsx|src/lib/actions.staff.test.ts|src/app/api/chat/route.test.ts|src/lib/patient-actions.test.ts|src/components/AssistantContent.test.tsx.

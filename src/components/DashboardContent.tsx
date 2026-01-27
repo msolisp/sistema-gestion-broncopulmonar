@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
-import { Users, FileText, X, Check, Shield, Eye, EyeOff, FileDown, Disc, Save } from "lucide-react"
+import { Users, FileText, X, Check, Shield, Eye, EyeOff, FileDown, Disc, Save, CheckCircle, AlertCircle } from "lucide-react"
 import jsPDF from 'jspdf';
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -125,15 +125,25 @@ function LogDetailsModal({ isOpen, onClose, log }: { isOpen: boolean, onClose: (
                                     </thead>
                                     <tbody className="divide-y divide-zinc-100">
                                         {Object.entries(detailsObj).map(([key, val]: [string, any]) => {
-                                            const isDiff = val && typeof val === 'object' && 'old' in val && 'new' in val;
+                                            const isDiff = val && typeof val === 'object' && ('old' in val || 'new' in val);
+                                            const oldVal = isDiff ? val.old : null;
+                                            const newVal = isDiff ? val.new : val;
+
+                                            const formatValue = (v: any) => {
+                                                if (v === null || v === undefined) return '(vacío)';
+                                                if (typeof v === 'boolean') return v ? 'Sí' : 'No';
+                                                if (typeof v === 'object') return JSON.stringify(v);
+                                                return v.toString();
+                                            };
+
                                             return (
                                                 <tr key={key} className="hover:bg-zinc-50/50 transition-colors">
                                                     <td className="px-4 py-3 font-medium text-zinc-700">{key}</td>
                                                     <td className="px-4 py-3 text-zinc-500 italic">
-                                                        {isDiff ? (val.old?.toString() || '(vacío)') : '-'}
+                                                        {isDiff ? formatValue(oldVal) : '-'}
                                                     </td>
                                                     <td className="px-4 py-3 text-indigo-600 font-medium">
-                                                        {isDiff ? (val.new?.toString() || '(vacío)') : (typeof val === 'string' ? val : JSON.stringify(val))}
+                                                        {formatValue(newVal)}
                                                     </td>
                                                 </tr>
                                             );
@@ -368,6 +378,7 @@ function RoleManagement({ initialRoles }: { initialRoles: any[] }) {
     // Delete Confirmation State
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [roleToDelete, setRoleToDelete] = useState<string | null>(null);
+    const [status, setStatus] = useState<{ type: 'success' | 'error' | null, message: string | null }>({ type: null, message: null });
 
     const router = useRouter();
 
@@ -377,28 +388,32 @@ function RoleManagement({ initialRoles }: { initialRoles: any[] }) {
 
     const handleCreateRole = async () => {
         if (!formData.nombre) return;
+        setStatus({ type: null, message: null });
         const res = await createRole(formData);
         if (res.message === 'Success') {
             setIsAdding(false);
             setFormData({ nombre: '', descripcion: '' });
+            setStatus({ type: 'success', message: 'Rol creado correctamente' });
             router.refresh();
+            setTimeout(() => setStatus({ type: null, message: null }), 3000);
         } else {
-            alert(res.message);
+            setStatus({ type: 'error', message: res.message });
         }
     };
 
     const handleUpdateRole = async () => {
         if (!currentRoleId || !formData.nombre) return;
-        // Optimization: We could add an updateRole action if not exists, but for now we assume create/delete. 
-        // Wait, the user asked for EDIT. I need to use updateRole action I saw in dynamic-rbac.ts
+        setStatus({ type: null, message: null });
         const res = await updateRole(currentRoleId, { ...formData, activo: true });
         if (res.message === 'Success') {
             setIsEditing(false);
             setFormData({ nombre: '', descripcion: '' });
             setCurrentRoleId(null);
+            setStatus({ type: 'success', message: 'Rol actualizado correctamente' });
             router.refresh();
+            setTimeout(() => setStatus({ type: null, message: null }), 3000);
         } else {
-            alert(res.message);
+            setStatus({ type: 'error', message: res.message });
         }
     };
 
@@ -409,11 +424,14 @@ function RoleManagement({ initialRoles }: { initialRoles: any[] }) {
 
     const confirmDeleteRole = async () => {
         if (!roleToDelete) return;
+        setStatus({ type: null, message: null });
         const res = await deleteRole(roleToDelete);
         if (res.message === 'Success') {
+            setStatus({ type: 'success', message: 'Rol eliminado correctamente' });
             router.refresh();
+            setTimeout(() => setStatus({ type: null, message: null }), 3000);
         } else {
-            alert(res.message); // Should ideally be a toast, but keeping consistent for errors for now
+            setStatus({ type: 'error', message: res.message });
         }
         setIsDeleteModalOpen(false);
         setRoleToDelete(null);
@@ -428,6 +446,13 @@ function RoleManagement({ initialRoles }: { initialRoles: any[] }) {
 
     return (
         <div className="space-y-6">
+            {status.message && (
+                <div className={`flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium animate-in fade-in slide-in-from-top-2 border ${status.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-red-50 text-red-800 border-red-200'
+                    }`}>
+                    {status.type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+                    {status.message}
+                </div>
+            )}
             <div className="flex justify-between items-center">
                 <h3 className="font-bold text-zinc-800">Mantenedor de Roles</h3>
                 {!isAdding && !isEditing && (
@@ -841,7 +866,8 @@ export default function DashboardContent({
                                     { key: 'medicamentos', title: 'Medicamentos' },
                                     { key: 'insumos', title: 'Insumos' },
                                     { key: 'feriados', title: 'Feriados' },
-                                    { key: 'configuracion', title: 'Configuración subida de archivos' },
+                                    { key: 'configuracion', title: 'Archivos' },
+                                    { key: 'seguridad-config', title: 'Seguridad y Accesibilidad' },
                                 ].map((item) => (
                                     <div key={item.key} onClick={() => setActiveMasterTable(item.key)} className="p-6 border rounded-xl hover:border-indigo-500 cursor-pointer">
                                         <h4 className="font-bold">{item.title}</h4>
@@ -858,7 +884,8 @@ export default function DashboardContent({
                                 {activeMasterTable === 'insumos' && <InsumosManager />}
                                 {activeMasterTable === 'feriados' && <FeriadosManager />}
 
-                                {activeMasterTable === 'configuracion' && <SystemConfigManager />}
+                                {activeMasterTable === 'configuracion' && <SystemConfigManager mode="file" />}
+                                {activeMasterTable === 'seguridad-config' && <SystemConfigManager mode="security" />}
                             </div>
                         )}
                     </div>

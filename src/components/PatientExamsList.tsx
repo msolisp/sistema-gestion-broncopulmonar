@@ -1,6 +1,6 @@
 'use client'
 
-import { Eye, Pencil, Trash2 } from 'lucide-react'
+import { Eye, Pencil, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react'
 
 import { useState } from 'react'
 // import { MedicalExam } from '@prisma/client' // FHIR uses ExamenMedico
@@ -33,20 +33,24 @@ export default function PatientExamsList({ exams, onDelete }: PatientExamsListPr
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
     const [editingExam, setEditingExam] = useState<MedicalExam | null>(null)
     const [isSaving, setIsSaving] = useState(false)
+    const [status, setStatus] = useState<{ type: 'success' | 'error' | null, message: string | null }>({ type: null, message: null });
 
     const handleDelete = async (examId: string) => {
         setDeletingId(examId)
+        setStatus({ type: null, message: null })
         try {
             const result = await deletePatientExam(examId)
             if (result.success) {
+                setStatus({ type: 'success', message: 'Examen eliminado correctamente' })
                 onDelete?.()
                 setShowDeleteConfirm(null)
                 router.refresh()
+                setTimeout(() => setStatus({ type: null, message: null }), 3000)
             } else {
-                alert(result.message)
+                setStatus({ type: 'error', message: result.message })
             }
         } catch (error) {
-            alert('Error al eliminar el examen')
+            setStatus({ type: 'error', message: 'Error al eliminar el examen' })
         } finally {
             setDeletingId(null)
         }
@@ -57,18 +61,21 @@ export default function PatientExamsList({ exams, onDelete }: PatientExamsListPr
         if (!editingExam) return
 
         setIsSaving(true)
+        setStatus({ type: null, message: null })
         const formData = new FormData(e.currentTarget)
 
         try {
             const result = await updatePatientExam(editingExam.id, formData)
             if (result.success) {
+                setStatus({ type: 'success', message: 'Examen actualizado correctamente' })
                 setEditingExam(null)
                 router.refresh()
+                setTimeout(() => setStatus({ type: null, message: null }), 3000)
             } else {
-                alert(result.message)
+                setStatus({ type: 'error', message: result.message })
             }
         } catch (error) {
-            alert('Error al actualizar el examen')
+            setStatus({ type: 'error', message: 'Error al actualizar el examen' })
         } finally {
             setIsSaving(false)
         }
@@ -100,10 +107,17 @@ export default function PatientExamsList({ exams, onDelete }: PatientExamsListPr
 
     return (
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
-            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200">
+            <div className="px-6 py-4 bg-gray-50 border-b border-gray-200 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">
                     Mis Exámenes ({exams.length})
                 </h3>
+                {status.message && (
+                    <div className={`flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium animate-in fade-in slide-in-from-right-2 ${status.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'
+                        }`}>
+                        {status.type === 'success' ? <CheckCircle2 className="w-4 h-4" /> : <AlertCircle className="w-4 h-4" />}
+                        {status.message}
+                    </div>
+                )}
             </div>
 
             <div className="overflow-x-auto">

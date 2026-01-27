@@ -1,0 +1,171 @@
+  console.error
+    [DEBUG TEST] session: true true
+
+      114 | export async function adminUpdateSystemUser(prevState: any, formData: FormData) {
+      115 |     const session = await auth();
+    > 116 |     console.error('[DEBUG TEST] session:', !!session, !!session?.user?.email);
+          |             ^
+      117 |     if (!session?.user?.email) return { message: 'Unauthorized' };
+      118 |     const userRole = (session.user as any).role;
+      119 |     if (userRole !== 'ADMIN') {
+
+      at error (src/lib/actions.staff.ts:116:13)
+      at Object.<anonymous> (src/lib/actions.staff.test.ts:124:9)
+
+  console.error
+    [DEBUG TEST] validation failed: {"_errors":["Invalid input: expected string, received null","Invalid input: expected \"\""]}
+
+      141 |     const validation = AdminUpdateSystemUserSchema.safeParse(dataToValidate);
+      142 |     if (!validation.success) {
+    > 143 |         console.error('[DEBUG TEST] validation failed:', JSON.stringify(validation.error.format()));
+          |                 ^
+      144 |         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
+      145 |     }
+      146 |     console.error('[DEBUG TEST] validation passed');
+
+      at error (src/lib/actions.staff.ts:143:17)
+      at Object.<anonymous> (src/lib/actions.staff.test.ts:124:9)
+
+  console.error
+    [DEBUG TEST] session: true true
+
+      114 | export async function adminUpdateSystemUser(prevState: any, formData: FormData) {
+      115 |     const session = await auth();
+    > 116 |     console.error('[DEBUG TEST] session:', !!session, !!session?.user?.email);
+          |             ^
+      117 |     if (!session?.user?.email) return { message: 'Unauthorized' };
+      118 |     const userRole = (session.user as any).role;
+      119 |     if (userRole !== 'ADMIN') {
+
+      at error (src/lib/actions.staff.ts:116:13)
+      at Object.<anonymous> (src/lib/actions.staff.test.ts:148:9)
+
+  console.error
+    [DEBUG TEST] validation failed: {"_errors":["Invalid input: expected string, received null","Invalid input: expected \"\""]}
+
+      141 |     const validation = AdminUpdateSystemUserSchema.safeParse(dataToValidate);
+      142 |     if (!validation.success) {
+    > 143 |         console.error('[DEBUG TEST] validation failed:', JSON.stringify(validation.error.format()));
+          |                 ^
+      144 |         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
+      145 |     }
+      146 |     console.error('[DEBUG TEST] validation passed');
+
+      at error (src/lib/actions.staff.ts:143:17)
+      at Object.<anonymous> (src/lib/actions.staff.test.ts:148:9)
+
+  console.log
+    [DELETE_USER] Attempting to delete user user-to-delete by admin@test.com
+
+      at log (src/lib/actions.staff.ts:270:17)
+
+  console.log
+    [DELETE_USER] Target person email: other@test.com, Current user email: admin@test.com
+
+      at log (src/lib/actions.staff.ts:283:17)
+
+  console.log
+    [DELETE_USER] Success
+
+      at log (src/lib/actions.staff.ts:300:17)
+
+  console.log
+    [DELETE_USER] Attempting to delete user my-user-id by admin@test.com
+
+      at log (src/lib/actions.staff.ts:270:17)
+
+  console.log
+    [DELETE_USER] Target person email: admin@test.com, Current user email: admin@test.com
+
+      at log (src/lib/actions.staff.ts:283:17)
+
+  console.log
+    [DELETE_USER] Self-deletion attempt blocked
+
+      at log (src/lib/actions.staff.ts:286:21)
+
+  console.error
+    [DEBUG TEST] session: true true
+
+      114 | export async function adminUpdateSystemUser(prevState: any, formData: FormData) {
+      115 |     const session = await auth();
+    > 116 |     console.error('[DEBUG TEST] session:', !!session, !!session?.user?.email);
+          |             ^
+      117 |     if (!session?.user?.email) return { message: 'Unauthorized' };
+      118 |     const userRole = (session.user as any).role;
+      119 |     if (userRole !== 'ADMIN') {
+
+      at error (src/lib/actions.staff.ts:116:13)
+      at Object.<anonymous> (src/lib/actions.staff.test.ts:328:9)
+
+  console.error
+    [DEBUG TEST] validation failed: {"_errors":["Invalid input: expected string, received null","Invalid input: expected \"\""],"rut":{"_errors":["RUT inválido"]}}
+
+      141 |     const validation = AdminUpdateSystemUserSchema.safeParse(dataToValidate);
+      142 |     if (!validation.success) {
+    > 143 |         console.error('[DEBUG TEST] validation failed:', JSON.stringify(validation.error.format()));
+          |                 ^
+      144 |         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
+      145 |     }
+      146 |     console.error('[DEBUG TEST] validation passed');
+
+      at error (src/lib/actions.staff.ts:143:17)
+      at Object.<anonymous> (src/lib/actions.staff.test.ts:328:9)
+
+FAIL src/lib/actions.staff.test.ts
+  Staff Actions
+    ✓ seeds permissions on create (14 ms)
+    ✕ updates permissions on role change (86 ms)
+    ✓ does NOT update permissions if role is same (4 ms)
+    ✓ deletes user successfully (6 ms)
+    ✓ prevents self-deletion (11 ms)
+    ✕ logs diff on user update (11 ms)
+    Permission Management
+      ✓ updates role permissions for all users in role (5 ms)
+      ✓ seeds default permissions (1 ms)
+      ✓ gets my permissions (2 ms)
+      ✓ returns empty permissions if not logged in (1 ms)
+    Validation Errors
+      ✓ create fails with invalid RUT (2 ms)
+
+  ● Staff Actions › updates permissions on role change
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: {"where": {"usuarioId": "user-sys-123"}}
+
+    Number of calls: 0
+
+      124 |         await adminUpdateSystemUser(null, formData);
+      125 |
+    > 126 |         expect(prisma.permisoUsuario.deleteMany).toHaveBeenCalledWith({ where: { usuarioId: 'user-sys-123' } });
+          |                                                  ^
+      127 |         expect(prisma.permisoUsuario.create).toHaveBeenCalled();
+      128 |     });
+      129 |
+
+      at Object.toHaveBeenCalledWith (src/lib/actions.staff.test.ts:126:50)
+
+  ● Staff Actions › logs diff on user update
+
+    expect(jest.fn()).toHaveBeenCalledWith(...expected)
+
+    Expected: "USER_UPDATED", StringContaining "\"Nombre\"", Anything, "admin@test.com"
+
+    Number of calls: 0
+
+      328 |         await adminUpdateSystemUser(null, formData);
+      329 |
+    > 330 |         expect(logAction).toHaveBeenCalledWith(
+          |                           ^
+      331 |             'USER_UPDATED',
+      332 |             expect.stringContaining('"Nombre"'),
+      333 |             expect.anything(),
+
+      at Object.toHaveBeenCalledWith (src/lib/actions.staff.test.ts:330:27)
+
+Test Suites: 1 failed, 1 total
+Tests:       2 failed, 9 passed, 11 total
+Snapshots:   0 total
+Time:        1.235 s
+Ran all test suites matching src/lib/actions.staff.test.ts.

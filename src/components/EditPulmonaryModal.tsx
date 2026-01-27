@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Pencil, Activity, Wind, Waves, X } from 'lucide-react';
+import { Pencil, Activity, Wind, Waves, X, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { updatePulmonaryRecord } from '@/lib/pulmonary';
 import { format } from 'date-fns';
 
@@ -27,27 +27,39 @@ interface EditPulmonaryModalProps {
 export function EditPulmonaryModal({ patientId, record }: EditPulmonaryModalProps) {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [status, setStatus] = useState<{ type: 'success' | 'error' | null, message: string | null }>({ type: null, message: null });
 
     async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
         setLoading(true);
+        setStatus({ type: null, message: null });
+
         const formData = new FormData(event.currentTarget);
         formData.append('patientId', patientId);
         formData.append('recordId', record.id);
 
-        console.log('Sending update form data...');
-        const result = await updatePulmonaryRecord(formData);
-        console.log('Server response:', result);
+        try {
+            console.log('Sending update form data...');
+            const result = await updatePulmonaryRecord(formData);
+            console.log('Server response:', result);
 
-        if (result?.message && !result.message.includes('exitosamente')) {
-            console.error('Error from server:', result.message);
-            alert(result.message);
+            if (result?.message && !result.message.includes('exitosamente')) {
+                console.error('Error from server:', result.message);
+                setStatus({ type: 'error', message: result.message });
+                setLoading(false);
+                return;
+            }
+
+            setStatus({ type: 'success', message: 'Registro actualizado correctamente' });
+            setTimeout(() => {
+                setLoading(false);
+                setOpen(false);
+                setStatus({ type: null, message: null });
+            }, 1500);
+        } catch (err) {
+            setStatus({ type: 'error', message: 'Error de conexión con el servidor' });
             setLoading(false);
-            return;
         }
-
-        setLoading(false);
-        setOpen(false);
     }
 
     // Format date for input default value (YYYY-MM-DD)
@@ -76,6 +88,13 @@ export function EditPulmonaryModal({ patientId, record }: EditPulmonaryModalProp
 
                         {/* Scrollable Content */}
                         <div className="overflow-y-auto p-6">
+                            {status.message && (
+                                <div className={`mb-6 flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium animate-in fade-in slide-in-from-top-2 ${status.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
+                                    }`}>
+                                    {status.type === 'success' ? <CheckCircle2 className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+                                    {status.message}
+                                </div>
+                            )}
                             <form id="edit-pulmonary-form" onSubmit={handleSubmit} className="space-y-6">
                                 <div className="grid grid-cols-2 gap-4">
                                     <div className="space-y-2">

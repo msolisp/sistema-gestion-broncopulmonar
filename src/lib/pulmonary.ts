@@ -43,19 +43,28 @@ export async function addPulmonaryRecord(formData: FormData) {
     const dlcoPercent = formData.get('dlcoPercent') ? parseInt(formData.get('dlcoPercent') as string) : null;
 
     try {
+        console.log("DEBUG: Resolving Ficha for personaId:", patientId);
         // Resolve FichaClinica ID from Patient ID (Persona ID)
         const ficha = await prisma.fichaClinica.findUnique({
             where: { personaId: patientId }
         });
 
         if (!ficha) {
+            console.error("DEBUG: Ficha non-existent for personaId:", patientId);
             return { message: 'Ficha clínica no encontrada para este paciente' };
         }
 
-        await prisma.pruebaFuncionPulmonar.create({
+        const testDate = new Date(date);
+        if (isNaN(testDate.getTime())) {
+            console.error("DEBUG: Invalid date received:", date);
+            return { message: 'Fecha de examen inválida' };
+        }
+
+        console.log("DEBUG: Creating record in DB...");
+        const newRecord = await prisma.pruebaFuncionPulmonar.create({
             data: {
                 fichaClinicaId: ficha.id,
-                fecha: new Date(date),
+                fecha: testDate,
                 notas: notes,
                 walkDistance,
                 spo2Rest,

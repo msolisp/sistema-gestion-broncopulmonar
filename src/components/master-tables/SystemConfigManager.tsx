@@ -4,7 +4,11 @@ import { useState, useEffect } from 'react';
 import { Save, AlertCircle, CheckCircle2, Settings, Shield } from 'lucide-react';
 import { getSystemConfig, updateSystemConfig } from '@/lib/actions.system';
 
-export default function SystemConfigManager() {
+interface SystemConfigManagerProps {
+    mode?: 'full' | 'file' | 'security';
+}
+
+export default function SystemConfigManager({ mode = 'full' }: SystemConfigManagerProps) {
     const [maxSize, setMaxSize] = useState('1');
     const [turnstileEnabled, setTurnstileEnabled] = useState(true);
     const [isLoading, setIsLoading] = useState(true);
@@ -68,64 +72,76 @@ export default function SystemConfigManager() {
                     <Settings className="w-6 h-6" />
                 </div>
                 <div>
-                    <h2 className="text-xl font-bold text-zinc-900">Configuración subida de archivos</h2>
-                    <p className="text-sm text-zinc-500">Parámetros globales de la aplicación</p>
+                    <h2 className="text-xl font-bold text-zinc-900">
+                        {mode === 'security' ? 'Seguridad y Accesibilidad' :
+                            mode === 'file' ? 'Configuración de Archivos' :
+                                'Configuración Global'}
+                    </h2>
+                    <p className="text-sm text-zinc-500">
+                        {mode === 'security' ? 'Parámetros de seguridad del portal' :
+                            mode === 'file' ? 'Límites y cuotas de almacenamiento' :
+                                'Parámetros globales de la aplicación'}
+                    </p>
                 </div>
             </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-zinc-200 overflow-hidden">
                 <form onSubmit={handleSubmit} className="p-6 space-y-8">
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                            <Shield className="w-4 h-4 text-indigo-600" />
-                            Seguridad y Accesibilidad
-                        </h3>
-                        <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-xl border border-zinc-100">
-                            <div className="space-y-1">
-                                <label className="text-sm font-semibold text-zinc-700">Cloudflare Turnstile</label>
-                                <p className="text-xs text-zinc-500">
-                                    Habilita la verificación de "No soy un robot" en el login.
-                                    <span className="block text-amber-600 font-medium mt-1">Desactívalo solo en emergencias si el servicio falla.</span>
-                                </p>
+                    {(mode === 'full' || mode === 'security') && (
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
+                                <Shield className="w-4 h-4 text-indigo-600" />
+                                Seguridad y Accesibilidad
+                            </h3>
+                            <div className="flex items-center justify-between p-4 bg-zinc-50 rounded-xl border border-zinc-100">
+                                <div className="space-y-1">
+                                    <label className="text-sm font-semibold text-zinc-700">Cloudflare Turnstile</label>
+                                    <p className="text-xs text-zinc-500">
+                                        Habilita la verificación de "No soy un robot" en el login.
+                                        <span className="block text-amber-600 font-medium mt-1">Desactívalo solo en emergencias si el servicio falla.</span>
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setTurnstileEnabled(!turnstileEnabled)}
+                                    className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ring-2 ring-offset-2 ${turnstileEnabled ? 'bg-indigo-600 ring-indigo-500' : 'bg-zinc-300 ring-transparent'}`}
+                                >
+                                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${turnstileEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
+                                </button>
                             </div>
-                            <button
-                                type="button"
-                                onClick={() => setTurnstileEnabled(!turnstileEnabled)}
-                                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none ring-2 ring-offset-2 ${turnstileEnabled ? 'bg-indigo-600 ring-indigo-500' : 'bg-zinc-300 ring-transparent'}`}
-                            >
-                                <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${turnstileEnabled ? 'translate-x-6' : 'translate-x-1'}`} />
-                            </button>
                         </div>
-                    </div>
+                    )}
 
-                    <div className="space-y-4">
-                        <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
-                            <Settings className="w-4 h-4 text-indigo-600" />
-                            Gestión de Archivos
-                        </h3>
-                        <div>
-                            <label htmlFor="maxSize" className="block text-sm font-semibold text-zinc-700 mb-2">
-                                Límite de Tamaño de Archivos (MB)
-                            </label>
-                            <p className="text-xs text-zinc-500 mb-3">
-                                Este valor define el tamaño máximo permitido para la subida de exámenes médicos y otros documentos.
-                            </p>
-                            <div className="relative max-w-xs">
-                                <input
-                                    type="number"
-                                    id="maxSize"
-                                    min="1"
-                                    max="50"
-                                    value={maxSize}
-                                    onChange={(e) => setMaxSize(e.target.value)}
-                                    className="block w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
-                                />
-                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400 font-medium">
-                                    MB
+                    {(mode === 'full' || mode === 'file') && (
+                        <div className="space-y-4">
+                            <h3 className="text-sm font-bold text-zinc-900 uppercase tracking-wider flex items-center gap-2">
+                                <Settings className="w-4 h-4 text-indigo-600" />
+                                Gestión de Archivos
+                            </h3>
+                            <div>
+                                <label htmlFor="maxSize" className="block text-sm font-semibold text-zinc-700 mb-2">
+                                    Límite de Tamaño de Archivos (MB)
+                                </label>
+                                <p className="text-xs text-zinc-500 mb-3">
+                                    Este valor define el tamaño máximo permitido para la subida de exámenes médicos y otros documentos.
+                                </p>
+                                <div className="relative max-w-xs">
+                                    <input
+                                        type="number"
+                                        id="maxSize"
+                                        min="1"
+                                        max="50"
+                                        value={maxSize}
+                                        onChange={(e) => setMaxSize(e.target.value)}
+                                        className="block w-full px-4 py-2.5 bg-zinc-50 border border-zinc-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                                    />
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-sm text-zinc-400 font-medium">
+                                        MB
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    )}
 
                     <div className="pt-4 border-t border-zinc-50 flex items-center justify-between">
                         <div className="h-8">

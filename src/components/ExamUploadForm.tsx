@@ -46,7 +46,7 @@ export default function ExamUploadForm({ patientId }: { patientId: string }) {
         const MAX_SIZE = maxSizeMB * 1024 * 1024;
 
         if (file && file.size > MAX_SIZE) {
-            alert(`El archivo excede el límite de ${maxSizeMB}MB`);
+            setStatus({ type: 'error', message: `El archivo excede el límite de ${maxSizeMB}MB` });
             return;
         }
 

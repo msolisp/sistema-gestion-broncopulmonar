@@ -315,7 +315,7 @@ export async function adminUpdatePatient(prevState: any, formData: FormData) {
 
         await logAction(
             'PATIENT_UPDATED',
-            JSON.stringify(changes),
+            changes,
             null,
             session.user.email
         );

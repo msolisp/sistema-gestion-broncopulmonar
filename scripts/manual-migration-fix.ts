@@ -38,15 +38,15 @@ async function main() {
 
     try {
         // MedicalKnowledge changes
-        console.log('  -> Altering MedicalKnowledge...');
-        await prisma.$executeRawUnsafe(`
-            ALTER TABLE "MedicalKnowledge" DROP COLUMN "embedding",
-            DROP COLUMN "page",
-            DROP COLUMN "source",
-            ADD COLUMN     "category" TEXT,
-            ADD COLUMN     "title" TEXT NOT NULL DEFAULT '',
-            ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
-        `);
+        // console.log('  -> Altering MedicalKnowledge...');
+        // await prisma.$executeRawUnsafe(`
+        //     ALTER TABLE "MedicalKnowledge" DROP COLUMN "embedding",
+        //     DROP COLUMN "page",
+        //     DROP COLUMN "source",
+        //     ADD COLUMN     "category" TEXT,
+        //     ADD COLUMN     "title" TEXT NOT NULL DEFAULT '',
+        //     ADD COLUMN     "updatedAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP;
+        // `);
         // Note: Added defaults to avoid errors if rows exist, though backup showed empty or close to empty?
         // Actually backup showed rows. Adding NOT NULL without default might fail if rows exist.
         // The migration file said: "Added the required column `title`... without a default value. This is not possible if the table is not empty."
@@ -158,6 +158,19 @@ async function main() {
                 "updatedAt" TIMESTAMP(3) NOT NULL,
             
                 CONSTRAINT "Feriado_pkey" PRIMARY KEY ("id")
+            );
+        `);
+
+        console.log('  -> Creating Configuracion table...');
+        await prisma.$executeRawUnsafe(`
+            CREATE TABLE IF NOT EXISTS "configuracion" (
+                "key" TEXT NOT NULL,
+                "value" TEXT NOT NULL,
+                "description" TEXT,
+                "updatedAt" TIMESTAMP(3) NOT NULL,
+                "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            
+                CONSTRAINT "configuracion_pkey" PRIMARY KEY ("key")
             );
         `);
 

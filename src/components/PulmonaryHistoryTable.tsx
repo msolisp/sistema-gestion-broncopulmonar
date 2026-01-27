@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { FileSpreadsheet, FileText, ChevronLeft, ChevronRight, FileDown, Trash2 } from 'lucide-react';
+import { FileSpreadsheet, FileText, ChevronLeft, ChevronRight, FileDown, Trash2, AlertCircle, CheckCircle2 } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { EditPulmonaryModal } from './EditPulmonaryModal';
@@ -26,6 +26,7 @@ interface PulmonaryRecord {
 
 export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] }) {
     const [currentPage, setCurrentPage] = useState(1);
+    const [status, setStatus] = useState<{ type: 'success' | 'error' | null, message: string | null }>({ type: null, message: null });
     const itemsPerPage = 5;
 
     // Sort by date DESC
@@ -72,9 +73,14 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
     const handleDelete = async () => {
         if (!deleteConfirmation.recordId || !deleteConfirmation.patientId) return;
 
+        setStatus({ type: null, message: null });
         const res = await deletePulmonaryRecord(deleteConfirmation.recordId, deleteConfirmation.patientId);
-        if (res.message) {
-            alert(res.message);
+
+        if (res.message && !res.message.includes('exitosamente')) {
+            setStatus({ type: 'error', message: res.message });
+        } else {
+            setStatus({ type: 'success', message: 'Registro eliminado correctamente' });
+            setTimeout(() => setStatus({ type: null, message: null }), 3000);
         }
         setDeleteConfirmation({ isOpen: false, recordId: null, patientId: null });
     };
@@ -164,13 +170,22 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
                     <h3 className="text-lg font-bold text-zinc-900">Registros Detallados</h3>
                     <p className="text-sm text-zinc-500">Evolución tabular de los exámenes ingresados.</p>
                 </div>
-                <button
-                    onClick={handleExportExcel}
-                    className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200"
-                >
-                    <FileSpreadsheet className="h-4 w-4" />
-                    Exportar Excel
-                </button>
+                <div className="flex flex-col sm:flex-row items-center gap-4">
+                    {status.message && (
+                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-sm font-medium animate-in fade-in slide-in-from-right-2 ${status.type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200'
+                            }`}>
+                            {status.type === 'success' ? <CheckCircle2 className="h-4 w-4" /> : <AlertCircle className="h-4 w-4" />}
+                            {status.message}
+                        </div>
+                    )}
+                    <button
+                        onClick={handleExportExcel}
+                        className="inline-flex items-center gap-2 px-3 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 rounded-lg transition-colors border border-emerald-200"
+                    >
+                        <FileSpreadsheet className="h-4 w-4" />
+                        Exportar Excel
+                    </button>
+                </div>
             </div>
 
             <div className="overflow-x-auto">

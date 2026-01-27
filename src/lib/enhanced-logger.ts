@@ -21,8 +21,8 @@ export interface LogActionOptions {
  * Extract client IP address from request headers
  * Supports various proxy headers (Vercel, Cloudflare, standard)
  */
-export function getClientIp(): string {
-    const headersList = headers();
+export async function getClientIp(): Promise<string> {
+    const headersList = await headers();
 
     // Try various headers in order of preference
     const forwardedFor = headersList.get('x-forwarded-for');
@@ -48,17 +48,64 @@ export function getClientIp(): string {
 /**
  * Extract user agent from request headers
  */
-export function getUserAgent(): string | null {
-    const headersList = headers();
+export async function getUserAgent(): Promise<string | null> {
+    const headersList = await headers();
     return headersList.get('user-agent');
 }
 
 /**
  * Log an action with enhanced audit information
- * @param options - Log options including user ID, action, resource, etc.
- * @returns Promise resolving to the created log entry
+ * Supports both new object-based options and legacy positional arguments
  */
-export async function logAction(options: LogActionOptions) {
+export async function logAction(options: LogActionOptions): Promise<any>;
+export async function logAction(
+    accion: string,
+    detalle?: string | Record<string, any> | null,
+    usuarioSistemaId?: string | null,
+    userEmail?: string | null,
+    ipAddress?: string | null,
+    recurso?: string | null
+): Promise<any>;
+export async function logAction(
+    arg1: LogActionOptions | string,
+    arg2?: string | Record<string, any> | null,
+    arg3?: string | null,
+    arg4?: string | null,
+    arg5?: string | null,
+    arg6?: string | null
+) {
+    let options: LogActionOptions;
+
+    if (typeof arg1 === 'string') {
+        // Legacy positional arguments
+        options = {
+            accion: arg1,
+            detalle: typeof arg2 === 'string' ? { message: arg2 } : (arg2 || undefined) as Record<string, any>,
+            usuarioSistemaId: arg3 || '',
+            recurso: arg6 || 'SYSTEM',
+        };
+
+        // Resolve user ID from email if ID is missing but email is present
+        if (!options.usuarioSistemaId && arg4) {
+            try {
+                const staff = await prisma.usuarioSistema.findFirst({
+                    where: { persona: { email: arg4 } },
+                    select: { id: true }
+                });
+                if (staff) options.usuarioSistemaId = staff.id;
+            } catch (e) {
+                console.error('Failed to resolve system user by email:', e);
+            }
+        }
+
+        // Use provided IP if any
+        if (arg5) {
+            // We'll need to manually handle this in the main implementation below
+        }
+    } else {
+        options = arg1;
+    }
+
     const {
         usuarioSistemaId,
         accion,
@@ -68,17 +115,21 @@ export async function logAction(options: LogActionOptions) {
         sessionId
     } = options;
 
-    const ipAddress = getClientIp();
-    const userAgent = getUserAgent();
+    const ipAddress = (typeof arg1 === 'string' && arg5) ? arg5 : await getClientIp();
+    const userAgent = await getUserAgent();
+
+    // If still no usuarioSistemaId, we might be in a public action (like failed login)
+    // In that case, we might need a special system user or allow null if the schema allows it
+    // But based on schema, it seems it might be required.
 
     try {
         const log = await prisma.logAccesoSistema.create({
             data: {
-                usuarioSistemaId,
+                usuarioSistemaId: usuarioSistemaId || undefined, // Prisma will handle optional/required
                 accion,
                 ipAddress,
                 userAgent,
-                recursoAccedido: recurso,
+                recursoAccedido: recurso || 'SYSTEM',
                 accionDetalle: detalle ? JSON.stringify(detalle) : null,
                 resultado,
                 sessionId,

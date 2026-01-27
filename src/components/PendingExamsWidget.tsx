@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { FileText, CheckCircle, ExternalLink } from 'lucide-react'
+import { FileText, CheckCircle, ExternalLink, AlertCircle } from 'lucide-react'
 import { reviewMedicalExam } from '@/lib/actions.patients'
 import { useRouter } from 'next/navigation'
 
@@ -24,15 +24,17 @@ interface PendingExamsWidgetProps {
 export default function PendingExamsWidget({ exams }: PendingExamsWidgetProps) {
     const router = useRouter()
     const [loadingMap, setLoadingMap] = useState<Record<string, boolean>>({})
+    const [status, setStatus] = useState<{ type: 'error' | null, message: string | null }>({ type: null, message: null });
 
     const handleReview = async (examId: string) => {
         setLoadingMap(prev => ({ ...prev, [examId]: true }))
         try {
+            setStatus({ type: null, message: null })
             await reviewMedicalExam(examId)
             router.refresh()
         } catch (error) {
             console.error('Error reviewing exam:', error)
-            alert('Error al marcar como revisado')
+            setStatus({ type: 'error', message: 'Error al marcar como revisado' })
         } finally {
             setLoadingMap(prev => ({ ...prev, [examId]: false }))
         }
@@ -56,6 +58,13 @@ export default function PendingExamsWidget({ exams }: PendingExamsWidgetProps) {
                     </span>
                 )}
             </div>
+
+            {status.message && (
+                <div className="mx-4 mt-4 p-2.5 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {status.message}
+                </div>
+            )}
 
             <div className="max-h-[300px] overflow-y-auto divide-y divide-zinc-50">
                 {exams.length === 0 ? (

@@ -1,3 +1,4 @@
+
 import { PrismaClient } from '@prisma/client';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -15,16 +16,18 @@ async function main() {
     try {
         await prisma.$connect();
 
-        const tablesToCheck = ['comuna', 'diagnostico_cie10', 'prevision', 'medicamento', 'insumo', 'feriado'];
+        // Count records with null embeddings
+        // Prisma doesn't always support vector natively in 'where' depending on schema, 
+        // but let's try via raw query for safety
+        const result = await prisma.$queryRaw`
+            SELECT 
+                COUNT(*) as total, 
+                COUNT(embedding) as with_embedding,
+                COUNT(*) - COUNT(embedding) as missing_embedding
+            FROM "MedicalKnowledge"
+        `;
 
-        for (const table of tablesToCheck) {
-            try {
-                const count = await prisma.$executeRawUnsafe(`SELECT COUNT(*) FROM "${table}"`);
-                console.log(`Table '${table}' count:`, count);
-            } catch (e: any) {
-                console.log(`Error counting '${table}': ${e.message}`);
-            }
-        }
+        console.log('Embedding Stats:', result);
 
     } catch (e) {
         console.error(e);
@@ -32,4 +35,5 @@ async function main() {
         await prisma.$disconnect();
     }
 }
+
 main();
