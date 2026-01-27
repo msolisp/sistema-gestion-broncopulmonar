@@ -119,37 +119,36 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
         return { message: 'Unauthorized: Access denied' };
     }
 
-    const rawData = Object.fromEntries(formData);
-    const { id, name, email, role, active, rutBody, rutDv, region, commune, address } = Object.fromEntries(formData);
-
-    // Combine RUT if separated
-    let fullRut = '';
-    if (rutBody && rutDv) {
-        const cleanBody = (rutBody as string).replace(/\D/g, '');
-        const formattedBody = cleanBody.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-        fullRut = `${formattedBody}-${(rutDv as string).toUpperCase()}`;
-    } else if (rawData.rut) {
-        fullRut = rawData.rut as string;
-    }
+    const rutBody = formData.get('rutBody') as string;
+    const rutDv = formData.get('rutDv') as string;
+    let inputRut: string | undefined = undefined;
+    if (rutBody && rutDv) inputRut = `${rutBody}-${rutDv}`;
 
     const dataToValidate = {
-        ...rawData,
-        rut: fullRut,
-        active: active === 'on'
+        id: formData.get('id') as string,
+        name: formData.get('name') as string,
+        email: formData.get('email') as string,
+        role: formData.get('role') as string,
+        active: formData.get('active') === 'on',
+        rut: inputRut,
+        region: (formData.get('region') as string | null) || undefined,
+        commune: (formData.get('commune') as string | null) || undefined,
+        address: (formData.get('address') as string | null) || undefined,
+        password: (formData.get('password') as string | null) || undefined
     };
 
     const validation = AdminUpdateSystemUserSchema.safeParse(dataToValidate);
-
     if (!validation.success) {
         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
     }
 
-    const { id: vId, name: vName, email: vEmail, role: vRole, active: vActive, rut: vRut, region: vRegion, commune: vCommune, address: vAddress, password: vPassword } = validation.data;
+    const vData = validation.data;
+    const { id: vId, name: vName, email: vEmail, role: vRole, active: vActive, rut: vRut, region: vRegion, commune: vCommune, address: vAddress, password: vPassword } = vData;
 
     try {
         const existingUser = await prisma.usuarioSistema.findUnique({
             where: { id: vId },
-            include: { persona: true }
+            include: { persona: true, rol_rel: true }
         });
 
         if (!existingUser) {
@@ -190,22 +189,16 @@ export async function adminUpdateSystemUser(prevState: any, formData: FormData) 
         const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : '';
 
         // Check if role is changing
-        const curUser = await prisma.usuarioSistema.findUnique({
-            where: { id: vId },
-            include: { persona: true, rol_rel: true }
-        });
-        const oldRoleId = curUser?.rolId;
+        const oldRoleId = existingUser.rolId;
         const newRoleId = vRole;
 
         // Calculate Diff
         const changes: Record<string, { old: any, new: any }> = {};
-        if (curUser) {
-            const oldName = `${curUser.persona.nombre} ${curUser.persona.apellidoPaterno} ${curUser.persona.apellidoMaterno || ''}`.trim();
-            if (oldName !== vName.trim()) changes['Nombre'] = { old: oldName, new: vName.trim() };
-            if (curUser.persona.email !== vEmail) changes['Email'] = { old: curUser.persona.email, new: vEmail };
-            if (curUser.rolId !== vRole) changes['Rol'] = { old: curUser.rol_rel.nombre, new: vRole }; // Note: vRole is ID, ideal would be name lookup but ID is okay or we can fetch name
-            if (curUser.activo !== vActive) changes['Estado'] = { old: curUser.activo ? 'Activo' : 'Inactivo', new: vActive ? 'Activo' : 'Inactivo' };
-        }
+        const oldName = `${existingUser.persona.nombre} ${existingUser.persona.apellidoPaterno} ${existingUser.persona.apellidoMaterno || ''}`.trim();
+        if (oldName !== vName.trim()) changes['Nombre'] = { old: oldName, new: vName.trim() };
+        if (existingUser.persona.email !== vEmail) changes['Email'] = { old: existingUser.persona.email, new: vEmail };
+        if (existingUser.rolId !== vRole) changes['Rol'] = { old: existingUser.rol_rel?.nombre || oldRoleId, new: vRole };
+        if (existingUser.activo !== vActive) changes['Estado'] = { old: existingUser.activo ? 'Activo' : 'Inactivo', new: vActive ? 'Activo' : 'Inactivo' };
 
         const result = await updateStaffUser(vId, {
             email: vEmail,
@@ -394,6 +387,13 @@ export async function updateRolePermissions(changes: Array<{ role: string, actio
                 });
             }
         }
+
+        await logAction(
+            'PERMISSIONS_UPDATED',
+            JSON.stringify({ role: changes[0]?.role, modifiedActions: changes.length }),
+            null,
+            session.user.email
+        );
 
         revalidatePath('/dashboard');
         return { message: 'Success' };

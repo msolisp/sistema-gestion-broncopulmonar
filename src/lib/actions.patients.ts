@@ -286,6 +286,16 @@ export async function adminUpdatePatient(prevState: any, formData: FormData) {
         else if (gender === 'Otro') sexo = 'OTRO';
         else if (gender) sexo = 'OTRO'; // Default any other value to OTRO
 
+        // Calculate Diff
+        const changes: Record<string, { old: any, new: any }> = {};
+        const oldName = `${persona.nombre} ${persona.apellidoPaterno} ${persona.apellidoMaterno || ''}`.trim();
+        if (oldName !== name.trim()) changes['Nombre'] = { old: oldName, new: name.trim() };
+        if (persona.email !== email) changes['Email'] = { old: persona.email, new: email };
+        if (persona.rut !== rut) changes['RUT'] = { old: persona.rut, new: rut };
+        if (persona.comuna !== commune) changes['Comuna'] = { old: persona.comuna, new: commune };
+        if (persona.region !== region) changes['Región'] = { old: persona.region, new: region };
+        if (persona.activo !== active) changes['Estado'] = { old: persona.activo ? 'Activo' : 'Inactivo', new: active ? 'Activo' : 'Inactivo' };
+
         // Use FHIR adapter to update patient
         await updatePatient(persona.id, {
             email,
@@ -302,6 +312,13 @@ export async function adminUpdatePatient(prevState: any, formData: FormData) {
             password: password && password.trim().length >= 6 ? password : undefined,
             modificadoPor: session.user.email || 'ADMIN'
         });
+
+        await logAction(
+            'PATIENT_UPDATED',
+            JSON.stringify(changes),
+            null,
+            session.user.email
+        );
 
         revalidatePath('/dashboard');
         revalidatePath('/patients');

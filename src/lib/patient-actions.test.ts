@@ -7,6 +7,7 @@ import {
 } from './patient-actions';
 import prisma from '@/lib/prisma';
 import { auth } from '@/auth';
+process.env.E2E_TESTING = 'true';
 import { put } from '@vercel/blob';
 
 // Mock dependencies
@@ -21,10 +22,14 @@ jest.mock('@/lib/prisma', () => ({
         delete: jest.fn(),
         update: jest.fn(),
     },
-    notificacionMedica: {
+    notification: {
         create: jest.fn(),
     }
 }));
+
+jest.mock('file-type', () => ({
+    fileTypeFromBuffer: jest.fn().mockResolvedValue({ mime: 'application/pdf' })
+}), { virtual: true });
 
 jest.mock('@/auth', () => ({
     auth: jest.fn(),
@@ -61,8 +66,41 @@ describe('Patient Actions', () => {
             expect(result.message).toContain('PDF');
         });
 
-        // Add a test with a valid mocked PDF if possible, but creating a valid PDF mockBuffer is verbose.
+        // Create a test with a valid mocked PDF if possible, but creating a valid PDF mockBuffer is verbose.
         // We will rely on testing validation logic mostly here.
+        it('creates an exam and a notification successfully', async () => {
+            (auth as jest.Mock).mockResolvedValue({ user: { email: 'patient@test.com', id: 'u1' } });
+            (prisma.persona.findUnique as jest.Mock).mockResolvedValue({
+                id: 'p1',
+                nombre: 'Juan',
+                apellidoPaterno: 'Perez',
+                fichaClinica: { id: 'f1' }
+            });
+
+            const formData = new FormData();
+            const mockFile = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+            formData.append('file', mockFile);
+            formData.append('centerName', 'Center');
+            formData.append('doctorName', 'Doc');
+            formData.append('examDate', '2023-01-01');
+
+            (prisma.examenMedico.create as jest.Mock).mockResolvedValue({ id: 'ex1' });
+
+            // We need to avoid the actual file-type import during the test if it causes issues, 
+            // but the function is already mocked/captured?
+            // Actually, the implementation uses dynamic import.
+
+            const result = await uploadPatientExam(null, formData);
+
+            expect(result.success).toBe(true);
+            expect(prisma.examenMedico.create).toHaveBeenCalled();
+            expect(prisma.notification.create).toHaveBeenCalledWith(expect.objectContaining({
+                data: expect.objectContaining({
+                    type: 'EXAM_UPLOADED',
+                    patientId: 'p1'
+                })
+            }));
+        });
     });
 
     describe('getPatientExams', () => {

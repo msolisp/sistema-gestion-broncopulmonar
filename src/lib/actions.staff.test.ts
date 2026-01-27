@@ -1,7 +1,17 @@
-
 import { adminCreateSystemUser, adminUpdateSystemUser } from './actions.staff';
 import prisma from '@/lib/prisma';
 import { createStaffUser, updateStaffUser } from '@/lib/fhir-adapters';
+process.env.E2E_TESTING = 'true';
+
+jest.mock('@/lib/logger', () => ({
+    logAction: jest.fn()
+}));
+
+jest.mock('@/lib/validators', () => ({
+    validarRutChileno: jest.fn(() => true),
+    obtenerCuerpoRut: jest.fn(),
+    obtenerDigitoVerificador: jest.fn(),
+}));
 
 // Define mock object inside the factory to avoid hoisting issues
 jest.mock('@/lib/prisma', () => {
@@ -54,11 +64,7 @@ jest.mock('next/cache', () => ({
     revalidatePath: jest.fn(),
 }));
 
-jest.mock('@/lib/validators', () => ({
-    validarRutChileno: jest.fn(() => true),
-    obtenerCuerpoRut: jest.fn(),
-    obtenerDigitoVerificador: jest.fn(),
-}));
+// Mocks already defined above
 
 describe('Staff Actions', () => {
     beforeEach(() => {
@@ -98,11 +104,17 @@ describe('Staff Actions', () => {
         formData.append('email', 'test@test.com');
         formData.append('role', 'NEW-ROLE-ID');
         formData.append('rutBody', '12345678');
-        formData.append('rutDv', '9');
+        formData.append('rutDv', '5');
         formData.append('active', 'on');
 
         // Old role was DIFFERENT
-        (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue({ id: 'user-sys-123', rolId: 'OLD-ROLE-ID' });
+        (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue({
+            id: 'user-sys-123',
+            rolId: 'OLD-ROLE-ID',
+            activo: true,
+            persona: { nombre: 'Old', apellidoPaterno: 'Name', email: 'test@test.com' },
+            rol_rel: { nombre: 'OLD-ROLE-NAME' }
+        });
         (updateStaffUser as jest.Mock).mockResolvedValue({ success: true });
 
         // Mock new permissions
@@ -125,7 +137,13 @@ describe('Staff Actions', () => {
         formData.append('rutBody', '12345678');
         formData.append('rutDv', '9');
 
-        (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue({ id: 'user-sys-123', rolId: 'SAME-ROLE-ID' });
+        (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue({
+            id: 'user-sys-123',
+            rolId: 'SAME-ROLE-ID',
+            activo: true,
+            persona: { nombre: 'Old', apellidoPaterno: 'Name', email: 'test@test.com' },
+            rol_rel: { nombre: 'SAME-ROLE-NAME' }
+        });
         (updateStaffUser as jest.Mock).mockResolvedValue({ success: true });
 
         await adminUpdateSystemUser(null, formData);
@@ -277,5 +295,59 @@ describe('Staff Actions', () => {
             const result = await adminCreateSystemUser(null, formData);
             expect(result.message).toContain('inválido');
         });
+    });
+
+    it('logs diff on user update', async () => {
+        const { logAction } = jest.requireMock('@/lib/logger');
+
+        const formData = new FormData();
+        formData.append('id', 'user-sys-123');
+        formData.append('name', 'New Name');
+        formData.append('email', 'new@test.com');
+        formData.append('role', 'NEW-ROLE');
+        formData.append('rutBody', '12345678');
+        formData.append('rutDv', '5');
+        formData.append('active', 'on');
+
+        const mockUser = {
+            id: 'user-sys-123',
+            rolId: 'OLD-ROLE',
+            activo: true,
+            persona: {
+                nombre: 'Old',
+                apellidoPaterno: 'Name',
+                apellidoMaterno: '',
+                email: 'old@test.com',
+                rut: '12345678-5'
+            },
+            rol_rel: { nombre: 'OLD-ROLE-NAME' }
+        };
+
+        (prisma.usuarioSistema.findUnique as jest.Mock).mockResolvedValue(mockUser);
+        (updateStaffUser as jest.Mock).mockResolvedValue({ success: true });
+        (prisma.permisoRol.findMany as jest.Mock).mockResolvedValue([]);
+
+        const { adminUpdateSystemUser } = require('./actions.staff');
+        const result = await adminUpdateSystemUser(null, formData);
+        expect(result.message).toBe('Success');
+
+        expect(logAction).toHaveBeenCalledWith(
+            'USER_UPDATED',
+            expect.stringContaining('"Nombre"'),
+            expect.anything(),
+            'admin@test.com'
+        );
+        expect(logAction).toHaveBeenCalledWith(
+            'USER_UPDATED',
+            expect.stringContaining('"old":"Old Name"'),
+            expect.anything(),
+            'admin@test.com'
+        );
+        expect(logAction).toHaveBeenCalledWith(
+            'USER_UPDATED',
+            expect.stringContaining('"new":"New Name"'),
+            expect.anything(),
+            'admin@test.com'
+        );
     });
 });

@@ -227,4 +227,28 @@ describe('POST /api/chat', () => {
         expect(res.status).toBe(500);
         expect(json.error).toBe('OpenAI Error');
     });
+
+    it('should include source warning instruction in system prompt', async () => {
+        (auth as jest.Mock).mockResolvedValue({ user: { id: '1' } });
+        (openai.embeddings.create as jest.Mock).mockResolvedValue({
+            data: [{ embedding: [0.1, 0.2, 0.3] }],
+        });
+        (prisma.$queryRaw as jest.Mock).mockResolvedValue([]);
+        (openai.chat.completions.create as jest.Mock).mockResolvedValue({
+            async *[Symbol.asyncIterator]() { yield { choices: [{ delta: { content: '...' } }] }; },
+        });
+
+        const req = new NextRequest('http://localhost:3000/api/chat', {
+            method: 'POST',
+            body: JSON.stringify({ messages: [{ role: 'user', content: 'Test' }] }),
+        });
+
+        await POST(req);
+
+        const createCall = (openai.chat.completions.create as jest.Mock).mock.calls[0][0];
+        const systemMessage = createCall.messages.find((m: any) => m.role === 'system');
+
+        expect(systemMessage.content).toContain('[[INTERNET_SOURCE]]');
+        expect(systemMessage.content).toContain('Context Priority');
+    });
 });

@@ -406,4 +406,11 @@ describe('PatientsTable Component', () => {
             expect(btn).toBeEnabled()
         })
     })
+
+    it('disables export to excel button when no patients', () => {
+        render(<PatientsTable patients={[]} />)
+        const exportBtn = screen.getByText('Exportar a Excel')
+        expect(exportBtn).toBeDisabled()
+        expect(exportBtn).toHaveClass('opacity-50', 'cursor-not-allowed')
+    })
 })

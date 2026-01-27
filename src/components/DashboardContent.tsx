@@ -113,11 +113,41 @@ function LogDetailsModal({ isOpen, onClose, log }: { isOpen: boolean, onClose: (
 
                     <div className="space-y-2">
                         <label className="text-xs font-semibold text-zinc-500 uppercase block">Detalles del Evento</label>
-                        <div className="bg-zinc-900 rounded-lg p-4 overflow-x-auto">
-                            <pre className="text-xs font-mono text-emerald-400 whitespace-pre-wrap">
-                                {detailsObj ? JSON.stringify(detailsObj, null, 2) : log.details}
-                            </pre>
-                        </div>
+                        {detailsObj && typeof detailsObj === 'object' && !Array.isArray(detailsObj) ? (
+                            <div className="border border-zinc-200 rounded-lg overflow-hidden">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="bg-zinc-50 text-zinc-500 text-xs uppercase">
+                                        <tr>
+                                            <th className="px-4 py-2 font-semibold">Campo</th>
+                                            <th className="px-4 py-2 font-semibold">Anterior</th>
+                                            <th className="px-4 py-2 font-semibold">Nuevo</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-zinc-100">
+                                        {Object.entries(detailsObj).map(([key, val]: [string, any]) => {
+                                            const isDiff = val && typeof val === 'object' && 'old' in val && 'new' in val;
+                                            return (
+                                                <tr key={key} className="hover:bg-zinc-50/50 transition-colors">
+                                                    <td className="px-4 py-3 font-medium text-zinc-700">{key}</td>
+                                                    <td className="px-4 py-3 text-zinc-500 italic">
+                                                        {isDiff ? (val.old?.toString() || '(vacío)') : '-'}
+                                                    </td>
+                                                    <td className="px-4 py-3 text-indigo-600 font-medium">
+                                                        {isDiff ? (val.new?.toString() || '(vacío)') : (typeof val === 'string' ? val : JSON.stringify(val))}
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        ) : (
+                            <div className="bg-zinc-900 rounded-lg p-4 overflow-x-auto border border-zinc-800 shadow-inner">
+                                <pre className="text-xs font-mono text-emerald-400 whitespace-pre-wrap leading-relaxed">
+                                    {detailsStr || 'Sin detalles adicionales'}
+                                </pre>
+                            </div>
+                        )}
                     </div>
                 </div>
 
