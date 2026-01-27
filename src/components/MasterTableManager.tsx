@@ -163,7 +163,7 @@ export default function MasterTableManager({
                                         {columns.map(col => (
                                             <td key={col.key} className="px-6 py-4 text-zinc-700 whitespace-nowrap">
                                                 {col.type === 'date' && item[col.key]
-                                                    ? new Date(item[col.key]).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric' })
+                                                    ? new Date(item[col.key]).toLocaleDateString('es-CL', { year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })
                                                     : item[col.key] || <span className="text-zinc-400 italic">No definido</span>
                                                 }
                                             </td>

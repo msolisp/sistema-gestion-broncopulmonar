@@ -38,7 +38,7 @@ export default async function AppointmentsPage() {
                                 <div key={apt.id} className="p-4 bg-white border border-zinc-200 rounded-xl shadow-sm flex justify-between items-center">
                                     <div>
                                         <div className="font-medium text-zinc-900">
-                                            {new Date(apt.date).toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
+                                            {new Date(apt.date).toLocaleDateString('es-CL', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', timeZone: 'UTC' })}
                                         </div>
                                         <div className="text-sm text-zinc-500">
                                             {new Date(apt.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })} hrs

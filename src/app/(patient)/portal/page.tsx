@@ -93,7 +93,7 @@ export default function PortalPage() {
                             {nextAppointment ? (
                                 <div className="space-y-1">
                                     <div className="text-2xl font-bold">
-                                        {new Date(nextAppointment.date).toLocaleDateString('es-CL', { day: 'numeric', month: 'long' })}
+                                        {new Date(nextAppointment.date).toLocaleDateString('es-CL', { day: 'numeric', month: 'long', timeZone: 'UTC' })}
                                     </div>
                                     <p className="text-xs text-zinc-500">
                                         {new Date(nextAppointment.date).toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })} hrs

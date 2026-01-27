@@ -76,7 +76,7 @@ export default function MyHistoryPage() {
                                         {tests.map(test => (
                                             <tr key={test.id} className="hover:bg-zinc-50">
                                                 <td className="px-4 py-3 font-medium">
-                                                    {new Date(test.date).toLocaleDateString('es-CL')}
+                                                    {new Date(test.date).toLocaleDateString('es-CL', { timeZone: 'UTC' })}
                                                 </td>
                                                 <td className="px-4 py-3">{test.cvfPercent || '-'}%</td>
                                                 <td className="px-4 py-3">{test.vef1Percent || '-'}%</td>

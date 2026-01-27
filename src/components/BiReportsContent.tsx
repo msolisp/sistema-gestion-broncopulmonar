@@ -241,7 +241,7 @@ export default function BiReportsContent({ patients }: BiReportsContentProps) {
         const patientsData = filteredPatients.map(p => ({
             RUT: p.rut,
             Comuna: p.commune,
-            'Fecha Diagnóstico': p.diagnosisDate ? new Date(p.diagnosisDate).toLocaleDateString() : '',
+            'Fecha Diagnóstico': p.diagnosisDate ? new Date(p.diagnosisDate).toLocaleDateString('es-CL', { timeZone: 'UTC' }) : '',
             'Edad': p.birthDate ? new Date().getFullYear() - new Date(p.birthDate).getFullYear() : '',
             'Género': p.gender,
             'Sistema Salud': p.healthSystem,
@@ -256,7 +256,7 @@ export default function BiReportsContent({ patients }: BiReportsContentProps) {
                 'RUT Paciente': p.rut,
                 'Centro': e.centerName,
                 'Doctor': e.doctorName,
-                'Fecha': new Date(e.examDate).toLocaleDateString()
+                'Fecha': new Date(e.examDate).toLocaleDateString('es-CL', { timeZone: 'UTC' })
             }))
         )
         const wsExams = XLSX.utils.json_to_sheet(examsData)

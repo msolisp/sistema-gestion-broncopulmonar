@@ -85,7 +85,7 @@ export default async function MyReservationsPage() {
                                         </div>
                                         <div>
                                             <p className="text-lg font-semibold text-zinc-900">
-                                                {new Date(apt.date).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                                                {new Date(apt.date).toLocaleDateString('es-CL', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}
                                             </p>
                                             <div className="flex items-center text-zinc-500 mt-1 text-sm">
                                                 <Clock className="w-4 h-4 mr-1.5" />
