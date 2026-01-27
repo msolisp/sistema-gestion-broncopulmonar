@@ -29,6 +29,12 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
     const [status, setStatus] = useState<{ type: 'success' | 'error' | null, message: string | null }>({ type: null, message: null });
     const itemsPerPage = 5;
 
+    // Helper to shift Date to UTC midnight for consistent display with date-fns
+    const shiftToUTC = (date: Date | string) => {
+        const d = new Date(date);
+        return new Date(d.getTime() + d.getTimezoneOffset() * 60000);
+    };
+
     // Sort by date DESC
     const sortedHistory = [...history].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
@@ -40,7 +46,7 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
 
     const handleExportExcel = () => {
         const dataToExport = sortedHistory.map(r => ({
-            'Fecha': format(new Date(r.date), 'dd/MM/yyyy'),
+            'Fecha': format(shiftToUTC(r.date), 'dd/MM/yyyy'),
             'TM6M (m)': r.walkDistance || '-',
             'SpO2 Basal (%)': r.spo2Rest || '-',
             'SpO2 Final (%)': r.spo2Final || '-',
@@ -95,7 +101,7 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
 
         doc.setFontSize(12);
         doc.setTextColor(100, 100, 100);
-        doc.text(`Fecha del Examen: ${format(new Date(record.date), 'dd MMMM yyyy', { locale: es })}`, 20, 30);
+        doc.text(`Fecha del Examen: ${format(shiftToUTC(record.date), 'dd MMMM yyyy', { locale: es })}`, 20, 30);
 
         let yPos = 50;
 
@@ -205,7 +211,7 @@ export function PulmonaryHistoryTable({ history }: { history: PulmonaryRecord[] 
                         {currentItems.map((record) => (
                             <tr key={record.id} className="hover:bg-zinc-50 transition-colors">
                                 <td className="px-6 py-4 font-medium text-zinc-900">
-                                    {format(new Date(record.date), 'dd MMM yyyy', { locale: es })}
+                                    {format(shiftToUTC(record.date), 'dd MMM yyyy', { locale: es })}
                                 </td>
                                 <td className="px-6 py-4 text-emerald-700 font-medium">
                                     {record.walkDistance ? `${record.walkDistance} m` : '-'}

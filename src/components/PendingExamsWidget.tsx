@@ -82,7 +82,7 @@ export default function PendingExamsWidget({ exams }: PendingExamsWidgetProps) {
                                     <p className="text-xs text-zinc-500">RUT: {exam.patient.rut}</p>
                                 </div>
                                 <span className="text-xs text-zinc-400">
-                                    {new Date(exam.examDate).toLocaleDateString('es-CL')}
+                                    {new Date(exam.examDate).toLocaleDateString('es-CL', { timeZone: 'UTC' })}
                                 </span>
                             </div>
 

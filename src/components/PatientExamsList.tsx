@@ -86,7 +86,8 @@ export default function PatientExamsList({ exams, onDelete, allowAdminActions }:
         return new Date(date).toLocaleDateString('es-CL', {
             year: 'numeric',
             month: 'long',
-            day: 'numeric'
+            day: 'numeric',
+            timeZone: 'UTC'
         })
     }
 

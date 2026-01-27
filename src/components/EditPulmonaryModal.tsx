@@ -63,7 +63,7 @@ export function EditPulmonaryModal({ patientId, record }: EditPulmonaryModalProp
     }
 
     // Format date for input default value (YYYY-MM-DD)
-    const defaultDate = record.date ? format(new Date(record.date), 'yyyy-MM-dd') : '';
+    const defaultDate = record.date ? format(new Date(new Date(record.date).getTime() + new Date(record.date).getTimezoneOffset() * 60000), 'yyyy-MM-dd') : '';
 
     return (
         <>
