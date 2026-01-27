@@ -310,11 +310,13 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit, roles }: Use
                             disabled={userToEdit?.roleName === 'ADMIN'}
                             className="w-full px-3 py-2 border border-zinc-300 rounded-lg text-sm bg-white outline-none focus:ring-2 focus:ring-indigo-500 disabled:bg-zinc-100"
                         >
-                            {roles.map(role => (
-                                <option key={role.id} value={role.id}>
-                                    {role.nombre}
-                                </option>
-                            ))}
+                            {roles
+                                .filter(role => role.nombre !== 'ADMIN' || userToEdit?.roleName === 'ADMIN')
+                                .map(role => (
+                                    <option key={role.id} value={role.id}>
+                                        {role.nombre}
+                                    </option>
+                                ))}
                         </select>
                         {userToEdit?.roleName === 'ADMIN' && <p className="text-xs text-zinc-400 mt-1">El rol de administrador no puede ser modificado</p>}
                     </div>
