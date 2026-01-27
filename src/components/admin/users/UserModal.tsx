@@ -146,9 +146,9 @@ export function UserModal({ isOpen, onClose, onSuccess, userToEdit, roles }: Use
             } else {
                 setSaveFeedback({ type: 'error', message: res?.message || 'Error al guardar' });
             }
-        } catch (error) {
+        } catch (error: any) {
             console.error(error);
-            setSaveFeedback({ type: 'error', message: 'Error de conexión' });
+            setSaveFeedback({ type: 'error', message: error.message || 'Error de conexión inesperado' });
         } finally {
             setIsSubmitting(false);
         }
