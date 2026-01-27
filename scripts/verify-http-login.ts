@@ -4,23 +4,16 @@ import { wrapper } from 'axios-cookiejar-support';
 import axios from 'axios';
 import { CookieJar } from 'tough-cookie';
 
-const BASE_URL = 'http://localhost:3000';
+const BASE_URL = 'http://localhost:3001';
 
 async function testLogin(email: string) {
     const jar = new CookieJar();
     const client = wrapper(axios.create({ jar, baseURL: BASE_URL }));
 
     try {
-        console.log(`Attempting login for ${email}...`);
+        console.log(`Attempting login for ${email} at ${BASE_URL}...`);
 
         // 1. Get CSRF Token
-        // NextAuth v5 often handles CSRF automatically or via specific endpoint
-        // Let's try simulating the form submission to the server action or the signin endpoint
-
-        // Actually, for credential provider, we usually POST to /api/auth/callback/credentials?
-        // Or if using Auth.js server actions, it's a POST to the page.
-
-        // Let's assume standard NextAuth API route for simplicity first
         const csrfRes = await client.get('/api/auth/csrf');
         const csrfToken = csrfRes.data.csrfToken;
         console.log('CSRF Token:', csrfToken);
@@ -28,7 +21,7 @@ async function testLogin(email: string) {
         // 2. Sign In
         const params = new URLSearchParams();
         params.append('email', email);
-        params.append('password', 'Password123!');
+        params.append('password', 'Admin123!');
         params.append('redirect', 'false');
         params.append('csrfToken', csrfToken);
         params.append('callbackUrl', '/');
@@ -39,6 +32,7 @@ async function testLogin(email: string) {
         });
 
         console.log('Login Status:', loginRes.status);
+        console.log('Login Data:', loginRes.data);
         console.log('Cookies:', jar.getCookiesSync(BASE_URL).map(c => c.key));
 
         if (jar.getCookiesSync(BASE_URL).some(c => c.key.includes('session'))) {
@@ -50,10 +44,15 @@ async function testLogin(email: string) {
         }
 
     } catch (e) {
-        console.error('Login Error:', (e as Error).message);
+        if (axios.isAxiosError(e)) {
+            console.error('Login Error Status:', e.response?.status);
+            console.error('Login Error Data:', e.response?.data);
+        } else {
+            console.error('Login Error:', (e as Error).message);
+        }
         return null;
     }
 }
 
 // Run
-testLogin('paciente1@Hospital.cl');
+testLogin('admin@hospital.cl');

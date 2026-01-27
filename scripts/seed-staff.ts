@@ -1,6 +1,18 @@
 
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+
+// Load production env vars if available
+const envPath = path.join(process.cwd(), '.env.production.local');
+if (fs.existsSync(envPath)) {
+    console.log('Loading .env.production.local');
+    dotenv.config({ path: envPath });
+} else {
+    dotenv.config();
+}
 
 const prisma = new PrismaClient();
 

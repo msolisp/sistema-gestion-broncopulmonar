@@ -1,0 +1,412 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-3.0.x"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model Rol {
+  id          String           @id @default(cuid())
+  nombre      String           @unique
+  descripcion String?
+  activo      Boolean          @default(true)
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  permisos    PermisoRol[]
+  usuarios    UsuarioSistema[] @relation("UserRole")
+
+  @@map("rol")
+}
+
+model PermisoRol {
+  id      String  @id @default(cuid())
+  rolId   String
+  recurso String
+  accion  String
+  activo  Boolean @default(true)
+  rol     Rol     @relation(fields: [rolId], references: [id], onDelete: Cascade)
+
+  @@unique([rolId, recurso, accion])
+  @@map("permiso_rol")
+}
+
+// Persona: Demographic data (non-clinical, non-employment)
+// Maps to FHIR Patient.demographics
+model Persona {
+  id              String          @id @default(cuid())
+
+  // Interoperabilidad FHIR
+  fhirId          String?         @unique // ID en servidor FHIR externo
+  fhirResourceType String?        @default("Patient") // Patient | Practitioner
+
+  // Identificación
+  rut             String          @unique
+  nombre          String
+  apellidoPaterno String
+  apellidoMaterno String?
+  email           String?         @unique
+  telefono        String?
+  direccion       String?
+  comuna          String?
+  region          String?
+  fechaNacimiento DateTime?
+  sexo            Sexo?
+  creadoPor       String
+  modificadoPor   String?
+  creadoEn        DateTime        @default(now())
+  modificadoEn    DateTime        @updatedAt
+  activo          Boolean         @default(true)
+  eliminadoEn     DateTime?
+  eliminadoPor    String?
+  credencial      Credencial?
+  fichaClinica    FichaClinica?
+  notifications   Notification[]
+  usuarioSistema  UsuarioSistema?
+
+  @@index([rut])
+  @@index([nombre, apellidoPaterno])
+  @@map("persona")
+}
+
+// Credencial: Centralized authentication (separated from clinical/employment)
+model Credencial {
+  id                  String         @id @default(cuid())
+  personaId           String         @unique
+  passwordHash        String
+  tipoAcceso          TipoAcceso
+  ultimoAcceso        DateTime?
+  intentosFallidos    Int            @default(0)
+  bloqueadoHasta      DateTime?
+  debeCambiarPassword Boolean        @default(false)
+  mfaHabilitado       Boolean        @default(false)
+  mfaSecret           String?
+  creadoEn            DateTime       @default(now())
+  modificadoEn        DateTime       @updatedAt
+  codigosBackup       CodigoBackup[]
+  persona             Persona        @relation(fields: [personaId], references: [id], onDelete: Cascade)
+
+  @@index([personaId, tipoAcceso])
+  @@map("credencial")
+}
+
+// FichaClinica: Clinical data ONLY - Maps to FHIR Patient.clinicalData
+model FichaClinica {
+  id                   String                  @id @default(cuid())
+  personaId            String                  @unique
+  numeroFicha          String                  @unique
+  prevision            String?
+  planSalud            String?
+  diagnosticoPrincipal String?
+  fechaDiagnostico     DateTime?
+  cota                 Float?
+  creadoPor            String
+  modificadoPor        String?
+  creadoEn             DateTime                @default(now())
+  modificadoEn         DateTime                @updatedAt
+  activo               Boolean                 @default(true)
+  eliminadoEn          DateTime?
+  eliminadoPor         String?
+  motivoEliminacion    String?
+  citas                Cita[]
+  examenes             ExamenMedico[]
+  persona              Persona                 @relation(fields: [personaId], references: [id])
+  notificaciones       NotificacionMedica[]
+  pruebasFuncion       PruebaFuncionPulmonar[]
+
+  @@index([numeroFicha])
+  @@index([prevision])
+  @@map("ficha_clinica")
+}
+
+// UsuarioSistema: Employment data ONLY - Maps to FHIR Practitioner
+model UsuarioSistema {
+  id                  String             @id @default(cuid())
+
+  // Interoperabilidad FHIR
+  fhirId              String?            @unique
+  fhirResourceType    String?            @default("PractitionerRole")
+
+  personaId           String             @unique
+  registroProfesional String?            @unique
+  especialidad        String?
+  creadoPor           String
+  modificadoPor       String?
+  creadoEn            DateTime           @default(now())
+  modificadoEn        DateTime           @updatedAt
+  activo              Boolean            @default(true)
+  eliminadoEn         DateTime?
+  eliminadoPor        String?
+  rolId               String
+  logsAcceso          LogAccesoSistema[]
+  permisos            PermisoUsuario[]
+  persona             Persona            @relation(fields: [personaId], references: [id])
+  rol_rel             Rol                @relation("UserRole", fields: [rolId], references: [id])
+
+  @@index([registroProfesional])
+  @@index([rolId])
+  @@map("usuario_sistema")
+}
+
+// Cita: Appointments (renamed from Appointment for consistency)
+model Cita {
+  id             String       @id @default(cuid())
+
+  // Interoperabilidad FHIR
+  fhirId          String?         @unique
+  fhirResourceType String?        @default("Appointment")
+
+  fichaClinicaId String
+  fecha          DateTime
+  estado         String       @default("PENDIENTE")
+  notas          String?
+  creadoEn       DateTime     @default(now())
+  modificadoEn   DateTime     @updatedAt
+  fichaClinica   FichaClinica @relation(fields: [fichaClinicaId], references: [id], onDelete: Cascade)
+
+  @@index([fichaClinicaId, fecha])
+  @@map("cita")
+}
+
+// ExamenMedico: Medical exams with audit trail
+model ExamenMedico {
+  id             String         @id @default(cuid())
+
+  // Interoperabilidad FHIR
+  fhirId          String?         @unique
+  fhirResourceType String?        @default("DiagnosticReport") 
+
+  fichaClinicaId String
+  nombreCentro   String
+  nombreDoctor   String
+  fechaExamen    DateTime
+  archivoUrl     String
+  archivoNombre  String?
+  revisado       Boolean        @default(false)
+  creadoEn       DateTime       @default(now())
+  modificadoEn   DateTime       @updatedAt
+  origen         String         @default("portal interno")
+  subidoPor      String?
+  fichaClinica   FichaClinica   @relation(fields: [fichaClinicaId], references: [id])
+  notifications  Notification[]
+
+  @@index([fichaClinicaId, fechaExamen])
+  @@map("examen_medico")
+}
+
+// NotificacionMedica: Medical notifications
+model NotificacionMedica {
+  id             String       @id @default(cuid())
+  fichaClinicaId String
+  tipo           String
+  titulo         String
+  mensaje        String
+  examenId       String?
+  leido          Boolean      @default(false)
+  creadoEn       DateTime     @default(now())
+  fichaClinica   FichaClinica @relation(fields: [fichaClinicaId], references: [id], onDelete: Cascade)
+
+  @@index([leido, creadoEn])
+  @@index([fichaClinicaId])
+  @@map("notificacion_medica")
+}
+
+// PruebaFuncionPulmonar: Pulmonary function tests
+model PruebaFuncionPulmonar {
+  id             String       @id @default(cuid())
+
+  // Interoperabilidad FHIR
+  fhirId          String?         @unique
+  fhirResourceType String?        @default("Observation")
+
+  fichaClinicaId String
+  fecha          DateTime
+  cvfValue       Float?
+  cvfPercent     Int?
+  vef1Value      Float?
+  vef1Percent    Int?
+  dlcoPercent    Int?
+  walkDistance   Float?
+  spo2Rest       Int?
+  spo2Final      Int?
+  heartRateRest  Int?
+  heartRateFinal Int?
+  notas          String?
+  creadoEn       DateTime     @default(now())
+  fichaClinica   FichaClinica @relation(fields: [fichaClinicaId], references: [id], onDelete: Cascade)
+
+  @@index([fichaClinicaId, fecha])
+  @@map("prueba_funcion_pulmonar")
+}
+
+// PermisoUsuario: Granular permissions (RBAC)
+model PermisoUsuario {
+  id          String         @id @default(cuid())
+  usuarioId   String
+  recurso     String
+  accion      String
+  activo      Boolean        @default(true)
+  otorgadoPor String
+  otorgadoEn  DateTime       @default(now())
+  usuario     UsuarioSistema @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([usuarioId, recurso, accion])
+  @@index([usuarioId, activo])
+  @@map("permiso_usuario")
+}
+
+// LogAccesoSistema: Access logs (immutable, 7-year retention) - Enhanced for MINSAL
+model LogAccesoSistema {
+  id            String         @id @default(cuid())
+  usuarioId     String
+  accion        String
+  recurso       String
+  recursoId     String
+  exitoso       Boolean        @default(true)
+  ipAddress     String         @default("unknown")
+  userAgent     String?
+  accionDetalle String?
+  duracionMs    Int?
+  fecha         DateTime       @default(now())
+  resultado     String?
+  sessionId     String?
+  usuario       UsuarioSistema @relation(fields: [usuarioId], references: [id])
+
+  @@index([usuarioId, fecha])
+  @@index([recursoId, fecha])
+  @@index([ipAddress])
+  @@index([resultado])
+  @@map("log_acceso_sistema")
+}
+
+// CodigoBackup: Emergency backup codes for MFA
+model CodigoBackup {
+  id           String     @id @default(cuid())
+  credencialId String
+  codigo       String     @unique
+  usado        Boolean    @default(false)
+  usadoEn      DateTime?
+  creadoEn     DateTime   @default(now())
+  credencial   Credencial @relation(fields: [credencialId], references: [id], onDelete: Cascade)
+
+  @@index([credencialId])
+  @@index([codigo])
+  @@map("codigo_backup")
+}
+
+model MedicalKnowledge {
+  id        String                 @id @default(cuid())
+  content   String
+  createdAt DateTime               @default(now())
+  imageUrl  String?
+  category  String?
+  title     String?
+  updatedAt DateTime               @updatedAt
+  embedding Unsupported("vector")?
+  page      Int?
+  source    String
+}
+
+model Comuna {
+  id        String   @id @default(cuid())
+  nombre    String   @unique
+  region    String
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Prevision {
+  id        String   @id @default(cuid())
+  nombre    String   @unique
+  tipo      String
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model DiagnosticoCIE10 {
+  id          String   @id @default(cuid())
+  codigo      String   @unique
+  descripcion String
+  categoria   String?
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Medicamento {
+  id              String   @id @default(cuid())
+  nombre          String
+  principioActivo String?
+  presentacion    String?
+  laboratorio     String?
+  activo          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Insumo {
+  id           String   @id @default(cuid())
+  nombre       String
+  categoria    String?
+  unidadMedida String?
+  activo       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Feriado {
+  id        String   @id @default(cuid())
+  nombre    String
+  fecha     DateTime
+  tipo      String
+  region    String?
+  activo    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([fecha, region])
+}
+
+model Notification {
+  id        String        @id @default(cuid())
+  type      String        @default("INFO")
+  title     String
+  message   String
+  read      Boolean       @default(false)
+  createdAt DateTime      @default(now())
+  patientId String
+  examId    String?
+  exam      ExamenMedico? @relation(fields: [examId], references: [id])
+  patient   Persona       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([read])
+  @@index([createdAt])
+  @@map("notification")
+}
+
+enum Sexo {
+  M
+  F
+  OTRO
+  NO_ESPECIFICADO
+}
+
+enum TipoAcceso {
+  PACIENTE
+  STAFF
+}
+
+model Configuracion {
+  key         String   @id
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now())
+
+  @@map("configuracion")
+}
