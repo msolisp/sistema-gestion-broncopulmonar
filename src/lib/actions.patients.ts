@@ -448,7 +448,7 @@ export async function uploadMedicalExam(formData: FormData) {
 
         const origen = userRole === 'PACIENTE' ? 'PORTAL_PACIENTES' : 'PORTAL_INTERNO';
 
-        await prisma.examenMedico.create({
+        const examMedico = await prisma.examenMedico.create({
             data: {
                 fichaClinicaId: ficha.id,
                 fechaExamen: new Date(examDate),
@@ -482,6 +482,25 @@ export async function uploadMedicalExam(formData: FormData) {
                     ipAddress: '::1'
                 }
             });
+        }
+
+        // Create notification for staff if uploaded by patient
+        if (origen === 'PORTAL_PACIENTES') {
+            try {
+                const patient = await prisma.persona.findUnique({ where: { id: patientId } });
+                await prisma.notification.create({
+                    data: {
+                        patientId: patientId,
+                        type: 'EXAM_UPLOADED',
+                        title: 'Nuevo examen subido',
+                        message: `${patient?.nombre || 'Paciente'} ${patient?.apellidoPaterno || ''} subió un examen médico de ${centerName}`,
+                        examId: examMedico.id,
+                        read: false,
+                    }
+                });
+            } catch (notifErr) {
+                console.error('Error creating notification in uploadMedicalExam:', notifErr);
+            }
         }
 
         revalidatePath(`/patients/${patientId}/history`);

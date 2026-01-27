@@ -113,16 +113,16 @@ export async function uploadPatientExam(
             },
         })
 
-        // Create notification
+        // Create notification for staff
         try {
-            await prisma.notificacionMedica.create({
+            await prisma.notification.create({
                 data: {
-                    fichaClinicaId: fichaClinica.id,
-                    tipo: 'EXAM_UPLOADED',
-                    titulo: 'Nuevo examen subido',
-                    mensaje: `${persona.nombre} ${persona.apellidoPaterno} subió un examen médico de ${centerName.trim()}`,
-                    examenId: exam.id,
-                    leido: false,
+                    patientId: persona.id,
+                    type: 'EXAM_UPLOADED',
+                    title: 'Nuevo examen subido',
+                    message: `${persona.nombre} ${persona.apellidoPaterno} subió un examen médico de ${centerName.trim()}`,
+                    examId: exam.id,
+                    read: false,
                 },
             })
         } catch (notifError) {
@@ -167,7 +167,7 @@ export async function getPatientExams() {
         });
 
         // Map to legacy format for frontend compatibility
-        return exams.map(e => ({
+        return exams.map((e: any) => ({
             id: e.id,
             patientId: persona.fichaClinica?.personaId, // Approximating
             centerName: e.nombreCentro,
