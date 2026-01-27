@@ -12,6 +12,9 @@ export default async function ReportsPage() {
     });
 
     const personas = await prisma.persona.findMany({
+        where: {
+            usuarioSistema: null
+        },
         include: {
             fichaClinica: {
                 include: {
