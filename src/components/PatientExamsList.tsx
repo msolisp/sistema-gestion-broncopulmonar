@@ -25,9 +25,10 @@ interface MedicalExam {
 interface PatientExamsListProps {
     exams: any[] // Relax type for compatibility with mapped objects
     onDelete?: () => void
+    allowAdminActions?: boolean
 }
 
-export default function PatientExamsList({ exams, onDelete }: PatientExamsListProps) {
+export default function PatientExamsList({ exams, onDelete, allowAdminActions }: PatientExamsListProps) {
     const router = useRouter()
     const [deletingId, setDeletingId] = useState<string | null>(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
@@ -167,7 +168,12 @@ export default function PatientExamsList({ exams, onDelete }: PatientExamsListPr
                                     {formatDate(exam.examDate)}
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    {formatDate(exam.createdAt)}
+                                    <div className="flex flex-col gap-1">
+                                        <span>{formatDate(exam.createdAt)}</span>
+                                        <span className={`px-2 py-0.5 text-[10px] rounded-full border w-fit ${exam.source === 'PORTAL_PACIENTE' || exam.source === 'portal pacientes' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}`}>
+                                            {exam.source === 'PORTAL_PACIENTE' || exam.source === 'portal pacientes' ? 'Paciente' : 'Interno'}
+                                        </span>
+                                    </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-3">
                                     <a
@@ -179,7 +185,7 @@ export default function PatientExamsList({ exams, onDelete }: PatientExamsListPr
                                     >
                                         <Eye className="h-5 w-5" />
                                     </a>
-                                    {(exam.source === 'PORTAL_PACIENTE' || exam.source === 'portal pacientes') && exam.uploadedByUserId && (
+                                    {(allowAdminActions || exam.source === 'PORTAL_PACIENTE' || exam.source === 'portal pacientes') && (
                                         <>
                                             <button
                                                 onClick={() => setEditingExam(exam)}

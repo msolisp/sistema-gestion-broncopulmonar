@@ -12,6 +12,7 @@ interface PageProps {
 
 import ExamUploadForm from '@/components/ExamUploadForm'
 import { PulmonaryHistory } from '@/components/PulmonaryHistory'
+import PatientExamsList from '@/components/PatientExamsList'
 
 // ... imports remain the same
 
@@ -72,7 +73,9 @@ export default async function PatientHistoryPage({ params }: PageProps) {
             centerName: e.nombreCentro,
             doctorName: e.nombreDoctor,
             examDate: e.fechaExamen,
-            source: e.origen === 'PORTAL_PACIENTES' ? 'portal pacientes' : 'interno'
+            createdAt: e.creadoEn,
+            source: e.origen === 'PORTAL_PACIENTES' ? 'portal pacientes' : 'interno',
+            reviewed: e.revisado
         })) || []
     }
 
@@ -142,59 +145,7 @@ export default async function PatientHistoryPage({ params }: PageProps) {
                                 <ExamUploadForm patientId={patient.id} />
                             </div>
 
-                            {/* Exams List */}
-                            {patient.exams.length > 0 ? (
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Archivo</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Centro / Médico</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Origen</th>
-                                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Acción</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                            {patient.exams.map((exam) => (
-                                                <tr key={exam.id} className="hover:bg-gray-50">
-                                                    <td className="px-4 py-3 text-sm text-gray-900">
-                                                        <div className="flex items-center gap-2">
-                                                            <div className="p-1.5 bg-red-100 rounded text-red-600">
-                                                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clipRule="evenodd" /></svg>
-                                                            </div>
-                                                            <span className="font-medium text-gray-700">
-                                                                {exam.fileName || 'Documento PDF'}
-                                                            </span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 text-sm text-gray-500">
-                                                        <div className="flex flex-col">
-                                                            <span className="font-medium text-gray-900">{exam.centerName}</span>
-                                                            <span className="text-xs">{exam.doctorName}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500">
-                                                        {new Date(exam.examDate).toLocaleDateString('es-CL')}
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm">
-                                                        <span className={`px-2 py-1 text-xs rounded-full border ${exam.source === 'portal pacientes' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-purple-50 text-purple-700 border-purple-200'}`}>
-                                                            {exam.source === 'portal pacientes' ? 'Portal de Pacientes' : 'Portal Interno'}
-                                                        </span>
-                                                    </td>
-                                                    <td className="px-4 py-3 whitespace-nowrap text-sm">
-                                                        <a href={exam.fileUrl} target="_blank" className="text-indigo-600 font-medium hover:underline">Ver</a>
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ) : (
-                                <div className="text-center py-8 bg-white border-2 border-dashed border-gray-100 rounded-lg">
-                                    <p className="text-gray-500 text-sm">No hay exámenes registrados.</p>
-                                </div>
-                            )}
+                            <PatientExamsList exams={patient.exams} allowAdminActions={true} />
                         </div>
                     </div>
                 </div>

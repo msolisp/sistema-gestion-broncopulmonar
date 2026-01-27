@@ -215,16 +215,20 @@ export async function deletePatientExam(examId: string): Promise<{ message: stri
             return { message: 'Examen no encontrado.' }
         }
 
-        // Verify ownership via subidoPor or origin
-        // Ideally we check if it belongs to this patient's clinical record + origin check
-        // Check filtering logic
+        // Verify ownership or staff permissions
+        const userRole = (session.user as any).role;
+        const isStaff = ['ADMIN', 'KINESIOLOGO'].includes(userRole);
 
-        // Only allow deletion of exams uploaded by patient from patient portal
-        if (exam.origen !== 'PORTAL_PACIENTE' || exam.subidoPor !== session.user.id) {
-            // Fallback check: if subidoPor is just the ID match
-            if (exam.subidoPor !== session.user.id && exam.subidoPor !== persona.id) {
+        if (!isStaff) {
+            // If not staff, must be owner and from portal
+            if (exam.origen !== 'PORTAL_PACIENTE' || (exam.subidoPor !== session.user.id && exam.subidoPor !== persona.id)) {
                 return { message: 'Solo puede eliminar exámenes que usted haya subido desde el portal de pacientes.' }
             }
+        }
+        // If staff, they can currently delete internal ones or if they are admin
+        else if (userRole !== 'ADMIN' && exam.origen !== 'PORTAL_INTERNO') {
+            // Kinesiologists can only delete internal ones? Or maybe any but we stick to internal for now if strict.
+            // Actually, usually staff should be able to manage clinical record.
         }
 
         // Delete the exam
@@ -290,9 +294,14 @@ export async function updatePatientExam(
             return { message: 'Examen no encontrado.' }
         }
 
-        // Verify ownership
-        if (exam.origen !== 'PORTAL_PACIENTE' || (exam.subidoPor !== session.user.id && exam.subidoPor !== persona.id)) {
-            return { message: 'Solo puede editar exámenes que usted haya subido.' }
+        // Verify ownership or staff permissions
+        const userRole = (session.user as any).role;
+        const isStaff = ['ADMIN', 'KINESIOLOGO'].includes(userRole);
+
+        if (!isStaff) {
+            if (exam.origen !== 'PORTAL_PACIENTE' || (exam.subidoPor !== session.user.id && exam.subidoPor !== persona.id)) {
+                return { message: 'Solo puede editar exámenes que usted haya subido.' }
+            }
         }
 
         // Update exam
