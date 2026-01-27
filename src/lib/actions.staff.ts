@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import { validarRutChileno } from '@/lib/validators';
 
-import { logAction } from '@/lib/logger';
+import { logAction } from '@/lib/enhanced-logger';
 
 export async function adminCreateSystemUser(prevState: any, formData: FormData) {
     const session = await auth();

@@ -7,7 +7,7 @@ import { validarRutChileno } from '@/lib/validators';
 import { auth } from '@/auth';
 import { revalidatePath } from 'next/cache';
 import { put } from '@vercel/blob';
-import { logAction } from './logger';
+import { logAction } from './enhanced-logger';
 
 export async function registerPatient(prevState: any, formData: FormData) {
     const rawData = Object.fromEntries(formData);

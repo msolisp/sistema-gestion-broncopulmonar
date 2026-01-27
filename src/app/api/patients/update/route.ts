@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { auth } from '@/auth'
 import prisma from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
-import { logAction } from '@/lib/logger'
+import { logAction } from '@/lib/enhanced-logger'
 
 export async function POST(request: NextRequest) {
     const session = await auth()

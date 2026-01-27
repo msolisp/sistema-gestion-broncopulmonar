@@ -6,7 +6,7 @@ import bcrypt from 'bcryptjs';
 import { AuthError } from 'next-auth';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
-import { logAction } from './logger';
+import { logAction } from './enhanced-logger';
 import { loggers } from './structured-logger';
 import { LoginSchema } from './schemas';
 import { getSystemConfig } from './actions.system';
