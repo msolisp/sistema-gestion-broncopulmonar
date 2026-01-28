@@ -36,7 +36,7 @@ jest.mock('@/auth', () => ({
 }));
 
 jest.mock('@vercel/blob', () => ({
-    put: jest.fn(),
+    put: jest.fn().mockResolvedValue({ url: 'https://test.com/file.pdf' }),
 }));
 
 describe('Patient Actions', () => {
@@ -79,6 +79,9 @@ describe('Patient Actions', () => {
 
             const formData = new FormData();
             const mockFile = new File(['test'], 'test.pdf', { type: 'application/pdf' });
+            Object.defineProperty(mockFile, 'arrayBuffer', {
+                value: jest.fn().mockResolvedValue(new ArrayBuffer(8))
+            });
             formData.append('file', mockFile);
             formData.append('centerName', 'Center');
             formData.append('doctorName', 'Doc');
@@ -91,6 +94,9 @@ describe('Patient Actions', () => {
             // Actually, the implementation uses dynamic import.
 
             const result = await uploadPatientExam(null, formData);
+            if (!result.success) {
+                throw new Error(`Upload Exam Failed: ${JSON.stringify(result, null, 2)}`);
+            }
 
             expect(result.success).toBe(true);
             expect(prisma.examenMedico.create).toHaveBeenCalled();

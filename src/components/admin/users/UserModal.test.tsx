@@ -329,7 +329,7 @@ describe('UserModal', () => {
         const saveBtn = screen.getByText('Guardar Cambios');
         fireEvent.click(saveBtn);
 
-        expect(await screen.findByText('Error de conexión')).toBeInTheDocument();
+        expect(await screen.findByText('Network Error')).toBeInTheDocument();
         expect(consoleSpy).toHaveBeenCalled();
         consoleSpy.mockRestore();
     });

@@ -21,6 +21,7 @@ export const RegisterPatientSchema = z.object({
         .regex(/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/, { message: 'Debe contener al menos un carácter especial' }),
     rut: z.string().refine(validarRutChileno, { message: 'RUT inválido. Debe incluir dígito verificador.' }),
     commune: z.string().min(1, { message: 'Debes seleccionar una comuna de residencia' }),
+    phone: z.string().optional(),
 });
 
 export const BookAppointmentSchema = z.object({

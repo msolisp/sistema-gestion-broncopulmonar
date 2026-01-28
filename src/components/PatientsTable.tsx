@@ -136,21 +136,37 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
     const totalPages = Math.ceil(filteredPatients.length / itemsPerPage)
 
     const handleExport = () => {
-        const dataToExport = filteredPatients.map(p => ({
-            'Nombre': p.name,
-            'Email': p.email,
-            'RUT': p.rut,
-            'Región': p.region,
-            'Comuna': p.commune,
-            'Edad': calculateAge(p.birthDate),
-            'Estado': p.active ? 'Activo' : 'Inactivo',
-            'Citas': p.appointments.length
-        }))
+        try {
+            console.log("DEBUG: Iniciando exportación a Excel...");
+            if (!filteredPatients || filteredPatients.length === 0) {
+                console.warn("DEBUG: No hay pacientes para exportar");
+                return;
+            }
 
-        const ws = XLSX.utils.json_to_sheet(dataToExport)
-        const wb = XLSX.utils.book_new()
-        XLSX.utils.book_append_sheet(wb, ws, "Pacientes")
-        XLSX.writeFile(wb, `pacientes_${new Date().toISOString().split('T')[0]}.xlsx`)
+            const dataToExport = filteredPatients.map(p => ({
+                'Nombre': p.name || 'Sin nombre',
+                'Email': p.email || 'Sin email',
+                'RUT': p.rut || 'Sin RUT',
+                'Región': p.region || 'No especificada',
+                'Comuna': p.commune || 'No especificada',
+                'Edad': calculateAge(p.birthDate),
+                'Estado': p.active ? 'Activo' : 'Inactivo',
+                'Citas': (p.appointments && Array.isArray(p.appointments)) ? p.appointments.length : 0
+            }))
+
+            console.log("DEBUG: Datos mapeados, creando hoja...");
+            const ws = XLSX.utils.json_to_sheet(dataToExport)
+            const wb = XLSX.utils.book_new()
+            XLSX.utils.book_append_sheet(wb, ws, "Pacientes")
+
+            console.log("DEBUG: Escribiendo archivo...");
+            const fileName = `pacientes_${new Date().toISOString().split('T')[0]}.xlsx`
+            XLSX.writeFile(wb, fileName)
+            console.log("✅ DEBUG: Exportación finalizada correctamente");
+        } catch (error) {
+            console.error("❌ CRITICAL ERROR: Falló la exportación a Excel:", error);
+            alert("Error al exportar a Excel. Por favor revisa la consola para más detalles.");
+        }
     }
 
     return (

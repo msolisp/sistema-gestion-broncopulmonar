@@ -68,7 +68,7 @@ jest.mock('./structured-logger', () => ({
 }));
 
 // Mock logger
-jest.mock('./logger', () => ({
+jest.mock('./enhanced-logger', () => ({
     logAction: jest.fn(),
 }));
 
@@ -164,7 +164,7 @@ describe('Auth Actions', () => {
             const { getSystemConfig } = require('./actions.system');
             getSystemConfig.mockResolvedValue('true');
             const originalNodeEnv = process.env.NODE_ENV;
-            process.env.NODE_ENV = 'production';
+            Object.defineProperty(process.env, 'NODE_ENV', { value: 'production', writable: true });
 
             const fd = new FormData();
             fd.append('email', 'test@test.com');
@@ -176,7 +176,7 @@ describe('Auth Actions', () => {
             expect(res).toBe('Captcha inválido. Por favor intenta de nuevo.');
             expect(signIn).not.toHaveBeenCalled();
 
-            process.env.NODE_ENV = originalNodeEnv;
+            Object.defineProperty(process.env, 'NODE_ENV', { value: originalNodeEnv, writable: true });
         });
 
         it('validates visual captcha failure', async () => {

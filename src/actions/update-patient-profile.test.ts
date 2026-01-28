@@ -14,6 +14,7 @@ jest.mock('@/lib/prisma', () => ({
         },
         persona: {
             update: jest.fn(),
+            findUnique: jest.fn().mockResolvedValue({ id: 'p1' }),
         },
         fichaClinica: {
             update: jest.fn(),
@@ -76,6 +77,7 @@ describe('updatePatientProfile', () => {
         const result = await updatePatientProfile(null, formData);
 
         // If validation fails on empty strings for optional fields, this will return an error message
+        if (result.message !== 'Success') console.log('Test Failure Result:', JSON.stringify(result, null, 2));
         expect(result).toEqual({ message: 'Success' });
     });
 });

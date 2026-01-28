@@ -20,32 +20,32 @@ describe('Enhanced Logger', () => {
     });
 
     describe('getClientIp', () => {
-        it('returns x-forwarded-for first part', () => {
+        it('returns x-forwarded-for first part', async () => {
             (headers as jest.Mock).mockReturnValue({
                 get: (key: string) => key === 'x-forwarded-for' ? '10.0.0.1, 10.0.0.2' : null
             });
-            expect(getClientIp()).toBe('10.0.0.1');
+            expect(await getClientIp()).toBe('10.0.0.1');
         });
 
-        it('returns x-real-ip if forwarded missing', () => {
+        it('returns x-real-ip if forwarded missing', async () => {
             (headers as jest.Mock).mockReturnValue({
                 get: (key: string) => key === 'x-real-ip' ? '10.0.0.2' : null
             });
-            expect(getClientIp()).toBe('10.0.0.2');
+            expect(await getClientIp()).toBe('10.0.0.2');
         });
 
-        it('returns cf-connecting-ip if others missing', () => {
+        it('returns cf-connecting-ip if others missing', async () => {
             (headers as jest.Mock).mockReturnValue({
                 get: (key: string) => key === 'cf-connecting-ip' ? '10.0.0.3' : null
             });
-            expect(getClientIp()).toBe('10.0.0.3');
+            expect(await getClientIp()).toBe('10.0.0.3');
         });
 
-        it('returns unknown if all missing', () => {
+        it('returns unknown if all missing', async () => {
             (headers as jest.Mock).mockReturnValue({
                 get: () => null
             });
-            expect(getClientIp()).toBe('unknown');
+            expect(await getClientIp()).toBe('unknown');
         });
     });
 

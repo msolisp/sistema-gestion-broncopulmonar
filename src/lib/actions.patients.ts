@@ -31,7 +31,7 @@ export async function registerPatient(prevState: any, formData: FormData) {
         return { message: 'Datos inválidos: ' + validation.error.issues.map(e => e.message).join(', ') };
     }
 
-    const { email, password, name, rut, commune } = validation.data;
+    const { email, password, name, rut, commune, phone } = validation.data;
 
     // Validate RUT format
     if (!validarRutChileno(rut)) {
@@ -60,6 +60,7 @@ export async function registerPatient(prevState: any, formData: FormData) {
             apellidoPaterno: apellidoPaterno || 'SIN_APELLIDO',
             apellidoMaterno,
             email,
+            telefono: phone,
             password,
             comuna: commune,
             creadoPor: 'SELF_REGISTRATION'
@@ -102,7 +103,23 @@ export async function updatePatientProfile(prevState: any, formData: FormData) {
 
 
     try {
-        if (!session.user?.id) return { message: 'Session error: No user ID' };
+        let personaId = session.user.id;
+
+        // Verify if session.user.id points to a valid Persona, if not find by email
+        if (!personaId) {
+            const p = await prisma.persona.findUnique({ where: { email: session.user.email } });
+            if (p) personaId = p.id;
+        } else {
+            // Optional: Double check if this ID exists in Persona
+            const exists = await prisma.persona.findUnique({ where: { id: personaId } });
+            if (!exists) {
+                const p = await prisma.persona.findUnique({ where: { email: session.user.email } });
+                if (p) personaId = p.id;
+            }
+        }
+
+        if (!personaId) return { message: 'Patient profile not found' };
+
         // Use FHIR adapter
         const payload = {
             nombre: nombre || name,
@@ -119,7 +136,7 @@ export async function updatePatientProfile(prevState: any, formData: FormData) {
             cota: cota !== undefined ? parseFloat(cota as any) : undefined,
             modificadoPor: session.user.email || 'SELF'
         };
-        const result = await updatePatient(session.user.id, payload);
+        const result = await updatePatient(personaId, payload);
 
         revalidatePath('/portal', 'layout');
         revalidatePath('/portal/perfil');

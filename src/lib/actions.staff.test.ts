@@ -3,7 +3,7 @@ import prisma from '@/lib/prisma';
 import { createStaffUser, updateStaffUser } from '@/lib/fhir-adapters';
 process.env.E2E_TESTING = 'true';
 
-jest.mock('@/lib/logger', () => ({
+jest.mock('@/lib/enhanced-logger', () => ({
     logAction: jest.fn()
 }));
 
@@ -298,7 +298,9 @@ describe('Staff Actions', () => {
     });
 
     it('logs diff on user update', async () => {
-        const { logAction } = jest.requireMock('@/lib/logger');
+        const { logAction } = jest.requireMock('@/lib/enhanced-logger');
+        const { validarRutChileno } = require('@/lib/validators');
+        validarRutChileno.mockReturnValue(true);
 
         const formData = new FormData();
         formData.append('id', 'user-sys-123');
@@ -334,19 +336,19 @@ describe('Staff Actions', () => {
         expect(logAction).toHaveBeenCalledWith(
             'USER_UPDATED',
             expect.stringContaining('"Nombre"'),
-            expect.anything(),
+            null,
             'admin@test.com'
         );
         expect(logAction).toHaveBeenCalledWith(
             'USER_UPDATED',
             expect.stringContaining('"old":"Old Name"'),
-            expect.anything(),
+            null,
             'admin@test.com'
         );
         expect(logAction).toHaveBeenCalledWith(
             'USER_UPDATED',
             expect.stringContaining('"new":"New Name"'),
-            expect.anything(),
+            null,
             'admin@test.com'
         );
     });

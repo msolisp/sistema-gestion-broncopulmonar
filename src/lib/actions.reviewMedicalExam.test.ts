@@ -4,7 +4,7 @@ import prisma from './prisma';
 import { auth } from '@/auth';
 
 // Mocks
-jest.mock('./prisma', () => ({
+jest.mock('@/lib/prisma', () => ({
     examenMedico: {
         update: jest.fn(),
     },

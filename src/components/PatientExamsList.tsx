@@ -25,10 +25,11 @@ interface MedicalExam {
 interface PatientExamsListProps {
     exams: any[] // Relax type for compatibility with mapped objects
     onDelete?: () => void
+    onUpdate?: () => void
     allowAdminActions?: boolean
 }
 
-export default function PatientExamsList({ exams, onDelete, allowAdminActions }: PatientExamsListProps) {
+export default function PatientExamsList({ exams, onDelete, onUpdate, allowAdminActions }: PatientExamsListProps) {
     const router = useRouter()
     const [deletingId, setDeletingId] = useState<string | null>(null)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState<string | null>(null)
@@ -70,6 +71,7 @@ export default function PatientExamsList({ exams, onDelete, allowAdminActions }:
             if (result.success) {
                 setStatus({ type: 'success', message: 'Examen actualizado correctamente' })
                 setEditingExam(null)
+                onUpdate?.()
                 router.refresh()
                 setTimeout(() => setStatus({ type: null, message: null }), 3000)
             } else {
