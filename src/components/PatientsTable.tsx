@@ -154,10 +154,26 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
             const wb = XLSX.utils.book_new()
             XLSX.utils.book_append_sheet(wb, ws, "Pacientes")
 
-            // Use XLSX.writeFile which is more robust for filename/extension preservation
-            // as it includes internal polyfills for cross-navigator compatibility
+            // Generate Excel file as Uint8Array (most reliable browser format)
+            const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+            // Create download link
             const fileName = `pacientes_${new Date().toISOString().split('T')[0]}.xlsx`
-            XLSX.writeFile(wb, fileName)
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName; // Important: direct property access
+
+            // Append to body is required for some browsers
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            setTimeout(() => {
+                document.body.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            }, 100);
         } catch (error) {
             console.error("Error al exportar a Excel:", error);
             alert("Error al exportar a Excel.");

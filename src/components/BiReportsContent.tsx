@@ -262,9 +262,25 @@ export default function BiReportsContent({ patients }: BiReportsContentProps) {
         const wsExams = XLSX.utils.json_to_sheet(examsData)
         XLSX.utils.book_append_sheet(wb, wsExams, "Exámenes")
 
-        // Use XLSX.writeFile which is more robust for filename/extension preservation
+        // Generate Excel file as Uint8Array
+        const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+        // Create download link
         const fileName = `Reporte_Broncopulmonar_${new Date().toISOString().split('T')[0]}.xlsx`
-        XLSX.writeFile(wb, fileName)
+        const url = window.URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = fileName;
+
+        document.body.appendChild(link);
+        link.click();
+
+        // Clean up
+        setTimeout(() => {
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        }, 100);
     }
 
     const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
