@@ -95,10 +95,10 @@ export default function NotificationBell() {
             {/* Bell Button */}
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`relative flex items-center w-full px-4 py-2.5 text-zinc-600 hover:text-indigo-600 hover:bg-zinc-50 rounded-lg transition-colors group text-sm font-medium`}
+                className={`relative flex items-center w-full px-4 py-2.5 rounded-lg transition-colors group text-sm font-medium ${isOpen ? 'bg-indigo-50 text-indigo-600' : 'text-zinc-600 hover:text-indigo-600 hover:bg-zinc-50'}`}
                 aria-label="Notificaciones"
             >
-                <Bell className="w-5 h-5 mr-3 text-zinc-400 group-hover:text-indigo-600" />
+                <Bell className={`w-5 h-5 mr-3 ${isOpen ? 'text-indigo-600' : 'text-zinc-400 group-hover:text-indigo-600'}`} />
                 <span>Exámenes cargados</span>
 
                 {unreadCount > 0 && (
@@ -108,103 +108,76 @@ export default function NotificationBell() {
                 )}
             </button>
 
-            {/* Dropdown */}
+            {/* Inline Accordion */}
             {isOpen && (
-                <>
-                    {/* Backdrop */}
-                    <div
-                        className="fixed inset-0 z-40"
-                        onClick={() => setIsOpen(false)}
-                    />
+                <div className="mt-1 ml-4 w-[calc(100%-1rem)] bg-white rounded-lg border border-zinc-200 shadow-sm overflow-hidden flex flex-col animate-in slide-in-from-top-2 duration-200">
+                    {/* Header */}
+                    <div className="px-3 py-2 border-b border-zinc-100 flex items-center justify-between bg-zinc-50/50 shrink-0">
+                        <h3 className="text-xs font-semibold text-zinc-700">
+                            Recientes
+                        </h3>
+                        {unreadCount > 0 && (
+                            <button
+                                onClick={markAllAsRead}
+                                disabled={loading}
+                                className="text-[10px] text-indigo-600 hover:text-indigo-700 font-medium disabled:opacity-50"
+                            >
+                                {loading ? '...' : 'Marcar leídas'}
+                            </button>
+                        )}
+                    </div>
 
-                    {/* Dropdown Panel */}
-                    <div className="absolute left-0 mt-2 w-96 bg-white rounded-lg shadow-2xl border border-zinc-200 z-[100] max-h-[60vh] overflow-hidden flex flex-col">
-                        {/* Header */}
-                        <div className="px-4 py-3 border-b border-zinc-200 flex items-center justify-between bg-zinc-50 shrink-0">
-                            <h3 className="text-sm font-semibold text-zinc-900">
-                                Notificaciones {unreadCount > 0 && `(${unreadCount})`}
-                            </h3>
-                            <div className="flex items-center gap-2">
-                                {unreadCount > 0 && (
-                                    <button
-                                        onClick={markAllAsRead}
-                                        disabled={loading}
-                                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium disabled:opacity-50"
-                                    >
-                                        {loading ? 'Marcando...' : 'Marcar todas como leídas'}
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => setIsOpen(false)}
-                                    className="text-zinc-400 hover:text-zinc-600"
-                                >
-                                    <X className="w-4 h-4" />
-                                </button>
+                    {/* Notifications List */}
+                    <div className="max-h-[300px] overflow-y-auto">
+                        {notifications.length === 0 ? (
+                            <div className="px-3 py-6 text-center">
+                                <p className="text-xs text-zinc-400">Sin novedades</p>
                             </div>
-                        </div>
-
-                        {/* Notifications List */}
-                        <div className="overflow-y-auto flex-1">
-                            {notifications.length === 0 ? (
-                                <div className="px-4 py-12 text-center">
-                                    <Bell className="w-12 h-12 text-zinc-300 mx-auto mb-3" />
-                                    <p className="text-sm text-zinc-500">No hay notificaciones nuevas</p>
-                                </div>
-                            ) : (
-                                notifications.map((notification) => (
-                                    <div
-                                        key={notification.id}
-                                        className="px-4 py-3 border-b border-zinc-100 hover:bg-zinc-50 transition-colors"
-                                    >
-                                        <div className="flex items-start justify-between gap-3">
-                                            <div className="flex-1 min-w-0">
-                                                <p className="text-sm font-medium text-zinc-900 mb-1">
-                                                    {notification.title}
-                                                </p>
-                                                <p className="text-sm text-zinc-600 mb-2">
-                                                    {notification.message}
-                                                </p>
-                                                <div className="flex items-center gap-4 text-xs text-zinc-500">
-                                                    <span>Paciente: {notification.patient.name}</span>
-                                                    {notification.patient.rut && (
-                                                        <span>RUT: {notification.patient.rut}</span>
-                                                    )}
-                                                </div>
-                                                <p className="text-xs text-zinc-400 mt-1">
-                                                    {new Date(notification.createdAt).toLocaleString('es-CL', {
-                                                        day: '2-digit',
-                                                        month: 'short',
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                    })}
-                                                </p>
-                                                <div className="flex gap-2 mt-2">
-                                                    <Link
-                                                        href={`/patients/${notification.patient.id}/history`}
-                                                        onClick={() => {
-                                                            markAsRead(notification.id)
-                                                            setIsOpen(false)
-                                                        }}
-                                                        className="text-xs text-indigo-600 hover:text-indigo-700 font-medium"
-                                                    >
-                                                        Ver historial →
-                                                    </Link>
-                                                </div>
-                                            </div>
+                        ) : (
+                            notifications.map((notification) => (
+                                <div
+                                    key={notification.id}
+                                    className="px-3 py-3 border-b border-zinc-50 hover:bg-zinc-50 transition-colors last:border-0"
+                                >
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex justify-between items-start gap-2">
+                                            <p className="text-xs font-medium text-zinc-900 leading-tight">
+                                                {notification.patient.name}
+                                            </p>
                                             <button
                                                 onClick={() => markAsRead(notification.id)}
-                                                className="flex-shrink-0 text-zinc-400 hover:text-zinc-600"
-                                                title="Marcar como leída"
+                                                className="text-zinc-300 hover:text-zinc-500 p-0.5"
+                                                title="Marcar leída"
                                             >
-                                                <X className="w-4 h-4" />
+                                                <X className="w-3 h-3" />
                                             </button>
                                         </div>
+
+                                        <p className="text-[10px] text-zinc-500">
+                                            {new Date(notification.createdAt).toLocaleString('es-CL', {
+                                                day: '2-digit',
+                                                month: 'short',
+                                                hour: '2-digit',
+                                                minute: '2-digit',
+                                            })}
+                                        </p>
+
+                                        <Link
+                                            href={`/patients/${notification.patient.id}/history`}
+                                            onClick={() => {
+                                                markAsRead(notification.id)
+                                                // Optional: keep open or close?
+                                            }}
+                                            className="text-[11px] text-indigo-600 hover:text-indigo-700 font-medium inline-flex items-center mt-1"
+                                        >
+                                            Ver detalles →
+                                        </Link>
                                     </div>
-                                ))
-                            )}
-                        </div>
+                                </div>
+                            ))
+                        )}
                     </div>
-                </>
+                </div>
             )}
         </div>
     )

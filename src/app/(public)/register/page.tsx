@@ -84,6 +84,34 @@ export default function RegisterPage() {
                             </div>
                         </div>
 
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="phone">
+                                Teléfono
+                            </label>
+                            <input
+                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                id="phone"
+                                type="tel"
+                                name="phone"
+                                placeholder="+56 9 1234 5678"
+                                autoComplete="tel"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="email">
+                                Email
+                            </label>
+                            <input
+                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                                id="email"
+                                type="email"
+                                name="email"
+                                autoComplete="off"
+                                required
+                            />
+                        </div>
+
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="region">
@@ -143,34 +171,6 @@ export default function RegisterPage() {
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="phone">
-                                Teléfono
-                            </label>
-                            <input
-                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                id="phone"
-                                type="tel"
-                                name="phone"
-                                placeholder="+56 9 1234 5678"
-                                autoComplete="tel"
-                            />
-                        </div>
-
-                        <div>
-                            <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="email">
-                                Email
-                            </label>
-                            <input
-                                className="w-full rounded-lg border border-zinc-200 px-4 py-2 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                                id="email"
-                                type="email"
-                                name="email"
-                                autoComplete="off"
-                                required
-                            />
                         </div>
                         <div>
                             <label className="block text-sm font-medium text-zinc-700 mb-1" htmlFor="password">

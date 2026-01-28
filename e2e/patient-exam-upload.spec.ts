@@ -6,16 +6,21 @@ test.describe('Patient Exam Upload', () => {
         await page.goto('/login')
         await page.fill('input[name="email"]', 'paciente1@test.com')
         await page.fill('input[name="password"]', 'Password123!')
+        // Fill Visual Captcha (E2E bypass)
+        const captchaInput = page.getByPlaceholder('Ingresa el código');
+        if (await captchaInput.isVisible()) {
+            await captchaInput.fill('0000');
+        }
         await page.click('button:has-text("Ingresar")')
 
         // Wait for redirect to portal
         await expect(page).toHaveURL(/.*\/portal/, { timeout: 10000 })
 
         // Navigate to exams page
-        await page.goto('/portal/examenes')
+        await page.goto('/portal/subir-examen')
 
         // Verify page loaded
-        await expect(page.locator('h1')).toContainText('Mis Exámenes Médicos')
+        await expect(page.locator('h1')).toContainText('Subir Examen Médico')
 
         // Fill form
         const testPdfPath = 'e2e/dummy.pdf'
@@ -41,7 +46,7 @@ test.describe('Patient Exam Upload', () => {
         await page.fill('input[name="password"]', 'Password123!')
         await page.click('button:has-text("Ingresar")')
 
-        await page.goto('/portal/examenes')
+        await page.goto('/portal/subir-examen')
 
         // Try to submit without file
         await page.fill('input#centerName', 'Clínica Test')
@@ -60,7 +65,7 @@ test.describe('Patient Exam Upload', () => {
         await page.fill('input[name="password"]', 'Password123!')
         await page.click('button:has-text("Ingresar")')
 
-        await page.goto('/portal/examenes')
+        await page.goto('/portal/subir-examen')
 
         const testPdfPath = 'e2e/dummy.pdf'
         await page.setInputFiles('input[type="file"]', testPdfPath)
@@ -80,7 +85,7 @@ test.describe('Patient Exam Upload', () => {
         await page.fill('input[name="password"]', 'Password123!')
         await page.click('button:has-text("Ingresar")')
 
-        await page.goto('/portal/examenes')
+        await page.goto('/portal/subir-examen')
 
         // Should show exams table or empty state
         const hasExams = await page.locator('table').isVisible()
@@ -103,7 +108,7 @@ test.describe('Patient Exam Upload', () => {
         await page.fill('input[name="password"]', 'Password123!')
         await page.click('button:has-text("Ingresar")')
 
-        await page.goto('/portal/examenes')
+        await page.goto('/portal/subir-examen')
 
         // Check if there are exams
         const hasExams = await page.locator('table tbody tr').count() > 0

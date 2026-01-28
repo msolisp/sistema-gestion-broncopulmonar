@@ -41,7 +41,7 @@ export default function InternalSidebar({ user, permissions = [] }: InternalSide
                 </h1>
             </div>
 
-            <nav className="flex-1 px-4 space-y-1 flex flex-col">
+            <nav className="flex-1 px-4 space-y-1 flex flex-col overflow-y-auto custom-scrollbar">
                 {can('Ver Agendamiento') && (
                     <Link href="/dashboard?tab=Agendamiento" className="flex items-center px-4 py-2.5 text-sm font-medium text-zinc-700 rounded-lg hover:bg-zinc-50 hover:text-indigo-600 group">
                         <Calendar className="mr-3 h-5 w-5 text-zinc-400 group-hover:text-indigo-600" />

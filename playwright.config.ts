@@ -18,7 +18,7 @@ export default defineConfig({
     timeout: 180000, // 3 minutes per test
 
     use: {
-        baseURL: 'http://localhost:3000',
+        baseURL: 'http://localhost:3001',
         trace: 'on-first-retry',
         actionTimeout: 60000, // 60 seconds per action
     },
@@ -42,11 +42,11 @@ export default defineConfig({
         },
     ],
     webServer: {
-        command: 'npm run dev',
+        command: 'npm run dev -- -p 3001',
         env: {
             E2E_TESTING: 'true',
         },
-        url: 'http://localhost:3000',
+        url: 'http://localhost:3001',
         reuseExistingServer: !process.env.CI,
         timeout: 120000, // 2 minutes to start server
     },

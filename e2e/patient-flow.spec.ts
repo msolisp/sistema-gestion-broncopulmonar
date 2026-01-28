@@ -1,6 +1,18 @@
 
 import { test, expect } from '@playwright/test';
 
+// Helper to generate valid RUT
+function generateValidRut() {
+    const num = Math.floor(Math.random() * 10000000) + 10000000; // 10M - 20M
+    let m = 0, s = 1;
+    let t = num;
+    for (; t; t = Math.floor(t / 10)) {
+        s = (s + t % 10 * (9 - m++ % 6)) % 11;
+    }
+    const dv = s ? (s - 1).toString() : 'K';
+    return `${num}-${dv}`;
+}
+
 test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     // 1. Go to Home
     await page.goto('/');
@@ -9,7 +21,7 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
     // 2. Register
     await page.click('text=Registrarse');
 
-    const uniqueRut = `${Math.floor(Math.random() * 90000000) + 10000000}-${Math.floor(Math.random() * 9)}`;
+    const uniqueRut = generateValidRut();
     const uniqueEmail = `patient_${Date.now()}@test.com`;
 
     await page.fill('input[name="name"]', 'Test Patient');
@@ -198,4 +210,20 @@ test('Patient Administration: Edit Patient', async ({ page }) => {
     await expect(page.getByText(newEmail)).toBeVisible();
     // Verify RUT formatting in table if possible, or just implicit visibility
     await expect(page.getByText('11.222.333-9')).toBeVisible();
+
+    // 8. Delete Patient (Soft Delete)
+    // Click the delete button on the row
+    // We need to re-locate the row as it might have refreshed
+    const deleteRow = page.getByRole('row', { name: newName });
+
+    // Setup dialog handler for confirmation
+    page.once('dialog', async dialog => {
+        // expect(dialog.message()).toContain('¿Estás seguro?'); // Check message if known
+        await dialog.accept();
+    });
+
+    await deleteRow.getByTitle('Eliminar').click();
+
+    // Verify patient is removed from table
+    await expect(page.getByText(newName)).not.toBeVisible();
 });
