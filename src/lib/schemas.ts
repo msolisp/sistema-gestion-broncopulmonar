@@ -22,6 +22,12 @@ export const RegisterPatientSchema = z.object({
     rut: z.string().refine(validarRutChileno, { message: 'RUT inválido. Debe incluir dígito verificador.' }),
     commune: z.string().min(1, { message: 'Debes seleccionar una comuna de residencia' }),
     phone: z.string().optional(),
+    birthDate: z.string().optional().refine((val) => {
+        if (!val) return true;
+        const date = new Date(val);
+        const now = new Date();
+        return !isNaN(date.getTime()) && date <= now;
+    }, { message: 'Fecha de nacimiento inválida o futura' }),
 });
 
 export const BookAppointmentSchema = z.object({

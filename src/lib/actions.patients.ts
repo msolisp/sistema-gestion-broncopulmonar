@@ -63,6 +63,7 @@ export async function registerPatient(prevState: any, formData: FormData) {
             telefono: phone,
             password,
             comuna: commune,
+            fechaNacimiento: validation.data.birthDate ? new Date(validation.data.birthDate) : undefined,
             creadoPor: 'SELF_REGISTRATION'
         });
     } catch (e) {

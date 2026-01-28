@@ -31,19 +31,19 @@ test('Patient Flow: Register, Login and Book Appointment', async ({ page }) => {
 
     // Select Region first to populate Commune options
     const regionSelect = page.locator('select#region');
-    await regionSelect.selectOption({ label: 'Metropolitana de Santiago' });
+    // Select Region by value
+    await regionSelect.selectOption({ value: 'Metropolitana de Santiago' });
 
-    // Wait for the state update
-    await page.waitForTimeout(2000);
+    // Ensure the change event is dispatched
+    await regionSelect.dispatchEvent('change');
 
-    // Explicitly wait for options to be populated (length > 1)
-    await page.waitForFunction(() => {
-        const select = document.querySelector('select[name="commune"]') as HTMLSelectElement;
-        return select && select.options.length > 1;
-    });
+    // Wait for the dependent dropdown to populate. we check for the presence of Santiago
+    await expect(page.locator('select[name="commune"] option').filter({ hasText: 'Santiago' })).toBeAttached({ timeout: 10000 });
 
     const communeSelect = page.locator('select[name="commune"]');
     await communeSelect.selectOption({ value: 'SANTIAGO' });
+    await page.fill('input[name="birthDate"]', '1990-01-01');
+
     await page.fill('input[name="email"]', uniqueEmail);
     await page.fill('input[name="password"]', 'Password123!');
 

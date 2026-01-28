@@ -13,7 +13,8 @@ export default async function ReportsPage() {
 
     const personas = await prisma.persona.findMany({
         where: {
-            usuarioSistema: null
+            activo: true,
+            fichaClinica: { isNot: null }
         },
         include: {
             fichaClinica: {
@@ -30,7 +31,7 @@ export default async function ReportsPage() {
         }
     });
 
-    const patients = personas.map(p => ({
+    const patients = personas.map((p: any) => ({
         id: p.id,
         commune: p.comuna || 'Sin Comuna',
         // Use fechaDiagnostico or creadoEn as diagnosis date
@@ -39,7 +40,7 @@ export default async function ReportsPage() {
         gender: p.sexo,
         healthSystem: p.fichaClinica?.prevision || 'No Informado',
         rut: p.rut,
-        exams: p.fichaClinica?.examenes.map(e => ({
+        exams: p.fichaClinica?.examenes.map((e: any) => ({
             centerName: e.nombreCentro,
             doctorName: e.nombreDoctor,
             examDate: e.fechaExamen
