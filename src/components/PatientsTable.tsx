@@ -137,11 +137,7 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
 
     const handleExport = () => {
         try {
-            console.log("DEBUG: Iniciando exportación a Excel...");
-            if (!filteredPatients || filteredPatients.length === 0) {
-                console.warn("DEBUG: No hay pacientes para exportar");
-                return;
-            }
+            if (!filteredPatients || filteredPatients.length === 0) return;
 
             const dataToExport = filteredPatients.map(p => ({
                 'Nombre': p.name || 'Sin nombre',
@@ -154,18 +150,29 @@ export default function PatientsTable({ patients }: PatientsTableProps) {
                 'Citas': (p.appointments && Array.isArray(p.appointments)) ? p.appointments.length : 0
             }))
 
-            console.log("DEBUG: Datos mapeados, creando hoja...");
             const ws = XLSX.utils.json_to_sheet(dataToExport)
             const wb = XLSX.utils.book_new()
             XLSX.utils.book_append_sheet(wb, ws, "Pacientes")
 
-            console.log("DEBUG: Escribiendo archivo...");
+            // Generate Excel file as array buffer
+            const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+            const data = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+
+            // Create download link and trigger it
             const fileName = `pacientes_${new Date().toISOString().split('T')[0]}.xlsx`
-            XLSX.writeFile(wb, fileName)
-            console.log("✅ DEBUG: Exportación finalizada correctamente");
+            const url = window.URL.createObjectURL(data);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', fileName);
+            document.body.appendChild(link);
+            link.click();
+
+            // Clean up
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
         } catch (error) {
-            console.error("❌ CRITICAL ERROR: Falló la exportación a Excel:", error);
-            alert("Error al exportar a Excel. Por favor revisa la consola para más detalles.");
+            console.error("Error al exportar a Excel:", error);
+            alert("Error al exportar a Excel.");
         }
     }
 
